@@ -1,57 +1,65 @@
 import 'package:flutter/material.dart';
 
 import 'app_list_settings_controller.dart';
+import 'app_strings.dart';
+import 'locale_controller.dart';
 
 class AppListSettingsScreen extends StatelessWidget {
   const AppListSettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('App-Liste')),
-      body: ValueListenableBuilder<AppListSettings>(
-        valueListenable: AppListSettingsController.instance,
-        builder: (context, settings, child) {
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _PreviewRow(settings: settings),
-              const SizedBox(height: 24),
-              const _SectionLabel('Textfarbe'),
-              _ColorPicker(settings: settings),
-              const SizedBox(height: 24),
-              const _SectionLabel('Schriftart'),
-              _FontFamilyPicker(settings: settings),
-              const SizedBox(height: 24),
-              _SectionLabel('Textgröße (${settings.fontSize.round()})'),
-              Slider(
-                value: settings.fontSize,
-                min: 12,
-                max: 28,
-                divisions: 16,
-                onChanged: (value) {
-                  AppListSettingsController.instance.update(
-                    settings.copyWith(fontSize: value),
-                  );
-                },
-              ),
-              const SizedBox(height: 8),
-              _SectionLabel('Zeilenabstand (${settings.rowHeight.round()})'),
-              Slider(
-                value: settings.rowHeight,
-                min: 56,
-                max: 104,
-                divisions: 12,
-                onChanged: (value) {
-                  AppListSettingsController.instance.update(
-                    settings.copyWith(rowHeight: value),
-                  );
-                },
-              ),
-            ],
-          );
-        },
-      ),
+    return ValueListenableBuilder<AppLanguage>(
+      valueListenable: LocaleController.instance,
+      builder: (context, language, child) {
+        final s = AppStrings(language);
+        return Scaffold(
+          appBar: AppBar(title: Text(s.appList)),
+          body: ValueListenableBuilder<AppListSettings>(
+            valueListenable: AppListSettingsController.instance,
+            builder: (context, settings, child) {
+              return ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _PreviewRow(settings: settings, s: s),
+                  const SizedBox(height: 24),
+                  _SectionLabel(s.textColor),
+                  _ColorPicker(settings: settings),
+                  const SizedBox(height: 24),
+                  _SectionLabel(s.font),
+                  _FontFamilyPicker(settings: settings, s: s),
+                  const SizedBox(height: 24),
+                  _SectionLabel(s.textSize(settings.fontSize.round())),
+                  Slider(
+                    value: settings.fontSize,
+                    min: 12,
+                    max: 28,
+                    divisions: 16,
+                    onChanged: (value) {
+                      AppListSettingsController.instance.update(
+                        settings.copyWith(fontSize: value),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  _SectionLabel(s.lineSpacing(settings.rowHeight.round())),
+                  Slider(
+                    value: settings.rowHeight,
+                    min: 56,
+                    max: 104,
+                    divisions: 12,
+                    onChanged: (value) {
+                      AppListSettingsController.instance.update(
+                        settings.copyWith(rowHeight: value),
+                      );
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -75,9 +83,10 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _PreviewRow extends StatelessWidget {
-  const _PreviewRow({required this.settings});
+  const _PreviewRow({required this.settings, required this.s});
 
   final AppListSettings settings;
+  final AppStrings s;
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +102,7 @@ class _PreviewRow extends StatelessWidget {
           const Icon(Icons.apps, color: Colors.black45),
           const SizedBox(width: 16),
           Text(
-            'Beispiel App',
+            s.exampleApp,
             style: TextStyle(
               color: settings.color,
               fontSize: settings.fontSize,
@@ -146,16 +155,22 @@ class _ColorPicker extends StatelessWidget {
 }
 
 class _FontFamilyPicker extends StatelessWidget {
-  const _FontFamilyPicker({required this.settings});
+  const _FontFamilyPicker({required this.settings, required this.s});
 
   final AppListSettings settings;
+  final AppStrings s;
 
   @override
   Widget build(BuildContext context) {
+    final options = {
+      s.fontStandard: '',
+      s.fontSerif: 'serif',
+      s.fontMonospace: 'monospace',
+    };
     return Wrap(
       spacing: 8,
       children: [
-        for (final entry in appListFontFamilies.entries)
+        for (final entry in options.entries)
           ChoiceChip(
             label: Text(entry.key),
             selected: settings.fontFamily == entry.value,

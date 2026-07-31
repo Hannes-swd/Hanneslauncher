@@ -13,15 +13,6 @@ const List<Color> appListColorPalette = [
   Color(0xFFC62828), // red
 ];
 
-/// Selectable font families for the app list. The empty string means "use
-/// the platform default"; "serif" and "monospace" are resolved by the
-/// Android system font manager without bundling any font assets.
-const Map<String, String> appListFontFamilies = {
-  'Standard': '',
-  'Serif': 'serif',
-  'Monospace': 'monospace',
-};
-
 class AppListSettings {
   const AppListSettings({
     this.colorIndex = 0,

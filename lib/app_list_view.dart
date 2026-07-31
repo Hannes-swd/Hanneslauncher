@@ -6,6 +6,8 @@ import 'package:installed_apps/app_info.dart';
 import 'package:installed_apps/installed_apps.dart';
 
 import 'app_list_settings_controller.dart';
+import 'clock_settings_controller.dart';
+import 'clock_widget.dart';
 
 /// Full app list for the home screen with an A-Z index bar on the right.
 /// All present letters are shown at all times; hovering/dragging over one
@@ -49,10 +51,22 @@ class _AppListViewState extends State<AppListView> {
     _loadApps();
     AppListSettingsController.instance.load();
     AppListSettingsController.instance.addListener(_onSettingsChanged);
+    ClockSettingsController.instance.load();
+  }
+
+  // Rapid drag input (or another widget's build/notifyListeners) can call
+  // this while the widget tree is still locked for the current frame. A
+  // microtask runs right after, once the frame is no longer locked, so
+  // setState is never invoked synchronously from such a callback.
+  void _safeSetState(VoidCallback fn) {
+    Future.microtask(() {
+      if (!mounted) return;
+      setState(fn);
+    });
   }
 
   void _onSettingsChanged() {
-    setState(() => _settings = AppListSettingsController.instance.value);
+    _safeSetState(() => _settings = AppListSettingsController.instance.value);
   }
 
   @override
@@ -76,8 +90,7 @@ class _AppListViewState extends State<AppListView> {
       _grouped.putIfAbsent(letter, () => []).add(app);
     }
 
-    if (!mounted) return;
-    setState(() {
+    _safeSetState(() {
       _letters = _grouped.keys.toList();
       _loaded = true;
     });
@@ -110,6 +123,10 @@ class _AppListViewState extends State<AppListView> {
 
     return Stack(
       children: [
+        // Positioned at the Stack level (full screen width) rather than
+        // inside the narrower list column, so it's centered on the whole
+        // screen instead of being skewed left by the alphabet bar's width.
+        if (_activeLetter == null) const IgnorePointer(child: ClockDisplay()),
         Row(
           children: [
             Expanded(child: _buildList()),
@@ -131,6 +148,9 @@ class _AppListViewState extends State<AppListView> {
                   final target =
                       targeting ? _targetIndexFor(letter, localDy) : null;
                   if (letter != _activeLetter || target != _targetAppIndex) {
+                    // Stays synchronous: the release handler below reads
+                    // _targetAppIndex right away to decide what to launch,
+                    // so it must always reflect the latest drag position.
                     setState(() {
                       _activeLetter = letter;
                       _targetAppIndex = target;
@@ -174,7 +194,8 @@ class _AppListViewState extends State<AppListView> {
 
   Widget _buildList() {
     if (_activeLetter == null || !_grouped.containsKey(_activeLetter)) {
-      // Nothing selected on the alphabet bar -> show no apps.
+      // Nothing selected on the alphabet bar -> the clock (rendered above,
+      // at the Stack level) is the only thing shown.
       return const SizedBox.shrink();
     }
     final letter = _activeLetter!;
@@ -321,6 +342,10 @@ class _AlphabetBarState extends State<_AlphabetBar> {
     return LayoutBuilder(
       builder: (context, constraints) {
         return GestureDetector(
+          // Only a drag recognizer here (no tap recognizer competing for
+          // the same pointer) so the very first touch-and-move is
+          // recognized immediately, instead of waiting to see whether it
+          // resolves as a tap first.
           behavior: HitTestBehavior.translucent,
           onVerticalDragStart: (details) {
             widget.onDragStateChanged(true);
@@ -331,11 +356,6 @@ class _AlphabetBarState extends State<_AlphabetBar> {
           },
           onVerticalDragEnd: (_) => _endHover(),
           onVerticalDragCancel: _endHover,
-          onTapDown: (details) {
-            widget.onDragStateChanged(true);
-            _handlePosition(details.localPosition, constraints.maxHeight);
-          },
-          onTapUp: (_) => _endHover(),
           child: Align(
             // _verticalBias is a 0..1 fraction; Alignment's y axis is -1..1.
             alignment: Alignment(0, _AlphabetBar._verticalBias * 2 - 1),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_list_view.dart';
+import 'locale_controller.dart';
 import 'settings_screen.dart';
 import 'wallpaper_controller.dart';
 
@@ -39,6 +40,7 @@ class _LauncherRootState extends State<LauncherRoot>
   void initState() {
     super.initState();
     WallpaperController.instance.load();
+    LocaleController.instance.load();
   }
 
   @override
@@ -73,7 +75,7 @@ class _LauncherRootState extends State<LauncherRoot>
   // the settings panel on swipe-down. Kept separate from the app list below
   // so dragging in the list (scrolling) and on the alphabet bar don't fight
   // with this gesture.
-  static const _dragStripHeight = 110.0;
+  static const _dragStripHeight = 36.0;
 
   @override
   Widget build(BuildContext context) {
