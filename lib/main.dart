@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_list_view.dart';
 import 'locale_controller.dart';
 import 'settings_screen.dart';
+import 'system_gesture_exclusion.dart';
 import 'wallpaper_controller.dart';
 
 void main() {
@@ -77,11 +78,29 @@ class _LauncherRootState extends State<LauncherRoot>
   // with this gesture.
   static const _dragStripHeight = 36.0;
 
+  // Must match the alphabet bar's width in app_list_view.dart.
+  static const _alphabetBarWidth = 28.0;
+
+  double? _exclusionHeightSent;
+
+  void _updateGestureExclusion(double totalHeight) {
+    if (_exclusionHeightSent == totalHeight) return;
+    _exclusionHeightSent = totalHeight;
+    SystemGestureExclusion.excludeRightEdge(
+      barWidth: _alphabetBarWidth,
+      top: _dragStripHeight,
+      bottom: totalHeight,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final height = constraints.maxHeight;
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _updateGestureExclusion(height),
+        );
         return Stack(
           children: [
             ValueListenableBuilder(

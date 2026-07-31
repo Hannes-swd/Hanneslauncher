@@ -123,10 +123,18 @@ class _AppListViewState extends State<AppListView> {
 
     return Stack(
       children: [
+        // Kept as a permanent child (hidden via Offstage rather than being
+        // added/removed) so the Stack's children never shift position. If
+        // they did, Flutter would rebuild the alphabet bar below and cancel
+        // whatever drag is currently in progress on it.
+        //
         // Positioned at the Stack level (full screen width) rather than
         // inside the narrower list column, so it's centered on the whole
         // screen instead of being skewed left by the alphabet bar's width.
-        if (_activeLetter == null) const IgnorePointer(child: ClockDisplay()),
+        Offstage(
+          offstage: _activeLetter != null,
+          child: const IgnorePointer(child: ClockDisplay()),
+        ),
         Row(
           children: [
             Expanded(child: _buildList()),
@@ -174,20 +182,25 @@ class _AppListViewState extends State<AppListView> {
             ),
           ],
         ),
-        if (_isDragging && _activeLetter != null)
-          ValueListenableBuilder<Offset>(
-            valueListenable: _bubblePosition,
-            builder: (context, position, child) {
-              return Positioned(
-                // Grows past 60 as the finger drags further left, so the
-                // bubble follows it instead of staying pinned at the edge.
-                right: 60 + position.dx,
-                top: (position.dy - 40).clamp(0.0, double.infinity),
-                child: child!,
-              );
-            },
-            child: _LetterBubble(letter: _activeLetter!, color: _settings.color),
-          ),
+        // Also a permanent child for the same reason as the clock above.
+        ValueListenableBuilder<Offset>(
+          valueListenable: _bubblePosition,
+          builder: (context, position, child) {
+            if (!_isDragging || _activeLetter == null) {
+              return const SizedBox.shrink();
+            }
+            return Positioned(
+              // Grows past 60 as the finger drags further left, so the
+              // bubble follows it instead of staying pinned at the edge.
+              right: 60 + position.dx,
+              top: (position.dy - 40).clamp(0.0, double.infinity),
+              child: _LetterBubble(
+                letter: _activeLetter!,
+                color: _settings.color,
+              ),
+            );
+          },
+        ),
       ],
     );
   }
