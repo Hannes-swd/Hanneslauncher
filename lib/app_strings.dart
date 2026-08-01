@@ -91,6 +91,25 @@ class AppStrings {
   String get blockWidget => 'Widget';
   String get blockAppRow => _en ? 'Apps' : 'Apps';
   String get blockAppRowTitle => _en ? 'App row' : 'App-Reihe';
+  String get blockCalendar => _en ? 'Calendar' : 'Kalender';
+  String get blockCalendarTitle => _en
+      ? 'Upcoming events from the device'
+      : 'Anstehende Termine vom Gerät';
+  String get calendarPermissionNeeded => _en
+      ? 'Needs permission to read calendars'
+      : 'Braucht Zugriff auf die Kalender';
+  String get allow => _en ? 'Allow' : 'Erlauben';
+  String get noUpcomingEvents =>
+      _en ? 'No upcoming events' : 'Keine anstehenden Termine';
+  String get today => _en ? 'Today' : 'Heute';
+  String get tomorrow => _en ? 'Tomorrow' : 'Morgen';
+  String get calendarsLabel => _en ? 'Calendars' : 'Kalender';
+  String get allCalendars => _en ? 'All calendars' : 'Alle Kalender';
+  String get daysAheadLabel => _en ? 'Look ahead' : 'Vorschau';
+  String days(int count) => _en ? '$count days' : '$count Tage';
+  String get noCalendarsFound => _en
+      ? 'No calendars found on this device'
+      : 'Keine Kalender auf diesem Gerät gefunden';
   String get emptyPanel => _en
       ? 'Nothing here yet. Add widgets or a row of apps with + above.'
       : 'Noch nichts hier. Oben mit + Widgets oder eine App-Reihe '

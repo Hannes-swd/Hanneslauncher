@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'app_row_settings_screen.dart';
 import 'app_strings.dart';
+import 'calendar_block_settings_screen.dart';
 import 'data_sources_controller.dart';
 import 'locale_controller.dart';
 import 'location_controller.dart';
@@ -122,6 +123,16 @@ class _PanelViewState extends State<PanelView> {
                 title: Text(s.blockWidget),
               ),
             ),
+            SimpleDialogOption(
+              onPressed: () =>
+                  Navigator.of(context).pop(PanelBlockType.calendar),
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.calendar_month),
+                title: Text(s.blockCalendar),
+                subtitle: Text(s.blockCalendarTitle),
+              ),
+            ),
           ],
         );
       },
@@ -129,32 +140,34 @@ class _PanelViewState extends State<PanelView> {
     if (choice == null || !mounted) return;
 
     final controller = PanelBlocksController.instance;
-    if (choice == PanelBlockType.appRow) {
-      final block = await controller.addAppRow();
-      if (!mounted) return;
-      // Straight into the picker: a new row is empty and would otherwise
-      // just sit there as a blank strip.
-      await _edit(block);
-    } else {
-      await controller.addWidget(s.blockWidget);
+    switch (choice) {
+      case PanelBlockType.appRow:
+        final block = await controller.addAppRow();
+        if (!mounted) return;
+        // Straight into the picker: a new row is empty and would otherwise
+        // just sit there as a blank strip.
+        await _edit(block);
+      case PanelBlockType.widget:
+        await controller.addWidget(s.blockWidget);
+      case PanelBlockType.calendar:
+        final block = await controller.addCalendar();
+        if (!mounted) return;
+        // Straight into settings: this is also where the calendar
+        // permission gets asked for the first time.
+        await _edit(block);
     }
   }
 
   Future<void> _edit(PanelBlock block) async {
-    if (block.type == PanelBlockType.appRow) {
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => AppRowSettingsScreen(blockId: block.id),
-        ),
-      );
-      return;
-    }
-
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => WidgetEditorScreen(blockId: block.id),
-      ),
-    );
+    final builder = switch (block.type) {
+      PanelBlockType.appRow => (context) =>
+          AppRowSettingsScreen(blockId: block.id),
+      PanelBlockType.widget => (context) =>
+          WidgetEditorScreen(blockId: block.id),
+      PanelBlockType.calendar => (context) =>
+          CalendarBlockSettingsScreen(blockId: block.id),
+    };
+    await Navigator.of(context).push(MaterialPageRoute(builder: builder));
   }
 
   @override

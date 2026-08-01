@@ -3,6 +3,7 @@ import 'package:installed_apps/installed_apps.dart';
 
 import 'app_icon.dart';
 import 'app_strings.dart';
+import 'calendar_block_view.dart';
 import 'folder_sheet.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
@@ -28,9 +29,11 @@ class PanelBlockCard extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: block.type == PanelBlockType.appRow
-            ? _AppRow(block: block, s: s)
-            : WidgetCardView(block: block, s: s),
+        child: switch (block.type) {
+          PanelBlockType.appRow => _AppRow(block: block, s: s),
+          PanelBlockType.widget => WidgetCardView(block: block, s: s),
+          PanelBlockType.calendar => CalendarBlockView(block: block, s: s),
+        },
       ),
     );
   }

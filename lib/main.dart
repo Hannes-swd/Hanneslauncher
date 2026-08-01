@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_list_view.dart';
+import 'calendar_controller.dart';
 import 'data_sources_controller.dart';
 import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
@@ -76,7 +77,10 @@ class _LauncherRootState extends State<LauncherRoot>
     // Opening the panel is the moment its widgets become visible, so that's
     // when anything past its refresh interval is fetched - a panel nobody
     // pulls down costs no data at all.
-    if (open) DataSourcesController.instance.refreshStale();
+    if (open) {
+      DataSourcesController.instance.refreshStale();
+      CalendarController.instance.refresh();
+    }
   }
 
   static const _panelRadius = BorderRadius.only(

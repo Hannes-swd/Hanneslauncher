@@ -4,6 +4,9 @@
     <!-- Only the coarse variant: a weather widget needs the town, not the
          street, and this asks for the less invasive permission. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Reads events from the calendars already synced on the device (a
+         Google account added in Android's own settings included). -->
+    <uses-permission android:name="android.permission.READ_CALENDAR"/>
     <application
         android:label="hanneslouncher"
         android:name="${applicationName}"

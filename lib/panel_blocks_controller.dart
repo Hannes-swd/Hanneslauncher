@@ -12,6 +12,10 @@ enum PanelBlockType {
 
   /// A widget hosted by the launcher, named by [PanelBlock.title].
   widget,
+
+  /// An agenda of upcoming events from the device's calendars, filtered to
+  /// [PanelBlock.itemKeys] (all calendars if empty) and [PanelBlock.daysAhead].
+  calendar,
 }
 
 /// One entry on the panel. The blocks are shown in list order.
@@ -25,6 +29,7 @@ class PanelBlock {
     this.title = '',
     this.elements = const [],
     this.cardHeight = 160,
+    this.daysAhead = 7,
   });
 
   final String id;
@@ -32,6 +37,9 @@ class PanelBlock {
 
   /// App row: what it holds, in display order. Same keys used for pinning:
   /// a package name, a `web:<id>` or a `folder:<id>`.
+  ///
+  /// Calendar: which calendars to include, by the device's own calendar id.
+  /// Empty means every calendar the device has.
   final List<String> itemKeys;
 
   /// App row: icons per line, 3..6.
@@ -51,6 +59,9 @@ class PanelBlock {
   /// inside it, so this is what they are placed within.
   final double cardHeight;
 
+  /// Calendar: how many days ahead the agenda reaches.
+  final int daysAhead;
+
   PanelBlock copyWith({
     List<String>? itemKeys,
     int? columns,
@@ -58,6 +69,7 @@ class PanelBlock {
     String? title,
     List<WidgetElement>? elements,
     double? cardHeight,
+    int? daysAhead,
   }) {
     return PanelBlock(
       id: id,
@@ -68,6 +80,7 @@ class PanelBlock {
       title: title ?? this.title,
       elements: elements ?? this.elements,
       cardHeight: cardHeight ?? this.cardHeight,
+      daysAhead: daysAhead ?? this.daysAhead,
     );
   }
 
@@ -82,6 +95,7 @@ class PanelBlock {
     'title': title,
     'elements': [for (final element in elements) element.toJson()],
     'cardHeight': cardHeight,
+    'daysAhead': daysAhead,
   };
 
   static PanelBlock fromJson(Map<String, dynamic> json) => PanelBlock(
@@ -96,6 +110,7 @@ class PanelBlock {
     title: json['title'] as String? ?? '',
     elements: _elementsFrom(json['elements']),
     cardHeight: (json['cardHeight'] as num?)?.toDouble() ?? 160,
+    daysAhead: json['daysAhead'] as int? ?? 7,
   );
 
   /// Skips a single unreadable element rather than losing the whole card
@@ -200,6 +215,12 @@ class PanelBlocksController extends ValueNotifier<List<PanelBlock>> {
       type: PanelBlockType.widget,
       title: title.trim(),
     );
+    await _save([...value, block]);
+    return block;
+  }
+
+  Future<PanelBlock> addCalendar() async {
+    final block = PanelBlock(id: _newId(), type: PanelBlockType.calendar);
     await _save([...value, block]);
     return block;
   }
