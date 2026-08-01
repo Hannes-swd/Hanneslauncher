@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'clock_settings_controller.dart';
 import 'locale_controller.dart';
+import 'system_app_launcher.dart';
 
 /// Shows the configured clock (digital or word-style), or nothing if the
 /// clock is turned off in settings.
@@ -20,12 +21,19 @@ class ClockDisplay extends StatelessWidget {
         // and shrinks it to fit on shorter screens instead of overflowing.
         // It also sizes itself to its content rather than filling the space,
         // which lets the caller lay out other widgets directly beneath it.
-        return FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.topCenter,
-          child: settings.style == ClockStyle.digital
-              ? const DigitalClock()
-              : const WordClock(),
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: SystemAppLauncher.openClock,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.topCenter,
+            child: switch (settings.style) {
+              ClockStyle.digital => const DigitalClock(),
+              ClockStyle.word => const WordClock(),
+              ClockStyle.roman => const RomanClock(),
+              ClockStyle.bars => const BarsClock(),
+            },
+          ),
         );
       },
     );
@@ -66,24 +74,245 @@ class _DigitalClockState extends State<DigitalClock> {
   Widget build(BuildContext context) {
     final hh = _now.hour.toString().padLeft(2, '0');
     final mm = _now.minute.toString().padLeft(2, '0');
+    return ValueListenableBuilder<ClockSettings>(
+      valueListenable: ClockSettingsController.instance,
+      builder: (context, settings, child) {
+        final color = settings.digitalColor;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$hh:$mm',
+              style: TextStyle(
+                fontSize: widget.fontSize,
+                fontWeight: FontWeight.w300,
+                color: color,
+              ),
+            ),
+            Text(
+              '${_now.day.toString().padLeft(2, '0')}.'
+              '${_now.month.toString().padLeft(2, '0')}.'
+              '${_now.year}',
+              style: TextStyle(
+                fontSize: widget.fontSize * 0.28,
+                color: color.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Hour and minute spelled out in Roman numerals (e.g. "XII:V"), with the
+/// date underneath in the usual digits. Minutes aren't zero-padded - Roman
+/// numerals have no notion of it - and zero itself has none at all, so it
+/// falls back to "0".
+class RomanClock extends StatefulWidget {
+  const RomanClock({super.key, this.fontSize = 56});
+
+  final double fontSize;
+
+  @override
+  State<RomanClock> createState() => _RomanClockState();
+}
+
+class _RomanClockState extends State<RomanClock> {
+  late DateTime _now = DateTime.now();
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      Future.microtask(() {
+        if (!mounted) return;
+        setState(() => _now = DateTime.now());
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var hour = _now.hour % 12;
+    if (hour == 0) hour = 12;
+    return ValueListenableBuilder<ClockSettings>(
+      valueListenable: ClockSettingsController.instance,
+      builder: (context, settings, child) {
+        final color = settings.romanColor;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${_toRoman(hour)}:${_toRoman(_now.minute)}',
+              style: TextStyle(
+                fontSize: widget.fontSize,
+                fontWeight: FontWeight.w300,
+                color: color,
+              ),
+            ),
+            Text(
+              '${_now.day.toString().padLeft(2, '0')}.'
+              '${_now.month.toString().padLeft(2, '0')}.'
+              '${_now.year}',
+              style: TextStyle(
+                fontSize: widget.fontSize * 0.28,
+                color: color.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+const List<int> _romanValues = [
+  1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1,
+];
+const List<String> _romanSymbols = [
+  'M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I',
+];
+
+String _toRoman(int number) {
+  if (number <= 0) return '0';
+  var remaining = number;
+  final buffer = StringBuffer();
+  for (var i = 0; i < _romanValues.length; i++) {
+    while (remaining >= _romanValues[i]) {
+      buffer.write(_romanSymbols[i]);
+      remaining -= _romanValues[i];
+    }
+  }
+  return buffer.toString();
+}
+
+/// Three bars - hour, minute, second - each filled from the bottom up in
+/// proportion to how far its unit has gotten through its own cycle, moving
+/// again every second.
+class BarsClock extends StatefulWidget {
+  const BarsClock({super.key, this.barHeight = 120, this.barWidth = 28});
+
+  final double barHeight;
+  final double barWidth;
+
+  @override
+  State<BarsClock> createState() => _BarsClockState();
+}
+
+class _BarsClockState extends State<BarsClock> {
+  late DateTime _now = DateTime.now();
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      Future.microtask(() {
+        if (!mounted) return;
+        setState(() => _now = DateTime.now());
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<ClockSettings>(
+      valueListenable: ClockSettingsController.instance,
+      builder: (context, settings, child) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            _Bar(
+              fraction: _now.hour / 24,
+              label: '${_now.hour}',
+              height: widget.barHeight,
+              width: widget.barWidth,
+              settings: settings,
+            ),
+            const SizedBox(width: 14),
+            _Bar(
+              fraction: _now.minute / 60,
+              label: '${_now.minute}',
+              height: widget.barHeight,
+              width: widget.barWidth,
+              settings: settings,
+            ),
+            const SizedBox(width: 14),
+            _Bar(
+              fraction: _now.second / 60,
+              label: '${_now.second}',
+              height: widget.barHeight,
+              width: widget.barWidth,
+              settings: settings,
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _Bar extends StatelessWidget {
+  const _Bar({
+    required this.fraction,
+    required this.label,
+    required this.height,
+    required this.width,
+    required this.settings,
+  });
+
+  final double fraction;
+  final String label;
+  final double height;
+  final double width;
+  final ClockSettings settings;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          '$hh:$mm',
-          style: TextStyle(
-            fontSize: widget.fontSize,
-            fontWeight: FontWeight.w300,
-            color: Colors.black,
+        Container(
+          width: width,
+          height: height,
+          alignment: Alignment.bottomCenter,
+          decoration: BoxDecoration(
+            color: settings.barsUnfilledColor,
+            borderRadius: BorderRadius.circular(width / 2),
+          ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOut,
+            width: width,
+            height: height * fraction.clamp(0.0, 1.0),
+            decoration: BoxDecoration(
+              color: settings.barsFilledColor,
+              borderRadius: BorderRadius.circular(width / 2),
+            ),
           ),
         ),
+        const SizedBox(height: 6),
         Text(
-          '${_now.day.toString().padLeft(2, '0')}.'
-          '${_now.month.toString().padLeft(2, '0')}.'
-          '${_now.year}',
+          label,
           style: TextStyle(
-            fontSize: widget.fontSize * 0.28,
-            color: Colors.black54,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: settings.barsTextColor,
           ),
         ),
       ],

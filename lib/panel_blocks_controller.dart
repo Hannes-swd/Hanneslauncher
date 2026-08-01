@@ -30,6 +30,7 @@ class PanelBlock {
     this.elements = const [],
     this.cardHeight = 160,
     this.daysAhead = 7,
+    this.linkedKey = '',
   });
 
   final String id;
@@ -62,6 +63,11 @@ class PanelBlock {
   /// Calendar: how many days ahead the agenda reaches.
   final int daysAhead;
 
+  /// Widget: the app, web app or folder opened when the card is tapped - a
+  /// package name, a `web:<id>` or a `folder:<id>`, same keys as [itemKeys].
+  /// Empty means the card isn't linked to anything.
+  final String linkedKey;
+
   PanelBlock copyWith({
     List<String>? itemKeys,
     int? columns,
@@ -70,6 +76,7 @@ class PanelBlock {
     List<WidgetElement>? elements,
     double? cardHeight,
     int? daysAhead,
+    String? linkedKey,
   }) {
     return PanelBlock(
       id: id,
@@ -81,6 +88,7 @@ class PanelBlock {
       elements: elements ?? this.elements,
       cardHeight: cardHeight ?? this.cardHeight,
       daysAhead: daysAhead ?? this.daysAhead,
+      linkedKey: linkedKey ?? this.linkedKey,
     );
   }
 
@@ -96,6 +104,7 @@ class PanelBlock {
     'elements': [for (final element in elements) element.toJson()],
     'cardHeight': cardHeight,
     'daysAhead': daysAhead,
+    'linkedKey': linkedKey,
   };
 
   static PanelBlock fromJson(Map<String, dynamic> json) => PanelBlock(
@@ -111,6 +120,7 @@ class PanelBlock {
     elements: _elementsFrom(json['elements']),
     cardHeight: (json['cardHeight'] as num?)?.toDouble() ?? 160,
     daysAhead: json['daysAhead'] as int? ?? 7,
+    linkedKey: json['linkedKey'] as String? ?? '',
   );
 
   /// Skips a single unreadable element rather than losing the whole card

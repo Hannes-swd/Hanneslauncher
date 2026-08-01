@@ -5,6 +5,7 @@ import 'app_strings.dart';
 import 'calendar_controller.dart';
 import 'locale_controller.dart';
 import 'panel_blocks_controller.dart';
+import 'system_app_launcher.dart';
 
 /// The agenda drawn on a calendar block: upcoming events, grouped by day,
 /// nearest first. Tapping one opens it in the system calendar app, exactly
@@ -107,12 +108,16 @@ class _CalendarBlockViewState extends State<CalendarBlockView> {
       );
     }
     if (events.isEmpty) {
-      return SizedBox(
-        height: 56,
-        child: Center(
-          child: Text(
-            widget.s.noUpcomingEvents,
-            style: const TextStyle(color: Colors.black54),
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: SystemAppLauncher.openCalendar,
+        child: SizedBox(
+          height: 56,
+          child: Center(
+            child: Text(
+              widget.s.noUpcomingEvents,
+              style: const TextStyle(color: Colors.black54),
+            ),
           ),
         ),
       );
@@ -134,14 +139,18 @@ class _CalendarBlockViewState extends State<CalendarBlockView> {
       final day = DateTime(event.start.year, event.start.month, event.start.day);
       if (lastDay == null || day != lastDay) {
         widgets.add(
-          Padding(
-            padding: EdgeInsets.fromLTRB(4, lastDay == null ? 0 : 12, 4, 4),
-            child: Text(
-              _dayLabel(day, s),
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.black54,
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: SystemAppLauncher.openCalendar,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(4, lastDay == null ? 0 : 12, 4, 4),
+              child: Text(
+                _dayLabel(day, s),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black54,
+                ),
               ),
             ),
           ),

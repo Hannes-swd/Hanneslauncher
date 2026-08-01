@@ -44,8 +44,9 @@ class AppStrings {
   String get style => _en ? 'Style' : 'Stil';
   String get digital => 'Digital';
   String get custom => 'Custom';
-  String get appearanceCustom =>
-      _en ? 'Appearance (Custom)' : 'Aussehen (Custom)';
+  String get roman => _en ? 'Roman numerals' : 'Römische Zahlen';
+  String get bars => _en ? 'Bars' : 'Balken';
+  String get appearanceCustom => _en ? 'Appearance' : 'Aussehen';
   String get backgroundColor =>
       _en ? 'Background color' : 'Hintergrundfarbe';
   String backgroundStrength(int percent) => _en
@@ -54,6 +55,14 @@ class AppStrings {
   String get activeLetters => _en ? 'Active letters' : 'Aktive Buchstaben';
   String get inactiveLetters =>
       _en ? 'Inactive letters' : 'Inaktive Buchstaben';
+  String get barsFilledColor =>
+      _en ? 'Filled bar color' : 'Farbe gefüllter Balken';
+  String get barsUnfilledColor =>
+      _en ? 'Unfilled bar color' : 'Farbe leerer Balken';
+  String barsUnfilledStrength(int percent) => _en
+      ? 'Unfilled bar strength ($percent%)'
+      : 'Stärke leerer Balken ($percent%)';
+  String get barsTextColor => _en ? 'Number color' : 'Zahlenfarbe';
 
   String get pinnedApps => _en ? 'Pinned apps' : 'Angepinnte Apps';
   String pinnedAppsSubtitle(int count, int max) => _en
@@ -192,6 +201,10 @@ class AppStrings {
   String get ruleEquals => _en ? 'Exactly' : 'Genau';
   String get ruleAny => _en ? 'anything' : 'alles';
   String get preview => _en ? 'Preview' : 'Vorschau';
+  String get openOnTap => _en ? 'Open on tap' : 'Beim Antippen öffnen';
+  String get openOnTapNone => _en ? 'Nothing' : 'Nichts';
+  String get linkPickerTitle =>
+      _en ? 'Choose app or folder' : 'App oder Ordner wählen';
 
   String get dataSources => _en ? 'Data sources' : 'Datenquellen';
   String dataSourcesSubtitle(int count) => _en

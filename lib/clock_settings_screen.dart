@@ -68,6 +68,26 @@ class ClockSettingsScreen extends StatelessWidget {
                               );
                             },
                           ),
+                          _StyleOption(
+                            title: s.roman,
+                            selected: settings.style == ClockStyle.roman,
+                            preview: const _RomanPreview(),
+                            onTap: () {
+                              ClockSettingsController.instance.update(
+                                settings.copyWith(style: ClockStyle.roman),
+                              );
+                            },
+                          ),
+                          _StyleOption(
+                            title: s.bars,
+                            selected: settings.style == ClockStyle.bars,
+                            preview: const _BarsPreview(),
+                            onTap: () {
+                              ClockSettingsController.instance.update(
+                                settings.copyWith(style: ClockStyle.bars),
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -84,70 +104,32 @@ class ClockSettingsScreen extends StatelessWidget {
                     ),
                   ),
                   Opacity(
-                    opacity:
-                        settings.enabled && settings.style == ClockStyle.word
-                        ? 1
-                        : 0.4,
+                    opacity: settings.enabled ? 1 : 0.4,
                     child: IgnorePointer(
-                      ignoring:
-                          !settings.enabled ||
-                          settings.style != ClockStyle.word,
+                      ignoring: !settings.enabled,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _Label(s.backgroundColor),
-                            _ColorSwatchRow(
-                              selectedIndex: settings.wordBgColorIndex,
-                              onSelected: (i) {
-                                ClockSettingsController.instance.update(
-                                  settings.copyWith(wordBgColorIndex: i),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            _Label(
-                              s.backgroundStrength(
-                                (settings.wordBgOpacity * 100).round(),
-                              ),
-                            ),
-                            Slider(
-                              value: settings.wordBgOpacity,
-                              min: 0,
-                              max: 1,
-                              divisions: 20,
-                              onChanged: (value) {
-                                ClockSettingsController.instance.update(
-                                  settings.copyWith(wordBgOpacity: value),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            _Label(s.activeLetters),
-                            _ColorSwatchRow(
-                              selectedIndex: settings.wordActiveColorIndex,
-                              onSelected: (i) {
-                                ClockSettingsController.instance.update(
-                                  settings.copyWith(wordActiveColorIndex: i),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            _Label(s.inactiveLetters),
-                            _ColorSwatchRow(
-                              selectedIndex: settings.wordInactiveColorIndex,
-                              onSelected: (i) {
-                                ClockSettingsController.instance.update(
-                                  settings.copyWith(
-                                    wordInactiveColorIndex: i,
-                                  ),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 24),
-                          ],
-                        ),
+                        // Only the section for the style actually in use -
+                        // the others' colors would sit there unused and just
+                        // be confusing to look at.
+                        child: switch (settings.style) {
+                          ClockStyle.digital => _DigitalAppearance(
+                            settings: settings,
+                            s: s,
+                          ),
+                          ClockStyle.word => _WordAppearance(
+                            settings: settings,
+                            s: s,
+                          ),
+                          ClockStyle.roman => _RomanAppearance(
+                            settings: settings,
+                            s: s,
+                          ),
+                          ClockStyle.bars => _BarsAppearance(
+                            settings: settings,
+                            s: s,
+                          ),
+                        },
                       ),
                     ),
                   ),
@@ -157,6 +139,180 @@ class ClockSettingsScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _DigitalAppearance extends StatelessWidget {
+  const _DigitalAppearance({required this.settings, required this.s});
+
+  final ClockSettings settings;
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Label(s.textColor),
+        _ColorSwatchRow(
+          selectedIndex: settings.digitalColorIndex,
+          onSelected: (i) {
+            ClockSettingsController.instance.update(
+              settings.copyWith(digitalColorIndex: i),
+            );
+          },
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
+class _RomanAppearance extends StatelessWidget {
+  const _RomanAppearance({required this.settings, required this.s});
+
+  final ClockSettings settings;
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Label(s.textColor),
+        _ColorSwatchRow(
+          selectedIndex: settings.romanColorIndex,
+          onSelected: (i) {
+            ClockSettingsController.instance.update(
+              settings.copyWith(romanColorIndex: i),
+            );
+          },
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
+class _BarsAppearance extends StatelessWidget {
+  const _BarsAppearance({required this.settings, required this.s});
+
+  final ClockSettings settings;
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Label(s.barsFilledColor),
+        _ColorSwatchRow(
+          selectedIndex: settings.barsFilledColorIndex,
+          onSelected: (i) {
+            ClockSettingsController.instance.update(
+              settings.copyWith(barsFilledColorIndex: i),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        _Label(s.barsUnfilledColor),
+        _ColorSwatchRow(
+          selectedIndex: settings.barsUnfilledColorIndex,
+          onSelected: (i) {
+            ClockSettingsController.instance.update(
+              settings.copyWith(barsUnfilledColorIndex: i),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        _Label(
+          s.barsUnfilledStrength(
+            (settings.barsUnfilledOpacity * 100).round(),
+          ),
+        ),
+        Slider(
+          value: settings.barsUnfilledOpacity,
+          min: 0,
+          max: 1,
+          divisions: 20,
+          onChanged: (value) {
+            ClockSettingsController.instance.update(
+              settings.copyWith(barsUnfilledOpacity: value),
+            );
+          },
+        ),
+        const SizedBox(height: 8),
+        _Label(s.barsTextColor),
+        _ColorSwatchRow(
+          selectedIndex: settings.barsTextColorIndex,
+          onSelected: (i) {
+            ClockSettingsController.instance.update(
+              settings.copyWith(barsTextColorIndex: i),
+            );
+          },
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
+class _WordAppearance extends StatelessWidget {
+  const _WordAppearance({required this.settings, required this.s});
+
+  final ClockSettings settings;
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Label(s.backgroundColor),
+        _ColorSwatchRow(
+          selectedIndex: settings.wordBgColorIndex,
+          onSelected: (i) {
+            ClockSettingsController.instance.update(
+              settings.copyWith(wordBgColorIndex: i),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        _Label(s.backgroundStrength((settings.wordBgOpacity * 100).round())),
+        Slider(
+          value: settings.wordBgOpacity,
+          min: 0,
+          max: 1,
+          divisions: 20,
+          onChanged: (value) {
+            ClockSettingsController.instance.update(
+              settings.copyWith(wordBgOpacity: value),
+            );
+          },
+        ),
+        const SizedBox(height: 8),
+        _Label(s.activeLetters),
+        _ColorSwatchRow(
+          selectedIndex: settings.wordActiveColorIndex,
+          onSelected: (i) {
+            ClockSettingsController.instance.update(
+              settings.copyWith(wordActiveColorIndex: i),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        _Label(s.inactiveLetters),
+        _ColorSwatchRow(
+          selectedIndex: settings.wordInactiveColorIndex,
+          onSelected: (i) {
+            ClockSettingsController.instance.update(
+              settings.copyWith(wordInactiveColorIndex: i),
+            );
+          },
+        ),
+        const SizedBox(height: 24),
+      ],
     );
   }
 }
@@ -274,6 +430,30 @@ class _WordPreview extends StatelessWidget {
     return const SizedBox(
       height: 90,
       child: FittedBox(child: WordClock()),
+    );
+  }
+}
+
+class _RomanPreview extends StatelessWidget {
+  const _RomanPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 60,
+      child: Center(child: RomanClock(fontSize: 28)),
+    );
+  }
+}
+
+class _BarsPreview extends StatelessWidget {
+  const _BarsPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 60,
+      child: Center(child: BarsClock(barHeight: 50, barWidth: 14)),
     );
   }
 }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import 'app_icon.dart';
 import 'app_list_settings_controller.dart' show appListColorPalette;
 import 'app_strings.dart';
 import 'data_sources_controller.dart';
 import 'data_sources_settings_screen.dart';
+import 'launcher_entries_controller.dart';
 import 'locale_controller.dart';
 import 'panel_blocks_controller.dart';
 import 'text_prompt_dialog.dart';
@@ -115,6 +117,19 @@ class WidgetEditorScreen extends StatelessWidget {
                     onChanged: (value) => PanelBlocksController.instance
                         .update(block.copyWith(cardHeight: value)),
                   ),
+                  const Divider(height: 32),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: Text(
+                      s.openOnTap,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
+                  _LinkedEntryTile(block: block, s: s),
                   const Divider(height: 32),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -313,6 +328,100 @@ class WidgetEditorScreen extends StatelessWidget {
     elements.insert(target, element);
     await PanelBlocksController.instance.update(
       block.copyWith(elements: elements),
+    );
+  }
+}
+
+/// Shows what the card opens when tapped, if anything, and leads to the
+/// picker that changes it.
+class _LinkedEntryTile extends StatelessWidget {
+  const _LinkedEntryTile({required this.block, required this.s});
+
+  final PanelBlock block;
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: LauncherEntriesController.instance,
+      builder: (context, child) {
+        final entry = LauncherEntriesController.instance
+            .resolve([block.linkedKey])
+            .firstOrNull;
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          leading: entry == null
+              ? const Icon(Icons.touch_app_outlined, color: Colors.black45)
+              : AppIcon(entry: entry, size: 36),
+          title: Text(entry?.name ?? s.openOnTapNone),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () async {
+            final key = await Navigator.of(context).push<String>(
+              MaterialPageRoute(
+                builder: (context) => _LinkedEntryPicker(s: s),
+              ),
+            );
+            if (key == null) return;
+            await PanelBlocksController.instance.update(
+              block.copyWith(linkedKey: key),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+/// Picks the single app, web app or folder a widget card opens when tapped.
+/// Pops with the chosen key, or an empty string to clear the link.
+class _LinkedEntryPicker extends StatelessWidget {
+  const _LinkedEntryPicker({required this.s});
+
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: LauncherEntriesController.instance,
+      builder: (context, child) {
+        if (!LauncherEntriesController.instance.isLoaded) {
+          return Scaffold(
+            appBar: AppBar(title: Text(s.linkPickerTitle)),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+        // Folders and web apps first: there are only a handful of them and
+        // they'd be tedious to find among hundreds of packages otherwise.
+        final all = LauncherEntriesController.instance.entries;
+        final entries = [
+          for (final entry in all)
+            if (entry.isFolder) entry,
+          for (final entry in all)
+            if (entry.isWebApp) entry,
+          for (final entry in all)
+            if (!entry.isFolder && !entry.isWebApp) entry,
+        ];
+
+        return Scaffold(
+          appBar: AppBar(title: Text(s.linkPickerTitle)),
+          body: ListView(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.block, color: Colors.black45),
+                title: Text(s.openOnTapNone),
+                onTap: () => Navigator.of(context).pop(''),
+              ),
+              const Divider(height: 1),
+              for (final entry in entries)
+                ListTile(
+                  leading: AppIcon(entry: entry, size: 36),
+                  title: Text(entry.name),
+                  onTap: () => Navigator.of(context).pop(entry.key),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

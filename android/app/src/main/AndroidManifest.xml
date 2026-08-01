@@ -64,5 +64,17 @@
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="https"/>
         </intent>
+        <!-- Required so tapping the home screen clock can find and open the
+             device's clock app on Android 11+ (package visibility) - without
+             this, resolveActivity() in MainActivity.kt silently sees no app
+             at all and does nothing. -->
+        <intent>
+            <action android:name="android.intent.action.SHOW_ALARMS"/>
+        </intent>
+        <!-- Same, for tapping the calendar block to open the calendar app. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="android.intent.category.APP_CALENDAR"/>
+        </intent>
     </queries>
 </manifest>

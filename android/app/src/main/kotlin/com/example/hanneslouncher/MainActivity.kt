@@ -2,6 +2,7 @@ package com.example.hanneslouncher
 
 import android.Manifest
 import android.content.ContentUris
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.graphics.Rect
@@ -16,6 +17,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val gestureChannelName = "hanneslouncher/system_gestures"
     private val calendarChannelName = "hanneslouncher/calendar"
+    private val systemAppsChannelName = "hanneslouncher/system_apps"
     private val calendarPermissionRequestCode = 4201
 
     // A plugin (device_calendar) returning every field as null on some
@@ -86,6 +88,39 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        // Opens the device's default clock/calendar app, the same way the
+        // stock status bar clock does - not by guessing a package name
+        // (which varies by OEM) but through the intents/categories Android
+        // itself resolves to whatever app is registered as the default.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, systemAppsChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    // ACTION_SHOW_ALARMS is what SystemUI fires when the
+                    // status bar clock is tapped; every clock app is
+                    // expected to handle it per the CTS "AlarmClock" contract.
+                    "openClock" -> result.success(
+                        startIfResolvable(Intent("android.intent.action.SHOW_ALARMS")),
+                    )
+                    "openCalendar" -> result.success(
+                        startIfResolvable(
+                            Intent(Intent.ACTION_MAIN)
+                                .addCategory(Intent.CATEGORY_APP_CALENDAR),
+                        ),
+                    )
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    private fun startIfResolvable(intent: Intent): Boolean {
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        return if (packageManager.resolveActivity(intent, 0) != null) {
+            startActivity(intent)
+            true
+        } else {
+            false
+        }
     }
 
     override fun onRequestPermissionsResult(

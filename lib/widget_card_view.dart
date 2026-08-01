@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'app_list_settings_controller.dart' show appListColorPalette;
 import 'app_strings.dart';
 import 'data_sources_controller.dart';
+import 'folder_sheet.dart';
+import 'launcher_entries_controller.dart';
 import 'location_controller.dart';
 import 'panel_blocks_controller.dart';
 import 'widget_element.dart';
@@ -29,8 +31,9 @@ class WidgetCardView extends StatelessWidget {
         LocationController.instance,
       ]),
       builder: (context, child) {
+        Widget card;
         if (block.elements.isEmpty) {
-          return SizedBox(
+          card = SizedBox(
             height: 72,
             child: Row(
               children: [
@@ -45,29 +48,49 @@ class WidgetCardView extends StatelessWidget {
               ],
             ),
           );
+        } else {
+          card = SizedBox(
+            height: block.cardHeight,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Stack(
+                  children: [
+                    for (final element in block.elements)
+                      Align(
+                        alignment: element.stackAlignment,
+                        child: WidgetElementView(
+                          element: element,
+                          cardWidth: constraints.maxWidth,
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          );
         }
 
-        return SizedBox(
-          height: block.cardHeight,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Stack(
-                children: [
-                  for (final element in block.elements)
-                    Align(
-                      alignment: element.stackAlignment,
-                      child: WidgetElementView(
-                        element: element,
-                        cardWidth: constraints.maxWidth,
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
+        if (block.linkedKey.isEmpty) return card;
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _openLink(context),
+          child: card,
         );
       },
     );
+  }
+
+  Future<void> _openLink(BuildContext context) async {
+    final entries = LauncherEntriesController.instance.resolve(
+      [block.linkedKey],
+    );
+    if (entries.isEmpty) return;
+    final entry = entries.first;
+    if (entry.isFolder) {
+      showFolderSheet(context, entry.folder!);
+    } else {
+      await entry.launch();
+    }
   }
 }
 
