@@ -60,9 +60,14 @@ class PinnedAppsSettingsScreen extends StatelessWidget {
                   body: !LauncherEntriesController.instance.isLoaded
                       ? const Center(child: CircularProgressIndicator())
                       : ListView.builder(
-                          itemCount: entries.length,
+                          // The margin slider on top, then the app picker -
+                          // +1 for it, offset by 1 in itemBuilder below.
+                          itemCount: entries.length + 1,
                           itemBuilder: (context, index) {
-                            final entry = entries[index];
+                            if (index == 0) {
+                              return _LeftMarginSlider(s: s);
+                            }
+                            final entry = entries[index - 1];
                             final isPinned = pinned.contains(entry.key);
                             return CheckboxListTile(
                               value: isPinned,
@@ -103,6 +108,47 @@ class PinnedAppsSettingsScreen extends StatelessWidget {
               },
             );
           },
+        );
+      },
+    );
+  }
+}
+
+/// Controls how far the pinned apps sit from the left edge of the screen -
+/// no longer tied to the clock's own width.
+class _LeftMarginSlider extends StatelessWidget {
+  const _LeftMarginSlider({required this.s});
+
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<double>(
+      valueListenable: PinnedAppsLayoutController.instance,
+      builder: (context, margin, child) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                s.pinnedAppsLeftMargin(margin.round()),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black54,
+                ),
+              ),
+              Slider(
+                value: margin,
+                min: 0,
+                max: 200,
+                divisions: 40,
+                onChanged: (value) =>
+                    PinnedAppsLayoutController.instance.setLeftMargin(value),
+              ),
+            ],
+          ),
         );
       },
     );

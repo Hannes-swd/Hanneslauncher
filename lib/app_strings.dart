@@ -71,6 +71,9 @@ class AppStrings {
   String get pinnedAppsFull => _en
       ? 'Limit reached - unpin one first'
       : 'Maximum erreicht - zuerst eine entfernen';
+  String pinnedAppsLeftMargin(int pixels) => _en
+      ? 'Distance from left edge ($pixels)'
+      : 'Abstand vom linken Rand ($pixels)';
 
   String get customizeApps => _en ? 'Customize apps' : 'Apps anpassen';
   String get customizeAppsSubtitle =>

@@ -56,3 +56,28 @@ class PinnedAppsController extends ValueNotifier<List<String>> {
     return true;
   }
 }
+
+/// How far the pinned apps sit from the left edge of the screen. Kept
+/// separate from the clock's own width so the icons no longer land under
+/// whatever the clock's left edge happens to be - which shifted around
+/// depending on the clock style and looked arbitrary - but at a spot the
+/// user picks directly.
+class PinnedAppsLayoutController extends ValueNotifier<double> {
+  PinnedAppsLayoutController._() : super(16);
+
+  static final PinnedAppsLayoutController instance =
+      PinnedAppsLayoutController._();
+
+  static const _key = 'pinned_apps_left_margin';
+
+  Future<void> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    value = prefs.getDouble(_key) ?? 16;
+  }
+
+  Future<void> setLeftMargin(double margin) async {
+    value = margin;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_key, margin);
+  }
+}

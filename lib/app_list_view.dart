@@ -78,6 +78,7 @@ class _AppListViewState extends State<AppListView> {
     AppListSettingsController.instance.addListener(_onSettingsChanged);
     ClockSettingsController.instance.load();
     PinnedAppsController.instance.load();
+    PinnedAppsLayoutController.instance.load();
   }
 
   // Rapid drag input (or another widget's build/notifyListeners) can call
@@ -213,40 +214,38 @@ class _AppListViewState extends State<AppListView> {
           offstage: _activeLetter != null || _searchMode,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              // IntrinsicWidth sizes this column to its widest child (the
-              // clock), so aligning the icons to its start puts them flush
-              // with the clock's left edge instead of floating at some
-              // arbitrary distance from the screen edge.
-              return Center(
-                child: IntrinsicWidth(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // deferToChild: only the clock's own painted area
-                      // reacts, so touches beside it fall through to what's
-                      // underneath.
-                      GestureDetector(
-                        behavior: HitTestBehavior.deferToChild,
-                        onVerticalDragUpdate: widget.onPanelDragUpdate,
-                        onVerticalDragEnd: widget.onPanelDragEnd,
-                        child: ConstrainedBox(
-                          // Caps how much of the screen the clock may claim,
-                          // so the pinned apps always keep room below it.
-                          constraints: BoxConstraints(
-                            maxHeight: constraints.maxHeight * 0.7,
-                          ),
-                          child: const ClockDisplay(),
+              // The clock is centered on its own, independently of the
+              // pinned apps below it - previously both sat in one column
+              // sized to the clock's width (via IntrinsicWidth), so the
+              // pinned icons landed flush with whatever the clock's left
+              // edge happened to be instead of a spot the user picks.
+              return Column(
+                children: [
+                  Center(
+                    // deferToChild: only the clock's own painted area
+                    // reacts, so touches beside it fall through to what's
+                    // underneath.
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.deferToChild,
+                      onVerticalDragUpdate: widget.onPanelDragUpdate,
+                      onVerticalDragEnd: widget.onPanelDragEnd,
+                      child: ConstrainedBox(
+                        // Caps how much of the screen the clock may claim,
+                        // so the pinned apps always keep room below it.
+                        constraints: BoxConstraints(
+                          maxHeight: constraints.maxHeight * 0.7,
                         ),
+                        child: const ClockDisplay(),
                       ),
-                      Expanded(
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: _buildPinnedApps(),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: _buildPinnedApps(),
+                    ),
+                  ),
+                ],
               );
             },
           ),
@@ -509,10 +508,15 @@ class _AppListViewState extends State<AppListView> {
         );
         if (pinnedApps.isEmpty) return const SizedBox.shrink();
 
-        // Positioning is handled by the caller; this just lays the icons out.
-        // A small inset keeps them from sitting hard against the clock's edge.
-        return Padding(
-          padding: const EdgeInsets.only(left: 4),
+        // Positioning is handled by the caller; this just lays the icons
+        // out, with the user's own left margin instead of one tied to the
+        // clock's width.
+        return ValueListenableBuilder<double>(
+          valueListenable: PinnedAppsLayoutController.instance,
+          builder: (context, leftMargin, child) => Padding(
+            padding: EdgeInsets.only(left: leftMargin),
+            child: child,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
