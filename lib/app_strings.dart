@@ -60,6 +60,16 @@ class AppStrings {
       ? 'Limit reached - unpin one first'
       : 'Maximum erreicht - zuerst eine entfernen';
 
+  String get customizeApps => _en ? 'Customize apps' : 'Apps anpassen';
+  String get customizeAppsSubtitle =>
+      _en ? 'Change name and icon' : 'Name und Icon ändern';
+  String get changeIcon => _en ? 'Change icon' : 'Icon ändern';
+  String get changeName => _en ? 'Change name' : 'Namen ändern';
+  String get resetApp => _en ? 'Reset' : 'Zurücksetzen';
+  String get cancel => _en ? 'Cancel' : 'Abbrechen';
+  String get save => _en ? 'Save' : 'Speichern';
+  String get nameLabel => _en ? 'Name' : 'Name';
+
   String get languageLabel => _en ? 'Language' : 'Sprache';
   String get languageSubtitle => _en ? 'App language' : 'App-Sprache';
   String get german => 'Deutsch';

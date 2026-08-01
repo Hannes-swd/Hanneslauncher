@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:installed_apps/app_info.dart';
 import 'package:installed_apps/installed_apps.dart';
 
+import 'app_icon.dart';
 import 'app_list_settings_controller.dart';
+import 'app_overrides_controller.dart';
 import 'clock_settings_controller.dart';
 import 'clock_widget.dart';
 import 'pinned_apps_controller.dart';
@@ -38,6 +40,9 @@ class _AppListViewState extends State<AppListView> {
   // it counts as aiming at an app row instead of just picking a letter.
   static const double _listTargetThreshold = 60;
 
+  // Every installed app, kept so the grouping below can be redone whenever a
+  // renamed app changes which letter it belongs under.
+  List<AppInfo> _apps = [];
   final SplayTreeMap<String, List<AppInfo>> _grouped = SplayTreeMap();
   List<String> _letters = [];
 
@@ -62,6 +67,8 @@ class _AppListViewState extends State<AppListView> {
     _loadApps();
     AppListSettingsController.instance.load();
     AppListSettingsController.instance.addListener(_onSettingsChanged);
+    AppOverridesController.instance.load();
+    AppOverridesController.instance.addListener(_onOverridesChanged);
     ClockSettingsController.instance.load();
     PinnedAppsController.instance.load();
   }
@@ -81,12 +88,20 @@ class _AppListViewState extends State<AppListView> {
     _safeSetState(() => _settings = AppListSettingsController.instance.value);
   }
 
+  // A renamed app can move to a different letter, so the whole grouping is
+  // rebuilt rather than just repainting the rows.
+  void _onOverridesChanged() => _safeSetState(_group);
+
   @override
   void dispose() {
     AppListSettingsController.instance.removeListener(_onSettingsChanged);
+    AppOverridesController.instance.removeListener(_onOverridesChanged);
     _bubblePosition.dispose();
     super.dispose();
   }
+
+  String _nameOf(AppInfo app) =>
+      AppOverridesController.instance.nameFor(app.packageName, app.name);
 
   Future<void> _loadApps() async {
     final apps = await InstalledApps.getInstalledApps(
@@ -94,18 +109,27 @@ class _AppListViewState extends State<AppListView> {
       excludeNonLaunchableApps: true,
       withIcon: true,
     );
-    apps.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-
-    _grouped.clear();
-    for (final app in apps) {
-      final letter = app.name.isEmpty ? '#' : app.name[0].toUpperCase();
-      _grouped.putIfAbsent(letter, () => []).add(app);
-    }
+    _apps = apps;
 
     _safeSetState(() {
-      _letters = _grouped.keys.toList();
+      _group();
       _loaded = true;
     });
+  }
+
+  /// Sorts and buckets [_apps] by their displayed (possibly renamed) name.
+  void _group() {
+    _apps.sort(
+      (a, b) => _nameOf(a).toLowerCase().compareTo(_nameOf(b).toLowerCase()),
+    );
+
+    _grouped.clear();
+    for (final app in _apps) {
+      final name = _nameOf(app);
+      final letter = name.isEmpty ? '#' : name[0].toUpperCase();
+      _grouped.putIfAbsent(letter, () => []).add(app);
+    }
+    _letters = _grouped.keys.toList();
   }
 
   // Size of the list area (everything left of the alphabet bar), captured
@@ -398,9 +422,7 @@ class _AppListViewState extends State<AppListView> {
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   child: GestureDetector(
                     onTap: () => InstalledApps.startApp(app.packageName),
-                    child: app.icon != null
-                        ? Image.memory(app.icon!, width: 48, height: 48)
-                        : const Icon(Icons.apps, size: 48),
+                    child: AppIcon(app: app, size: 48),
                   ),
                 ),
             ],
@@ -419,13 +441,11 @@ class _AppListViewState extends State<AppListView> {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
         children: [
-          app.icon != null
-              ? Image.memory(app.icon!, width: 32, height: 32)
-              : const Icon(Icons.apps, color: Colors.black, size: 32),
+          AppIcon(app: app, size: 32),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              app.name,
+              _nameOf(app),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(

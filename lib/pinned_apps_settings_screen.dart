@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:installed_apps/app_info.dart';
 import 'package:installed_apps/installed_apps.dart';
 
+import 'app_icon.dart';
+import 'app_overrides_controller.dart';
 import 'app_strings.dart';
 import 'locale_controller.dart';
 import 'pinned_apps_controller.dart';
@@ -92,10 +94,13 @@ class _PinnedAppsSettingsScreenState extends State<PinnedAppsSettingsScreen> {
                                     );
                                   }
                                 },
-                          secondary: app.icon != null
-                              ? Image.memory(app.icon!, width: 36, height: 36)
-                              : const Icon(Icons.apps),
-                          title: Text(app.name),
+                          secondary: AppIcon(app: app, size: 36),
+                          title: Text(
+                            AppOverridesController.instance.nameFor(
+                              app.packageName,
+                              app.name,
+                            ),
+                          ),
                         );
                       },
                     ),
