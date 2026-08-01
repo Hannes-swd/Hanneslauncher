@@ -190,30 +190,40 @@ class _AppListViewState extends State<AppListView> {
           offstage: _activeLetter != null,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              return Column(
-                children: [
-                  // deferToChild: only the clock's own painted area reacts,
-                  // so touches beside it fall through to what's underneath.
-                  GestureDetector(
-                    behavior: HitTestBehavior.deferToChild,
-                    onVerticalDragUpdate: widget.onPanelDragUpdate,
-                    onVerticalDragEnd: widget.onPanelDragEnd,
-                    child: ConstrainedBox(
-                      // Caps how much of the screen the clock may claim, so
-                      // the pinned apps always keep room below it.
-                      constraints: BoxConstraints(
-                        maxHeight: constraints.maxHeight * 0.7,
+              // IntrinsicWidth sizes this column to its widest child (the
+              // clock), so aligning the icons to its start puts them flush
+              // with the clock's left edge instead of floating at some
+              // arbitrary distance from the screen edge.
+              return Center(
+                child: IntrinsicWidth(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // deferToChild: only the clock's own painted area
+                      // reacts, so touches beside it fall through to what's
+                      // underneath.
+                      GestureDetector(
+                        behavior: HitTestBehavior.deferToChild,
+                        onVerticalDragUpdate: widget.onPanelDragUpdate,
+                        onVerticalDragEnd: widget.onPanelDragEnd,
+                        child: ConstrainedBox(
+                          // Caps how much of the screen the clock may claim,
+                          // so the pinned apps always keep room below it.
+                          constraints: BoxConstraints(
+                            maxHeight: constraints.maxHeight * 0.7,
+                          ),
+                          child: const ClockDisplay(),
+                        ),
                       ),
-                      child: const ClockDisplay(),
-                    ),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: _buildPinnedApps(),
+                        ),
+                      ),
+                    ],
                   ),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: _buildPinnedApps(),
-                    ),
-                  ),
-                ],
+                ),
               );
             },
           ),
@@ -377,8 +387,9 @@ class _AppListViewState extends State<AppListView> {
         if (pinnedApps.isEmpty) return const SizedBox.shrink();
 
         // Positioning is handled by the caller; this just lays the icons out.
+        // A small inset keeps them from sitting hard against the clock's edge.
         return Padding(
-          padding: const EdgeInsets.only(left: 36),
+          padding: const EdgeInsets.only(left: 4),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
