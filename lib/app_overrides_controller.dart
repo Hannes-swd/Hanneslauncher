@@ -46,7 +46,14 @@ class AppOverridesController extends ValueNotifier<Map<String, AppOverride>> {
 
   static const _key = 'app_overrides';
 
+  bool _loaded = false;
+
+  /// Reads the stored customizations once. Later calls do nothing: what's in
+  /// memory is by then the newer state, and re-reading would throw away
+  /// renames made since.
   Future<void> load() async {
+    if (_loaded) return;
+    _loaded = true;
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_key);
     if (raw == null) return;
@@ -59,9 +66,8 @@ class AppOverridesController extends ValueNotifier<Map<String, AppOverride>> {
           ),
       };
     } catch (_) {
-      // Corrupted entry (e.g. from an older format): start over rather than
-      // leaving the launcher unable to show its app list.
-      value = const {};
+      // Unreadable - leave whatever is in memory alone rather than wiping
+      // it, since the next save would make that permanent.
     }
   }
 

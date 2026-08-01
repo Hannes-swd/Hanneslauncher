@@ -63,20 +63,27 @@ class WebAppsController extends ValueNotifier<List<WebApp>> {
 
   static const _key = 'web_apps';
 
+  bool _loaded = false;
+
+  /// Reads the stored web apps once. Later calls do nothing: what's in
+  /// memory is by then the newer state, and re-reading would throw away web
+  /// apps added since.
   Future<void> load() async {
+    if (_loaded) return;
+    _loaded = true;
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_key);
     if (raw == null) return;
-    try {
-      value = [
-        for (final entry in raw)
-          WebApp.fromJson(jsonDecode(entry) as Map<String, dynamic>),
-      ];
-    } catch (_) {
-      // Corrupted entry (e.g. from an older format): start over rather than
-      // leaving the launcher unable to show its app list.
-      value = const [];
+    final loaded = <WebApp>[];
+    for (final entry in raw) {
+      try {
+        loaded.add(WebApp.fromJson(jsonDecode(entry) as Map<String, dynamic>));
+      } catch (_) {
+        // Skip just the unreadable one. Dropping the whole list here would
+        // be permanent: the next save would write the shortened list back.
+      }
     }
+    value = loaded;
   }
 
   WebApp? byId(String id) {

@@ -72,21 +72,35 @@ class FoldersController extends ValueNotifier<List<LauncherFolder>> {
 
   static const _key = 'folders';
 
+  bool _loaded = false;
+
+  /// Reads the stored folders once. Later calls do nothing: what's in memory
+  /// is by then the newer state, and re-reading would throw away folders
+  /// created since - which is how they'd vanish seemingly at random.
   Future<void> load() async {
+    if (_loaded) return;
+    _loaded = true;
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_key);
     if (raw == null) return;
-    try {
-      value = [
-        for (final entry in raw)
+    final loaded = <LauncherFolder>[];
+    for (final entry in raw) {
+      try {
+        loaded.add(
           LauncherFolder.fromJson(jsonDecode(entry) as Map<String, dynamic>),
-      ];
-    } catch (_) {
-      // Corrupted entry (e.g. from an older format): start over rather than
-      // leaving the launcher unable to show its app list.
-      value = const [];
+        );
+      } catch (_) {
+        // Skip just the unreadable one. Dropping the whole list here would
+        // be permanent: the next save would write the shortened list back.
+      }
     }
+    value = loaded;
   }
+
+  /// Lets a test pretend the app restarted; there is no other way to make
+  /// the one-shot [load] read again.
+  @visibleForTesting
+  void debugResetLoadedForTest() => _loaded = false;
 
   LauncherFolder? byId(String id) {
     for (final folder in value) {

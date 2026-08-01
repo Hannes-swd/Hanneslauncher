@@ -12,7 +12,14 @@ class PinnedAppsController extends ValueNotifier<List<String>> {
   static const maxPinned = 6;
   static const _key = 'pinned_app_packages';
 
+  bool _loaded = false;
+
+  /// Reads the stored pins once. Later calls do nothing: what's in memory is
+  /// by then the newer state, and re-reading would throw away pins made
+  /// since.
   Future<void> load() async {
+    if (_loaded) return;
+    _loaded = true;
     final prefs = await SharedPreferences.getInstance();
     value = prefs.getStringList(_key) ?? const [];
   }
