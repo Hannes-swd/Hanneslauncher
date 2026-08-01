@@ -24,6 +24,9 @@ class AppStrings {
   String get appListSubtitle =>
       _en ? 'Color, font, size, spacing' : 'Farbe, Schriftart, Größe, Abstand';
   String get exampleApp => _en ? 'Example app' : 'Beispiel App';
+  String get searchApps => _en ? 'Search apps' : 'App suchen';
+  String get noSearchResults =>
+      _en ? 'No app found' : 'Keine App gefunden';
   String get textColor => _en ? 'Text color' : 'Textfarbe';
   String get font => _en ? 'Font' : 'Schriftart';
   String get fontStandard => _en ? 'Default' : 'Standard';

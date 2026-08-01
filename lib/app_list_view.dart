@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 
 import 'app_icon.dart';
 import 'app_list_settings_controller.dart';
+import 'app_strings.dart';
 import 'clock_settings_controller.dart';
 import 'clock_widget.dart';
 import 'folder_sheet.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
+import 'locale_controller.dart';
 import 'pinned_apps_controller.dart';
 import 'pinned_quick_actions.dart';
 
@@ -56,6 +58,14 @@ class _AppListViewState extends State<AppListView> {
   // alphabet bar the finger is (0 = resting at the bar).
   final ValueNotifier<Offset> _bubblePosition = ValueNotifier(Offset.zero);
 
+  // Whether the finger is currently over the search icon at the bottom of
+  // the alphabet bar (shows a search bubble instead of a letter one), and
+  // whether search has actually been opened (released while over it).
+  bool _searchHovering = false;
+  bool _searchMode = false;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+
   AppListSettings _settings = AppListSettingsController.instance.value;
   double get _rowHeight => _settings.rowHeight;
 
@@ -95,6 +105,8 @@ class _AppListViewState extends State<AppListView> {
     AppListSettingsController.instance.removeListener(_onSettingsChanged);
     LauncherEntriesController.instance.removeListener(_onEntriesChanged);
     _bubblePosition.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -198,7 +210,7 @@ class _AppListViewState extends State<AppListView> {
         // it. Both hidden while browsing the alphabet, and kept as one
         // permanent Stack child so the children never shift position.
         Offstage(
-          offstage: _activeLetter != null,
+          offstage: _activeLetter != null || _searchMode,
           child: LayoutBuilder(
             builder: (context, constraints) {
               // IntrinsicWidth sizes this column to its widest child (the
@@ -269,9 +281,32 @@ class _AppListViewState extends State<AppListView> {
                       _targetAppIndex = target;
                     });
                   }
+                },
+                onBubblePositionChanged: (offset) {
                   // Cheap update: only the bubble listens to this, so it
                   // doesn't trigger a rebuild of the list/alphabet bar.
-                  _bubblePosition.value = Offset(draggedLeft, localDy);
+                  _bubblePosition.value = offset;
+                },
+                onSearchHoverChanged: (hovering) {
+                  if (hovering == _searchHovering) return;
+                  setState(() {
+                    _searchHovering = hovering;
+                    if (hovering) {
+                      // Reaching the search icon drops whatever letter/app
+                      // was targeted a moment ago in the same drag, so
+                      // releasing there can never also launch a stale
+                      // target.
+                      _activeLetter = null;
+                      _targetAppIndex = null;
+                    }
+                  });
+                },
+                onSearchActivate: () {
+                  setState(() => _searchMode = true);
+                  // The field needs to exist first before it can take focus.
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) _searchFocusNode.requestFocus();
+                  });
                 },
                 onDragStateChanged: (dragging) {
                   if (!dragging) _launchTargetedApp();
@@ -291,7 +326,7 @@ class _AppListViewState extends State<AppListView> {
         ValueListenableBuilder<Offset>(
           valueListenable: _bubblePosition,
           builder: (context, position, child) {
-            if (!_isDragging || _activeLetter == null) {
+            if (!_isDragging || (_activeLetter == null && !_searchHovering)) {
               return const SizedBox.shrink();
             }
             return Positioned(
@@ -299,10 +334,12 @@ class _AppListViewState extends State<AppListView> {
               // bubble follows it instead of staying pinned at the edge.
               right: 60 + position.dx,
               top: (position.dy - 40).clamp(0.0, double.infinity),
-              child: _LetterBubble(
-                letter: _activeLetter!,
-                color: _settings.color,
-              ),
+              child: _searchHovering
+                  ? _SearchBubble(color: _settings.color)
+                  : _LetterBubble(
+                      letter: _activeLetter!,
+                      color: _settings.color,
+                    ),
             );
           },
         ),
@@ -311,6 +348,8 @@ class _AppListViewState extends State<AppListView> {
   }
 
   Widget _buildList() {
+    if (_searchMode) return _buildSearchView();
+
     return LayoutBuilder(
       builder: (context, constraints) {
         // Recorded for _targetIndexFor above, so hit-testing and drawing
@@ -377,6 +416,83 @@ class _AppListViewState extends State<AppListView> {
         );
       },
     );
+  }
+
+  /// The search icon's release swaps the list for this: a text field plus
+  /// every entry whose name contains what's typed, spanning every letter
+  /// instead of just the one group a scrub would reach.
+  Widget _buildSearchView() {
+    final s = AppStrings(LocaleController.instance.value);
+    final query = _searchController.text.trim().toLowerCase();
+    final allEntries = LauncherEntriesController.instance.entries;
+    final results = query.isEmpty
+        ? allEntries
+        : [
+            for (final entry in allEntries)
+              if (entry.name.toLowerCase().contains(query)) entry,
+          ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: _headerHeight,
+          child: Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 12),
+                  child: TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      border: InputBorder.none,
+                      hintText: s.searchApps,
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _closeSearch,
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: results.isEmpty
+              ? Center(
+                  child: Text(
+                    s.noSearchResults,
+                    style: const TextStyle(color: Colors.black54),
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: results.length,
+                  itemBuilder: (context, index) {
+                    final entry = results[index];
+                    return GestureDetector(
+                      onTap: () {
+                        _closeSearch();
+                        _open(entry);
+                      },
+                      child: _buildAppRow(entry, -1),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  void _closeSearch() {
+    _searchFocusNode.unfocus();
+    setState(() {
+      _searchMode = false;
+      _searchController.clear();
+    });
   }
 
   Widget _buildPinnedApps() {
@@ -464,12 +580,22 @@ class _AlphabetBar extends StatefulWidget {
     required this.letters,
     required this.color,
     required this.onScrub,
+    required this.onBubblePositionChanged,
+    required this.onSearchHoverChanged,
+    required this.onSearchActivate,
     required this.onDragStateChanged,
   });
 
   final List<String> letters;
   final Color color;
   final ScrubCallback onScrub;
+  final ValueChanged<Offset> onBubblePositionChanged;
+
+  /// Fired as the finger enters/leaves the search icon below the letters.
+  final ValueChanged<bool> onSearchHoverChanged;
+
+  /// Fired when the finger is released while over the search icon.
+  final VoidCallback onSearchActivate;
   final ValueChanged<bool> onDragStateChanged;
 
   // Preferred height per letter row. Shrinks automatically when there are
@@ -506,10 +632,12 @@ class _AlphabetBarState extends State<_AlphabetBar> {
   // fits on screen. Drawing and hit-testing both read this.
   double _rowHeight = _AlphabetBar._maxRowHeight;
 
+  // A search icon sits one row below the last letter, so the bar's own row
+  // count is one more than the letter count throughout this class.
+  int get _rowCount => widget.letters.length + 1;
+
   void _updateRowHeight(double height) {
-    final count = widget.letters.length;
-    if (count == 0) return;
-    final fitted = height / count;
+    final fitted = height / _rowCount;
     _rowHeight = fitted < _AlphabetBar._maxRowHeight
         ? fitted
         : _AlphabetBar._maxRowHeight;
@@ -517,12 +645,11 @@ class _AlphabetBarState extends State<_AlphabetBar> {
 
   void _handlePosition(Offset localPosition, double height) {
     final letters = widget.letters;
-    if (letters.isEmpty) return;
-    final blockHeight = letters.length * _rowHeight;
+    final blockHeight = _rowCount * _rowHeight;
     final blockTop = (height - blockHeight) * _AlphabetBar._verticalBias;
     final index = ((localPosition.dy - blockTop) / _rowHeight)
         .floor()
-        .clamp(0, letters.length - 1);
+        .clamp(0, _rowCount - 1);
     // localPosition.dx is 0 at the bar's left edge, so it goes negative once
     // the finger has moved left of it (e.g. over the app list). Rounded so
     // sub-pixel jitter doesn't cause extra rebuilds.
@@ -536,15 +663,21 @@ class _AlphabetBarState extends State<_AlphabetBar> {
         _dragShift = shiftForWave;
       });
     }
-    widget.onScrub(letters[index], localPosition.dy, draggedLeft);
+    final onSearchRow = index == letters.length;
+    widget.onSearchHoverChanged(onSearchRow);
+    if (!onSearchRow) widget.onScrub(letters[index], localPosition.dy, draggedLeft);
+    widget.onBubblePositionChanged(Offset(draggedLeft, localPosition.dy));
   }
 
   void _endHover() {
+    final wasOnSearchRow = _hoveredIndex == widget.letters.length;
     setState(() {
       _hoveredIndex = null;
       _dragShift = 0;
     });
+    widget.onSearchHoverChanged(false);
     widget.onDragStateChanged(false);
+    if (wasOnSearchRow) widget.onSearchActivate();
   }
 
   @override
@@ -576,8 +709,7 @@ class _AlphabetBarState extends State<_AlphabetBar> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                for (var i = 0; i < widget.letters.length; i++)
-                  _buildLetter(i, widget.letters[i]),
+                for (var i = 0; i < _rowCount; i++) _buildRow(i),
               ],
             ),
           ),
@@ -586,7 +718,10 @@ class _AlphabetBarState extends State<_AlphabetBar> {
     );
   }
 
-  Widget _buildLetter(int index, String letter) {
+  /// Row `letters.length` (one past the last letter) is the search icon at
+  /// the very bottom of the bar; every row before that is a letter.
+  Widget _buildRow(int index) {
+    final isSearchRow = index == widget.letters.length;
     final dragRatio = (_dragShift / _maxDragShift).clamp(0.0, 1.0);
     final effectiveReach = _waveReach + _extraReachAtMaxDrag * dragRatio;
     final distance = _hoveredIndex == null
@@ -606,6 +741,7 @@ class _AlphabetBarState extends State<_AlphabetBar> {
     final scale = rawScale < 1 ? rawScale : 1.0;
     final baseFontSize = 11 * scale;
     final extraFontSize = _maxExtraFontSize * scale;
+    final animatedSize = baseFontSize + extraFontSize * strength;
 
     return SizedBox(
       height: _rowHeight,
@@ -614,16 +750,18 @@ class _AlphabetBarState extends State<_AlphabetBar> {
           duration: const Duration(milliseconds: 90),
           curve: Curves.easeOut,
           transform: Matrix4.translationValues(-maxShift * strength, 0, 0),
-          child: AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 90),
-            curve: Curves.easeOut,
-            style: TextStyle(
-              fontSize: baseFontSize + extraFontSize * strength,
-              fontWeight: FontWeight.w600,
-              color: widget.color,
-            ),
-            child: Text(letter),
-          ),
+          child: isSearchRow
+              ? Icon(Icons.search, size: animatedSize + 8, color: widget.color)
+              : AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 90),
+                  curve: Curves.easeOut,
+                  style: TextStyle(
+                    fontSize: animatedSize,
+                    fontWeight: FontWeight.w600,
+                    color: widget.color,
+                  ),
+                  child: Text(widget.letters[index]),
+                ),
         ),
       ),
     );
@@ -647,5 +785,17 @@ class _LetterBubble extends StatelessWidget {
         color: textColor,
       ),
     );
+  }
+}
+
+class _SearchBubble extends StatelessWidget {
+  const _SearchBubble({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconColor = color == Colors.white ? Colors.black : color;
+    return Icon(Icons.search, size: 32, color: iconColor);
   }
 }
