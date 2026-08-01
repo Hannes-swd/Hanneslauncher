@@ -184,6 +184,16 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
     return null;
   }
 
+  /// The key of a configured source that looks like one of the Open-Meteo
+  /// weather templates, or null if none was set up. Used to prefill the
+  /// weather icon template so it doesn't have to be typed out by hand.
+  String? weatherSourceKey() {
+    for (final source in value) {
+      if (source.url.contains('open-meteo.com')) return source.key;
+    }
+    return null;
+  }
+
   Future<DataSource> add({
     required String key,
     required String name,

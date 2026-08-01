@@ -232,14 +232,53 @@ class WidgetEditorScreen extends StatelessWidget {
     );
     if (type == null || !context.mounted) return;
 
+    var rules = const <IconRule>[];
+    var template = '';
+    if (type == WidgetElementType.icon) {
+      final useWeatherTemplate = await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return SimpleDialog(
+            title: Text(s.iconTemplateTitle),
+            children: [
+              SimpleDialogOption(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.wb_sunny_outlined),
+                  title: Text(s.weatherIconTemplate),
+                  subtitle: Text(s.weatherIconTemplateHint),
+                ),
+              ),
+              SimpleDialogOption(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.rule_outlined),
+                  title: Text(s.ownRules),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+      if (!context.mounted) return;
+      if (useWeatherTemplate == true) {
+        rules = weatherWmoRules;
+        final key = DataSourcesController.instance.weatherSourceKey();
+        if (key != null) template = '{{$key.current.weather_code}}';
+      } else {
+        // A fresh icon element without rules would always show the fallback
+        // glyph, so it starts with one catch-all rule to edit.
+        rules = const [IconRule(iconName: 'sunny')];
+      }
+    }
+
     final element = WidgetElement(
       id: _newElementId(block),
       type: type,
-      // A fresh icon element without rules would always show the fallback
-      // glyph, so it starts with one catch-all rule to edit.
-      rules: type == WidgetElementType.icon
-          ? const [IconRule(iconName: 'sunny')]
-          : const [],
+      template: template,
+      rules: rules,
     );
     await PanelBlocksController.instance.update(
       block.copyWith(elements: [...block.elements, element]),
@@ -309,6 +348,13 @@ class ElementEditorScreen extends StatelessWidget {
               appBar: AppBar(
                 title: Text(WidgetEditorScreen._labelFor(element.type, s)),
                 actions: [
+                  if (element.type == WidgetElementType.icon)
+                    IconButton(
+                      icon: const Icon(Icons.auto_awesome),
+                      tooltip: s.insertWeatherTemplate,
+                      onPressed: () =>
+                          _insertWeatherTemplate(context, block, element, s),
+                    ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline),
                     tooltip: s.deleteBlock,
@@ -528,10 +574,13 @@ class ElementEditorScreen extends StatelessWidget {
                     ),
                   ],
 
-                  if (element.type == WidgetElementType.icon) ...[
-                    _RuleDiagnosis(element: element, s: s),
-                    _Rules(block: block, element: element, s: s),
-                  ],
+                  if (element.type == WidgetElementType.icon)
+                    _RuleDiagnosis(
+                      key: ValueKey(element.id),
+                      element: element,
+                      s: s,
+                      block: block,
+                    ),
 
                   const SizedBox(height: 24),
                   _sectionLabel(s.preview),
@@ -580,6 +629,53 @@ class ElementEditorScreen extends StatelessWidget {
     return PanelBlocksController.instance.update(
       block.copyWith(elements: elements),
     );
+  }
+
+  Future<void> _insertWeatherTemplate(
+    BuildContext context,
+    PanelBlock block,
+    WidgetElement element,
+    AppStrings s,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(s.insertWeatherTemplate),
+          content: Text(s.replaceRulesConfirm),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(s.cancel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(s.insertWeatherTemplate),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final key = DataSourcesController.instance.weatherSourceKey();
+    await _update(
+      block,
+      element.copyWith(
+        rules: weatherWmoRules,
+        // Only filled in when it isn't already pointing somewhere - the
+        // rules are what's actually broken here, the value field may
+        // already be correct.
+        template: element.template.trim().isEmpty && key != null
+            ? '{{$key.current.weather_code}}'
+            : element.template,
+      ),
+    );
+    if (key == null && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(s.noWeatherSourceHint)));
+    }
   }
 }
 
@@ -748,19 +844,51 @@ class _ValueDropdown extends StatelessWidget {
 /// placeholder currently yields, and which rule - if any - catches it. A
 /// question mark on the card otherwise gives no clue whether the value is
 /// missing or simply uncovered by the rules.
-class _RuleDiagnosis extends StatelessWidget {
-  const _RuleDiagnosis({required this.element, required this.s});
+///
+/// Also lets a value be typed in and checked directly against the rules,
+/// bypassing the placeholder entirely - the only way to tell apart "the
+/// fetched value isn't what I expect" from "my rule doesn't cover the value
+/// it clearly should".
+class _RuleDiagnosis extends StatefulWidget {
+  const _RuleDiagnosis({
+    super.key,
+    required this.element,
+    required this.s,
+    required this.block,
+  });
 
   final WidgetElement element;
   final AppStrings s;
+  final PanelBlock block;
+
+  @override
+  State<_RuleDiagnosis> createState() => _RuleDiagnosisState();
+}
+
+class _RuleDiagnosisState extends State<_RuleDiagnosis> {
+  final TextEditingController _test = TextEditingController();
+
+  @override
+  void dispose() {
+    _test.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final s = widget.s;
     return ListenableBuilder(
       listenable: DataSourcesController.instance,
       builder: (context, child) {
-        final value = DataSourcesController.instance.resolve(element.template);
-        final matches = element.rules.where((rule) => rule.matches(value));
+        final liveValue = DataSourcesController.instance.resolve(
+          widget.element.template,
+        );
+        final testing = _test.text.trim().isNotEmpty;
+        final value = testing ? _test.text.trim() : liveValue;
+
+        final matches = widget.element.rules.where(
+          (rule) => rule.matches(value),
+        );
         // A dash is what a placeholder that leads nowhere resolves to.
         final missing = value.trim().isEmpty || value.trim() == '-';
 
@@ -775,7 +903,7 @@ class _RuleDiagnosis extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(s.currentValue(value)),
+                Text(s.currentValue(liveValue)),
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -800,6 +928,22 @@ class _RuleDiagnosis extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _test,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    labelText: s.testAnotherValue,
+                    border: const OutlineInputBorder(),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                _Rules(
+                  block: widget.block,
+                  element: widget.element,
+                  s: s,
+                  testValue: value,
+                ),
               ],
             ),
           ),
@@ -810,31 +954,55 @@ class _RuleDiagnosis extends StatelessWidget {
 }
 
 /// The icon element's rules: first match wins, so the order is the priority.
+/// Checked against [testValue] - either the live resolved value, or one
+/// typed into the diagnosis box above to test a rule directly.
 class _Rules extends StatelessWidget {
-  const _Rules({required this.block, required this.element, required this.s});
+  const _Rules({
+    required this.block,
+    required this.element,
+    required this.s,
+    required this.testValue,
+  });
 
   final PanelBlock block;
   final WidgetElement element;
   final AppStrings s;
+  final String testValue;
 
   @override
   Widget build(BuildContext context) {
+    final value = testValue;
+    // Only the first match counts, so later ones are marked as shadowed
+    // rather than as matching - otherwise two ticks would suggest both are
+    // in play.
+    var alreadyMatched = false;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 24),
         ElementEditorScreen._sectionLabel(s.rulesLabel),
         for (var i = 0; i < element.rules.length; i++)
-          _RuleRow(
-            rule: element.rules[i],
-            s: s,
-            onChanged: (rule) => _replace(i, rule),
-            onRemove: () => _replace(i, null),
+          Builder(
+            builder: (context) {
+              final matches = element.rules[i].matches(value);
+              final effective = matches && !alreadyMatched;
+              alreadyMatched = alreadyMatched || matches;
+              return _RuleRow(
+                rule: element.rules[i],
+                s: s,
+                matches: matches,
+                effective: effective,
+                testValue: value,
+                onChanged: (rule) => _replace(i, rule),
+                onRemove: () => _replace(i, null),
+              );
+            },
           ),
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
-            onPressed: () => _append(),
+            onPressed: () => _append(context),
             icon: const Icon(Icons.add),
             label: Text(s.addRule),
           ),
@@ -843,8 +1011,20 @@ class _Rules extends StatelessWidget {
     );
   }
 
-  Future<void> _append() {
-    return _write([...element.rules, const IconRule(iconName: 'sunny')]);
+  Future<void> _append(BuildContext context) async {
+    // Straight into editing it, with the test value already in hand -
+    // adding a rule and then finding out separately whether it matches is
+    // two steps for something that should be one.
+    final created = await showDialog<IconRule>(
+      context: context,
+      builder: (context) => _RuleDialog(
+        rule: const IconRule(iconName: 'sunny'),
+        s: s,
+        testValue: testValue,
+      ),
+    );
+    if (created == null) return;
+    await _write([...element.rules, created]);
   }
 
   Future<void> _replace(int index, IconRule? rule) {
@@ -873,12 +1053,25 @@ class _RuleRow extends StatelessWidget {
   const _RuleRow({
     required this.rule,
     required this.s,
+    required this.matches,
+    required this.effective,
+    required this.testValue,
     required this.onChanged,
     required this.onRemove,
   });
 
   final IconRule rule;
   final AppStrings s;
+
+  /// Carried into the edit dialog, so it can show right away whether the
+  /// range being typed would match - without saving first to find out.
+  final String testValue;
+
+  /// Whether the value as it stands falls under this rule, and whether this
+  /// is the rule that actually decides - an earlier one may have won.
+  final bool matches;
+  final bool effective;
+
   final ValueChanged<IconRule> onChanged;
   final VoidCallback onRemove;
 
@@ -890,14 +1083,36 @@ class _RuleRow extends StatelessWidget {
       if (rule.equals != null && rule.equals!.isNotEmpty)
         '${s.ruleEquals} ${rule.equals}',
     ];
+    // A crossed range (e.g. "from 3 to 2") never matches anything - easy to
+    // create by a typo and, glanced at quickly, easy to mistake for a
+    // sensible range.
+    final inverted =
+        rule.min != null && rule.max != null && rule.min! > rule.max!;
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(widgetIcons[rule.iconName] ?? Icons.help_outline),
       title: Text(range.isEmpty ? s.ruleAny : range.join(', ')),
-      trailing: IconButton(
-        icon: const Icon(Icons.remove_circle_outline),
-        onPressed: onRemove,
+      subtitle: inverted
+          ? Text(
+              s.rangeInverted,
+              style: const TextStyle(color: Colors.red),
+            )
+          : null,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (matches)
+            Icon(
+              effective ? Icons.check_circle : Icons.check_circle_outline,
+              size: 18,
+              color: effective ? Colors.green : Colors.black26,
+            ),
+          IconButton(
+            icon: const Icon(Icons.remove_circle_outline),
+            onPressed: onRemove,
+          ),
+        ],
       ),
       onTap: () => _edit(context),
     );
@@ -909,17 +1124,23 @@ class _RuleRow extends StatelessWidget {
   Future<void> _edit(BuildContext context) async {
     final updated = await showDialog<IconRule>(
       context: context,
-      builder: (context) => _RuleDialog(rule: rule, s: s),
+      builder: (context) =>
+          _RuleDialog(rule: rule, s: s, testValue: testValue),
     );
     if (updated != null) onChanged(updated);
   }
 }
 
 class _RuleDialog extends StatefulWidget {
-  const _RuleDialog({required this.rule, required this.s});
+  const _RuleDialog({
+    required this.rule,
+    required this.s,
+    required this.testValue,
+  });
 
   final IconRule rule;
   final AppStrings s;
+  final String testValue;
 
   @override
   State<_RuleDialog> createState() => _RuleDialogState();
@@ -938,6 +1159,14 @@ class _RuleDialogState extends State<_RuleDialog> {
   late String _iconName = widget.rule.iconName;
 
   @override
+  void initState() {
+    super.initState();
+    for (final field in [_min, _max, _equals]) {
+      field.addListener(() => setState(() {}));
+    }
+  }
+
+  @override
   void dispose() {
     _min.dispose();
     _max.dispose();
@@ -945,9 +1174,27 @@ class _RuleDialogState extends State<_RuleDialog> {
     super.dispose();
   }
 
+  /// The rule as it stands in the fields right now, saved or not - so
+  /// whether it would match can be shown immediately.
+  IconRule get _draftRule {
+    final equals = _equals.text.trim();
+    return IconRule(
+      min: double.tryParse(_min.text.trim()),
+      max: double.tryParse(_max.text.trim()),
+      equals: equals.isEmpty ? null : equals,
+      iconName: _iconName,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = widget.s;
+    final draft = _draftRule;
+    final inverted =
+        draft.min != null && draft.max != null && draft.min! > draft.max!;
+    final hasTestValue = widget.testValue.trim().isNotEmpty;
+    final matches = hasTestValue && draft.matches(widget.testValue);
+
     return AlertDialog(
       title: Text(s.addRule),
       content: SingleChildScrollView(
@@ -955,6 +1202,26 @@ class _RuleDialogState extends State<_RuleDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (hasTestValue)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Icon(
+                      matches ? Icons.check_circle : Icons.cancel_outlined,
+                      size: 18,
+                      color: matches ? Colors.green : Colors.black38,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        s.currentValue(widget.testValue),
+                        style: const TextStyle(color: Colors.black54),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Row(
               children: [
                 Expanded(
@@ -974,6 +1241,14 @@ class _RuleDialogState extends State<_RuleDialog> {
                 ),
               ],
             ),
+            if (inverted)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  s.rangeInverted,
+                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                ),
+              ),
             TextField(
               controller: _equals,
               decoration: InputDecoration(labelText: s.ruleEquals),
@@ -1011,17 +1286,7 @@ class _RuleDialogState extends State<_RuleDialog> {
           child: Text(s.cancel),
         ),
         TextButton(
-          onPressed: () {
-            final equals = _equals.text.trim();
-            Navigator.of(context).pop(
-              IconRule(
-                min: double.tryParse(_min.text.trim()),
-                max: double.tryParse(_max.text.trim()),
-                equals: equals.isEmpty ? null : equals,
-                iconName: _iconName,
-              ),
-            );
-          },
+          onPressed: () => Navigator.of(context).pop(draft),
           child: Text(s.save),
         ),
       ],

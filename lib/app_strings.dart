@@ -120,6 +120,28 @@ class AppStrings {
       _en ? 'No rule matches it' : 'Keine Regel trifft darauf zu';
   String ruleMatches(String icon) =>
       _en ? 'Matches: $icon' : 'Passende Regel: $icon';
+  String get rangeInverted => _en
+      ? "\"From\" is greater than \"to\" - this can never match"
+      : '"Von" ist größer als "Bis" - das kann nie zutreffen';
+  String get iconTemplateTitle =>
+      _en ? 'Start from' : 'Ausgangspunkt';
+  String get weatherIconTemplate =>
+      _en ? 'Weather icons (auto)' : 'Wettersymbole (automatisch)';
+  String get weatherIconTemplateHint => _en
+      ? 'Sun, cloud, rain ... filled in for every weather code'
+      : 'Sonne, Wolke, Regen ... für jeden Wettercode ausgefüllt';
+  String get ownRules => _en ? 'Empty, add my own' : 'Leer, selbst anlegen';
+  String get insertWeatherTemplate =>
+      _en ? 'Insert weather icons' : 'Wettersymbole einfügen';
+  String get replaceRulesConfirm => _en
+      ? 'This replaces the current rules with the standard weather icon set.'
+      : 'Das ersetzt die aktuellen Regeln durch den Standard-Satz an '
+            'Wettersymbolen.';
+  String get noWeatherSourceHint => _en
+      ? 'No weather source found - fill in the value field yourself'
+      : 'Keine Wetterquelle gefunden - Wert-Feld selbst ausfüllen';
+  String get testAnotherValue =>
+      _en ? 'Test a value' : 'Einen Wert testen';
   String get valueMissing => _en
       ? 'The value is empty - check the placeholder above'
       : 'Der Wert ist leer - Platzhalter oben prüfen';

@@ -253,6 +253,24 @@ extension WidgetAlignmentX on WidgetAlignment {
   };
 }
 
+/// The standard WMO weather-code ranges Open-Meteo's `weather_code` field
+/// uses, each mapped to a sensible icon. Typed out once here rather than
+/// left for hand entry, which is exactly the kind of small transcription
+/// mistake (a swapped digit, a missed range) that silently leaves a code
+/// uncovered.
+const List<IconRule> weatherWmoRules = [
+  IconRule(min: 0, max: 0, iconName: 'sunny'),
+  IconRule(min: 1, max: 2, iconName: 'partly'),
+  IconRule(min: 3, max: 3, iconName: 'cloudy'),
+  IconRule(min: 45, max: 48, iconName: 'fog'),
+  IconRule(min: 51, max: 57, iconName: 'shower'),
+  IconRule(min: 61, max: 67, iconName: 'rain'),
+  IconRule(min: 71, max: 77, iconName: 'snow'),
+  IconRule(min: 80, max: 82, iconName: 'shower'),
+  IconRule(min: 85, max: 86, iconName: 'snow'),
+  IconRule(min: 95, max: 99, iconName: 'thunder'),
+];
+
 /// The icons an icon rule can pick, by name. A fixed map rather than a
 /// lookup by code point, so the build can still drop unused glyphs.
 const Map<String, IconData> widgetIcons = {
