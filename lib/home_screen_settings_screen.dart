@@ -4,6 +4,8 @@ import 'app_list_settings_screen.dart';
 import 'app_strings.dart';
 import 'clock_settings_screen.dart';
 import 'locale_controller.dart';
+import 'pinned_apps_controller.dart';
+import 'pinned_apps_settings_screen.dart';
 import 'wallpaper_controller.dart';
 
 class HomeScreenSettingsScreen extends StatelessWidget {
@@ -69,6 +71,29 @@ class HomeScreenSettingsScreen extends StatelessWidget {
                         MaterialPageRoute(
                           builder: (context) => const ClockSettingsScreen(),
                         ),
+                      );
+                    },
+                  ),
+                  ValueListenableBuilder<List<String>>(
+                    valueListenable: PinnedAppsController.instance,
+                    builder: (context, pinned, child) {
+                      return ListTile(
+                        leading: const Icon(Icons.push_pin_outlined),
+                        title: Text(s.pinnedApps),
+                        subtitle: Text(
+                          s.pinnedAppsSubtitle(
+                            pinned.length,
+                            PinnedAppsController.maxPinned,
+                          ),
+                        ),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const PinnedAppsSettingsScreen(),
+                            ),
+                          );
+                        },
                       );
                     },
                   ),

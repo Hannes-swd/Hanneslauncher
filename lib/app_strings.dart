@@ -52,6 +52,14 @@ class AppStrings {
   String get inactiveLetters =>
       _en ? 'Inactive letters' : 'Inaktive Buchstaben';
 
+  String get pinnedApps => _en ? 'Pinned apps' : 'Angepinnte Apps';
+  String pinnedAppsSubtitle(int count, int max) => _en
+      ? 'Shown on the home screen ($count/$max)'
+      : 'Auf dem Homescreen angezeigt ($count/$max)';
+  String get pinnedAppsFull => _en
+      ? 'Limit reached - unpin one first'
+      : 'Maximum erreicht - zuerst eine entfernen';
+
   String get languageLabel => _en ? 'Language' : 'Sprache';
   String get languageSubtitle => _en ? 'App language' : 'App-Sprache';
   String get german => 'Deutsch';

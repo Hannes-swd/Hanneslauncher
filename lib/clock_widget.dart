@@ -16,7 +16,12 @@ class ClockDisplay extends StatelessWidget {
       valueListenable: ClockSettingsController.instance,
       builder: (context, settings, child) {
         if (!settings.enabled) return const SizedBox.shrink();
-        return Align(
+        // scaleDown keeps the clock at its natural size when there's room
+        // and shrinks it to fit on shorter screens instead of overflowing.
+        // It also sizes itself to its content rather than filling the space,
+        // which lets the caller lay out other widgets directly beneath it.
+        return FittedBox(
+          fit: BoxFit.scaleDown,
           alignment: Alignment.topCenter,
           child: settings.style == ClockStyle.digital
               ? const DigitalClock()

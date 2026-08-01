@@ -8,13 +8,24 @@ import 'package:installed_apps/installed_apps.dart';
 import 'app_list_settings_controller.dart';
 import 'clock_settings_controller.dart';
 import 'clock_widget.dart';
+import 'pinned_apps_controller.dart';
 
 /// Full app list for the home screen with an A-Z index bar on the right.
 /// All present letters are shown at all times; hovering/dragging over one
 /// filters the list below to only that letter's apps and shows a floating
 /// bubble with the current letter.
 class AppListView extends StatefulWidget {
-  const AppListView({super.key});
+  const AppListView({
+    super.key,
+    this.onPanelDragUpdate,
+    this.onPanelDragEnd,
+  });
+
+  /// Dragging anywhere on the clock also opens/closes the settings panel,
+  /// so the whole clock area works as a pull-down handle instead of just a
+  /// thin strip at the very top of the screen.
+  final GestureDragUpdateCallback? onPanelDragUpdate;
+  final GestureDragEndCallback? onPanelDragEnd;
 
   @override
   State<AppListView> createState() => _AppListViewState();
@@ -52,6 +63,7 @@ class _AppListViewState extends State<AppListView> {
     AppListSettingsController.instance.load();
     AppListSettingsController.instance.addListener(_onSettingsChanged);
     ClockSettingsController.instance.load();
+    PinnedAppsController.instance.load();
   }
 
   // Rapid drag input (or another widget's build/notifyListeners) can call
@@ -96,12 +108,48 @@ class _AppListViewState extends State<AppListView> {
     });
   }
 
-  // Which app row (if any) in the given letter's group sits under the given
-  // y position, using the list's own top-down layout. Null if out of range.
-  int? _targetIndexFor(String letter, double localDy) {
+  // Size of the list area (everything left of the alphabet bar), captured
+  // during layout so the hit-testing below can use the same geometry the
+  // list is actually drawn with.
+  Size? _listSize;
+
+  /// Column layout for a group of [itemCount] apps: apps fill a column
+  /// top-to-bottom and spill into further columns once a column is full,
+  /// so nothing is cut off on shorter screens.
+  ({int rowsPerColumn, int columnCount, double columnWidth})? _gridFor(
+    int itemCount,
+  ) {
+    final size = _listSize;
+    if (size == null || itemCount == 0 || size.width <= 0) return null;
+    final availableHeight = size.height - _headerHeight;
+    if (availableHeight <= 0) return null;
+    final rowsPerColumn = math.max(1, (availableHeight / _rowHeight).floor());
+    final columnCount = (itemCount / rowsPerColumn).ceil();
+    return (
+      rowsPerColumn: rowsPerColumn,
+      columnCount: columnCount,
+      columnWidth: size.width / columnCount,
+    );
+  }
+
+  // Which app (if any) sits under the finger, given how far left of the
+  // alphabet bar it is and its vertical position. Null if outside the grid.
+  int? _targetIndexFor(String letter, double localDy, double draggedLeft) {
     final group = _grouped[letter];
     if (group == null || group.isEmpty) return null;
-    final itemIndex = ((localDy - _headerHeight) / _rowHeight).floor();
+    final grid = _gridFor(group.length);
+    if (grid == null) return null;
+
+    // draggedLeft counts leftwards from the bar's left edge, which is the
+    // list's right edge.
+    final x = _listSize!.width - draggedLeft;
+    final column = (x / grid.columnWidth).floor();
+    if (column < 0 || column >= grid.columnCount) return null;
+
+    final row = ((localDy - _headerHeight) / _rowHeight).floor();
+    if (row < 0 || row >= grid.rowsPerColumn) return null;
+
+    final itemIndex = column * grid.rowsPerColumn + row;
     if (itemIndex < 0 || itemIndex >= group.length) return null;
     return itemIndex;
   }
@@ -131,9 +179,44 @@ class _AppListViewState extends State<AppListView> {
         // Positioned at the Stack level (full screen width) rather than
         // inside the narrower list column, so it's centered on the whole
         // screen instead of being skewed left by the alphabet bar's width.
+        // deferToChild: only the clock's own painted area reacts, so touches
+        // on the empty space below it still fall through to whatever is
+        // underneath. The alphabet bar sits later in the Stack, so it wins
+        // the hit test in the strip they overlap.
+        // Clock on top with the pinned apps centred in the space left below
+        // it. Both hidden while browsing the alphabet, and kept as one
+        // permanent Stack child so the children never shift position.
         Offstage(
           offstage: _activeLetter != null,
-          child: const IgnorePointer(child: ClockDisplay()),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Column(
+                children: [
+                  // deferToChild: only the clock's own painted area reacts,
+                  // so touches beside it fall through to what's underneath.
+                  GestureDetector(
+                    behavior: HitTestBehavior.deferToChild,
+                    onVerticalDragUpdate: widget.onPanelDragUpdate,
+                    onVerticalDragEnd: widget.onPanelDragEnd,
+                    child: ConstrainedBox(
+                      // Caps how much of the screen the clock may claim, so
+                      // the pinned apps always keep room below it.
+                      constraints: BoxConstraints(
+                        maxHeight: constraints.maxHeight * 0.7,
+                      ),
+                      child: const ClockDisplay(),
+                    ),
+                  ),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: _buildPinnedApps(),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
         Row(
           children: [
@@ -153,8 +236,9 @@ class _AppListViewState extends State<AppListView> {
                   final letter = targeting
                       ? (_activeLetter ?? barLetter)
                       : barLetter;
-                  final target =
-                      targeting ? _targetIndexFor(letter, localDy) : null;
+                  final target = targeting
+                      ? _targetIndexFor(letter, localDy, draggedLeft)
+                      : null;
                   if (letter != _activeLetter || target != _targetAppIndex) {
                     // Stays synchronous: the release handler below reads
                     // _targetAppIndex right away to decide what to launch,
@@ -206,47 +290,133 @@ class _AppListViewState extends State<AppListView> {
   }
 
   Widget _buildList() {
-    if (_activeLetter == null || !_grouped.containsKey(_activeLetter)) {
-      // Nothing selected on the alphabet bar -> the clock (rendered above,
-      // at the Stack level) is the only thing shown.
-      return const SizedBox.shrink();
-    }
-    final letter = _activeLetter!;
-    final appsInGroup = _grouped[letter]!;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Recorded for _targetIndexFor above, so hit-testing and drawing
+        // always agree on the column layout.
+        _listSize = Size(constraints.maxWidth, constraints.maxHeight);
 
-    final items = <Widget>[
-      SizedBox(
-        height: _headerHeight,
-        child: Padding(
-          padding: const EdgeInsets.only(left: 16),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              letter,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
+        if (_activeLetter == null || !_grouped.containsKey(_activeLetter)) {
+          // Nothing selected on the alphabet bar -> the clock (rendered
+          // above, at the Stack level) is the only thing shown.
+          return const SizedBox.shrink();
+        }
+        final letter = _activeLetter!;
+        final appsInGroup = _grouped[letter]!;
+        final grid = _gridFor(appsInGroup.length);
+        if (grid == null) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: _headerHeight,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    letter,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
               ),
             ),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var col = 0; col < grid.columnCount; col++)
+                    SizedBox(
+                      width: grid.columnWidth,
+                      child: Column(
+                        children: [
+                          for (
+                            var row = 0;
+                            row < grid.rowsPerColumn &&
+                                col * grid.rowsPerColumn + row <
+                                    appsInGroup.length;
+                            row++
+                          )
+                            _buildAppRow(
+                              appsInGroup[col * grid.rowsPerColumn + row],
+                              col * grid.rowsPerColumn + row,
+                            ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPinnedApps() {
+    return ValueListenableBuilder<List<String>>(
+      valueListenable: PinnedAppsController.instance,
+      builder: (context, pinnedPackages, child) {
+        if (pinnedPackages.isEmpty) return const SizedBox.shrink();
+
+        // Resolve packages against the already loaded app list so the icons
+        // come for free; anything uninstalled meanwhile is skipped.
+        final byPackage = {
+          for (final apps in _grouped.values)
+            for (final app in apps) app.packageName: app,
+        };
+        final pinnedApps = [
+          for (final package in pinnedPackages)
+            if (byPackage[package] != null) byPackage[package]!,
+        ];
+        if (pinnedApps.isEmpty) return const SizedBox.shrink();
+
+        // Positioning is handled by the caller; this just lays the icons out.
+        return Padding(
+          padding: const EdgeInsets.only(left: 36),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final app in pinnedApps)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: GestureDetector(
+                    onTap: () => InstalledApps.startApp(app.packageName),
+                    child: app.icon != null
+                        ? Image.memory(app.icon!, width: 48, height: 48)
+                        : const Icon(Icons.apps, size: 48),
+                  ),
+                ),
+            ],
           ),
-        ),
-      ),
-    ];
-    for (var i = 0; i < appsInGroup.length; i++) {
-      final app = appsInGroup[i];
-      final isTargeted = i == _targetAppIndex;
-      items.add(
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 100),
-          height: _rowHeight,
-          color: isTargeted ? Colors.black12 : Colors.transparent,
-          child: ListTile(
-            leading: app.icon != null
-                ? Image.memory(app.icon!, width: 40, height: 40)
-                : const Icon(Icons.apps, color: Colors.black),
-            title: Text(
+        );
+      },
+    );
+  }
+
+  Widget _buildAppRow(AppInfo app, int index) {
+    final isTargeted = index == _targetAppIndex;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 100),
+      height: _rowHeight,
+      color: isTargeted ? Colors.black12 : Colors.transparent,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: [
+          app.icon != null
+              ? Image.memory(app.icon!, width: 32, height: 32)
+              : const Icon(Icons.apps, color: Colors.black, size: 32),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
               app.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: _settings.color,
                 fontSize: _settings.fontSize,
@@ -256,15 +426,10 @@ class _AppListViewState extends State<AppListView> {
                 fontWeight: isTargeted ? FontWeight.bold : FontWeight.normal,
               ),
             ),
-            onTap: () => InstalledApps.startApp(app.packageName),
           ),
-        ),
-      );
-    }
-
-    // Keying by the active letter gives the list a fresh scroll position
-    // whenever the filter changes instead of keeping the old offset.
-    return ListView(key: ValueKey(_activeLetter), children: items);
+        ],
+      ),
+    );
   }
 }
 
@@ -290,10 +455,10 @@ class _AlphabetBar extends StatefulWidget {
   final ScrubCallback onScrub;
   final ValueChanged<bool> onDragStateChanged;
 
-  // Fixed height per letter row so the letters sit close together instead
-  // of being stretched across the whole bar, while still lining up exactly
-  // with where a touch/drag is mapped to an index below.
-  static const double _rowHeight = 30;
+  // Preferred height per letter row. Shrinks automatically when there are
+  // more letters than comfortably fit, so the alphabet is never cut off on
+  // shorter screens.
+  static const double _maxRowHeight = 30;
 
   // Where the letter block sits vertically: 0.5 = centered, higher = lower
   // on screen. Kept in one place so the drawn position and the hit-test
@@ -320,23 +485,38 @@ class _AlphabetBarState extends State<_AlphabetBar> {
   int? _hoveredIndex;
   double _dragShift = 0;
 
+  // Row height actually in use, recalculated per layout so every letter
+  // fits on screen. Drawing and hit-testing both read this.
+  double _rowHeight = _AlphabetBar._maxRowHeight;
+
+  void _updateRowHeight(double height) {
+    final count = widget.letters.length;
+    if (count == 0) return;
+    final fitted = height / count;
+    _rowHeight = fitted < _AlphabetBar._maxRowHeight
+        ? fitted
+        : _AlphabetBar._maxRowHeight;
+  }
+
   void _handlePosition(Offset localPosition, double height) {
     final letters = widget.letters;
     if (letters.isEmpty) return;
-    final blockHeight = letters.length * _AlphabetBar._rowHeight;
+    final blockHeight = letters.length * _rowHeight;
     final blockTop = (height - blockHeight) * _AlphabetBar._verticalBias;
-    final index = ((localPosition.dy - blockTop) / _AlphabetBar._rowHeight)
+    final index = ((localPosition.dy - blockTop) / _rowHeight)
         .floor()
         .clamp(0, letters.length - 1);
     // localPosition.dx is 0 at the bar's left edge, so it goes negative once
     // the finger has moved left of it (e.g. over the app list). Rounded so
     // sub-pixel jitter doesn't cause extra rebuilds.
-    final draggedLeft =
-        (-localPosition.dx).clamp(0.0, _maxDragShift).roundToDouble();
-    if (index != _hoveredIndex || draggedLeft != _dragShift) {
+    final draggedLeft = math.max(0.0, -localPosition.dx).roundToDouble();
+    // The wave visual saturates, but the raw distance is reported onwards
+    // so multi-column targeting can reach the leftmost column.
+    final shiftForWave = draggedLeft.clamp(0.0, _maxDragShift);
+    if (index != _hoveredIndex || shiftForWave != _dragShift) {
       setState(() {
         _hoveredIndex = index;
-        _dragShift = draggedLeft;
+        _dragShift = shiftForWave;
       });
     }
     widget.onScrub(letters[index], localPosition.dy, draggedLeft);
@@ -354,21 +534,25 @@ class _AlphabetBarState extends State<_AlphabetBar> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        _updateRowHeight(constraints.maxHeight);
         return GestureDetector(
           // Only a drag recognizer here (no tap recognizer competing for
           // the same pointer) so the very first touch-and-move is
           // recognized immediately, instead of waiting to see whether it
           // resolves as a tap first.
+          // Pan (any direction) rather than vertical-only: dragging straight
+          // sideways off the bar towards an app must work too, not just
+          // scrubbing up/down first.
           behavior: HitTestBehavior.translucent,
-          onVerticalDragStart: (details) {
+          onPanStart: (details) {
             widget.onDragStateChanged(true);
             _handlePosition(details.localPosition, constraints.maxHeight);
           },
-          onVerticalDragUpdate: (details) {
+          onPanUpdate: (details) {
             _handlePosition(details.localPosition, constraints.maxHeight);
           },
-          onVerticalDragEnd: (_) => _endHover(),
-          onVerticalDragCancel: _endHover,
+          onPanEnd: (_) => _endHover(),
+          onPanCancel: _endHover,
           child: Align(
             // _verticalBias is a 0..1 fraction; Alignment's y axis is -1..1.
             alignment: Alignment(0, _AlphabetBar._verticalBias * 2 - 1),
@@ -397,8 +581,17 @@ class _AlphabetBarState extends State<_AlphabetBar> {
     final strength = math.sin(linear * math.pi / 2);
     final maxShift = _baseShift + _dragShift * _dragShiftFactor;
 
+    // Scale the type down alongside the row when the alphabet had to be
+    // squeezed, so tightly packed letters don't overlap each other. The
+    // wave's magnification scales too, otherwise the enlarged letters would
+    // collide with their neighbours on a tightly packed bar.
+    final rawScale = _rowHeight / _AlphabetBar._maxRowHeight;
+    final scale = rawScale < 1 ? rawScale : 1.0;
+    final baseFontSize = 11 * scale;
+    final extraFontSize = _maxExtraFontSize * scale;
+
     return SizedBox(
-      height: _AlphabetBar._rowHeight,
+      height: _rowHeight,
       child: Center(
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 90),
@@ -408,7 +601,7 @@ class _AlphabetBarState extends State<_AlphabetBar> {
             duration: const Duration(milliseconds: 90),
             curve: Curves.easeOut,
             style: TextStyle(
-              fontSize: 11 + _maxExtraFontSize * strength,
+              fontSize: baseFontSize + extraFontSize * strength,
               fontWeight: FontWeight.w600,
               color: widget.color,
             ),

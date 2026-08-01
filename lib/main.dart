@@ -135,7 +135,13 @@ class _LauncherRootState extends State<LauncherRoot>
                       width: double.infinity,
                     ),
                   ),
-                  const Expanded(child: AppListView()),
+                  Expanded(
+                    child: AppListView(
+                      onPanelDragUpdate: (details) =>
+                          _onDragUpdate(details, height),
+                      onPanelDragEnd: _onDragEnd,
+                    ),
+                  ),
                 ],
               ),
             ),
