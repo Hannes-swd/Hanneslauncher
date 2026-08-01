@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:installed_apps/app_info.dart';
 
-import 'app_overrides_controller.dart';
+import 'launcher_entry.dart';
 
-/// Shows an app's icon: the user's own picture if one was set in the app
-/// customization screen, otherwise the icon reported by the system.
+/// Shows an entry's icon: the user's own picture if one was set, otherwise
+/// the icon Android reports for an installed app, otherwise a glyph (which
+/// is what a web app without a picked picture falls back to).
 class AppIcon extends StatelessWidget {
-  const AppIcon({super.key, required this.app, required this.size});
+  const AppIcon({super.key, required this.entry, required this.size});
 
-  final AppInfo app;
+  final LauncherEntry entry;
   final double size;
 
   @override
   Widget build(BuildContext context) {
-    final customIcon = AppOverridesController.instance
-        .forPackage(app.packageName)
-        ?.iconFile;
+    final folder = entry.folder;
+    if (folder != null) {
+      // Just the glyph in the folder's own color, on nothing - so it sits on
+      // the wallpaper the same way the app icons do, instead of inside a
+      // colored tile.
+      return Icon(Icons.folder, size: size, color: folder.color);
+    }
+
+    final customIcon = entry.customIcon;
     if (customIcon != null) {
       // Custom pictures are arbitrary photos, so they're clipped to a square
       // and cropped to fill it instead of being stretched.
@@ -29,9 +35,10 @@ class AppIcon extends StatelessWidget {
         ),
       );
     }
-    if (app.icon != null) {
-      return Image.memory(app.icon!, width: size, height: size);
+    final systemIcon = entry.systemIcon;
+    if (systemIcon != null) {
+      return Image.memory(systemIcon, width: size, height: size);
     }
-    return Icon(Icons.apps, size: size);
+    return Icon(entry.isWebApp ? Icons.public : Icons.apps, size: size);
   }
 }

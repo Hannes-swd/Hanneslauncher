@@ -70,6 +70,47 @@ class AppStrings {
   String get save => _en ? 'Save' : 'Speichern';
   String get nameLabel => _en ? 'Name' : 'Name';
 
+  String get webApps => _en ? 'Web apps' : 'Web-Apps';
+  String webAppsSubtitle(int count) => _en
+      ? 'Websites and PWAs in the app list ($count)'
+      : 'Webseiten und PWAs in der App-Liste ($count)';
+  String get addWebApp => _en ? 'Add web app' : 'Web-App hinzufügen';
+  String get editWebApp => _en ? 'Edit web app' : 'Web-App bearbeiten';
+  String get urlLabel => _en ? 'Address' : 'Adresse';
+  String get changeUrl => _en ? 'Change address' : 'Adresse ändern';
+  String get remove => _en ? 'Remove' : 'Entfernen';
+  String get noWebApps => _en
+      ? 'No web apps yet. Add one with the button below - it then shows up in '
+            'the app list and can be pinned to the home screen.'
+      : 'Noch keine Web-Apps. Unten eine hinzufügen - sie erscheint dann in '
+            'der App-Liste und kann auf den Homescreen gepinnt werden.';
+  String get nameAndUrlRequired =>
+      _en ? 'Name and address are required' : 'Name und Adresse sind nötig';
+
+  String get folders => _en ? 'Folders' : 'Ordner';
+  String foldersSubtitle(int count) => _en
+      ? 'Groups of apps in the app list ($count)'
+      : 'App-Gruppen in der App-Liste ($count)';
+  String get addFolder => _en ? 'Add folder' : 'Ordner hinzufügen';
+  String get folderName => _en ? 'Folder name' : 'Ordnername';
+  String get folderColor => _en ? 'Folder color' : 'Ordnerfarbe';
+  String get folderContents => _en ? 'Contents' : 'Inhalt';
+  String get addToFolder => _en ? 'Add to folder' : 'Zum Ordner hinzufügen';
+  String get addApps => _en ? 'Add apps' : 'Apps hinzufügen';
+  String get newSubfolder => _en ? 'New folder inside' : 'Neuer Unterordner';
+  String get emptyFolder => _en ? 'This folder is empty' : 'Dieser Ordner ist leer';
+  String get noFolders => _en
+      ? 'No folders yet. Add one with the button below - it then shows up in '
+            'the app list and can be pinned to the home screen.'
+      : 'Noch keine Ordner. Unten einen hinzufügen - er erscheint dann in der '
+            'App-Liste und kann auf den Homescreen gepinnt werden.'
+      ;
+  String get nameRequired => _en ? 'A name is required' : 'Ein Name ist nötig';
+  String get deleteFolder => _en ? 'Delete folder' : 'Ordner löschen';
+  String get folderCycleBlocked => _en
+      ? "A folder can't be put inside itself"
+      : 'Ein Ordner kann nicht in sich selbst';
+
   String get languageLabel => _en ? 'Language' : 'Sprache';
   String get languageSubtitle => _en ? 'App language' : 'App-Sprache';
   String get german => 'Deutsch';

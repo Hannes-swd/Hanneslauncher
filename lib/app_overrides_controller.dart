@@ -2,10 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'picked_image_store.dart';
 
 /// A user-supplied replacement for an app's name and/or icon. Either field
 /// may be null, meaning "keep whatever the system reports for this app".
@@ -89,27 +88,10 @@ class AppOverridesController extends ValueNotifier<Map<String, AppOverride>> {
   /// Lets the user pick an image and uses it as [packageName]'s icon.
   /// Returns false if the picker was dismissed without a selection.
   Future<bool> pickIcon(String packageName) async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (picked == null) return false;
+    final savedFile = await pickImageInto('app_icons', packageName);
+    if (savedFile == null) return false;
 
-    final appDir = await getApplicationDocumentsDirectory();
-    final iconDir = Directory(p.join(appDir.path, 'app_icons'));
-    if (!iconDir.existsSync()) {
-      await iconDir.create(recursive: true);
-    }
-
-    // The package name goes into the file name, so each app keeps its own
-    // icon file. A timestamp is appended because Image.file caches by path -
-    // reusing it would keep showing the previous picture.
-    final stamp = DateTime.now().millisecondsSinceEpoch;
-    final safePackage = packageName.replaceAll(RegExp(r'[^\w.]'), '_');
-    final savedPath = p.join(
-      iconDir.path,
-      '$safePackage.$stamp${p.extension(picked.path)}',
-    );
-    final savedFile = await File(picked.path).copy(savedPath);
-
-    await _deleteIconFile(value[packageName]?.iconPath);
+    await deleteStoredImage(value[packageName]?.iconPath);
     await _write(
       packageName,
       AppOverride(name: value[packageName]?.name, iconPath: savedFile.path),
@@ -118,22 +100,14 @@ class AppOverridesController extends ValueNotifier<Map<String, AppOverride>> {
   }
 
   Future<void> clearIcon(String packageName) async {
-    await _deleteIconFile(value[packageName]?.iconPath);
+    await deleteStoredImage(value[packageName]?.iconPath);
     await _write(packageName, AppOverride(name: value[packageName]?.name));
   }
 
   /// Drops both the custom name and the custom icon for an app.
   Future<void> reset(String packageName) async {
-    await _deleteIconFile(value[packageName]?.iconPath);
+    await deleteStoredImage(value[packageName]?.iconPath);
     await _write(packageName, const AppOverride());
-  }
-
-  Future<void> _deleteIconFile(String? path) async {
-    if (path == null) return;
-    final file = File(path);
-    if (file.existsSync()) {
-      await file.delete();
-    }
   }
 
   Future<void> _write(String packageName, AppOverride override) async {

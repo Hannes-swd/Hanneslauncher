@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:installed_apps/app_info.dart';
-import 'package:installed_apps/installed_apps.dart';
 
 import 'app_icon.dart';
 import 'app_overrides_controller.dart';
 import 'app_strings.dart';
+import 'launcher_entries_controller.dart';
+import 'launcher_entry.dart';
 import 'locale_controller.dart';
+import 'text_prompt_dialog.dart';
+import 'web_apps_controller.dart';
 
-/// Lists every installed app; tapping one offers to replace its icon or
-/// rename it. Changes are stored per package and used everywhere the app
-/// shows up (app list and pinned apps).
+/// Lists everything that appears in the app list - installed apps and saved
+/// web apps - and lets each one be given its own icon and name. Changes show
+/// up everywhere the entry is used (app list and pinned apps).
 class AppCustomizeScreen extends StatefulWidget {
   const AppCustomizeScreen({super.key});
 
@@ -18,117 +21,144 @@ class AppCustomizeScreen extends StatefulWidget {
 }
 
 class _AppCustomizeScreenState extends State<AppCustomizeScreen> {
-  List<AppInfo> _apps = [];
-  bool _loaded = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadApps();
+  /// Web apps first: there are only a handful of them and they'd be tedious
+  /// to find among hundreds of packages otherwise. Folders are left out -
+  /// they get their own screen, where their contents are editable too.
+  List<LauncherEntry> _entries() {
+    final all = LauncherEntriesController.instance.entries;
+    return [
+      for (final entry in all)
+        if (entry.isWebApp) entry,
+      for (final entry in all)
+        if (entry.app != null) entry,
+    ];
   }
 
-  Future<void> _loadApps() async {
-    final apps = await InstalledApps.getInstalledApps(
-      excludeSystemApps: false,
-      excludeNonLaunchableApps: true,
-      withIcon: true,
-    );
-    apps.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    if (!mounted) return;
-    setState(() {
-      _apps = apps;
-      _loaded = true;
-    });
-  }
-
-  Future<void> _openOptions(AppInfo app, AppStrings s) async {
-    final controller = AppOverridesController.instance;
-    final hasOverride = controller.forPackage(app.packageName) != null;
+  Future<void> _openOptions(LauncherEntry entry, AppStrings s) async {
+    final hasOverride =
+        entry.app != null &&
+        AppOverridesController.instance.forPackage(entry.app!.packageName) !=
+            null;
 
     final choice = await showDialog<String>(
       context: context,
       builder: (context) {
         return SimpleDialog(
-          title: Text(controller.nameFor(app.packageName, app.name)),
+          title: Text(entry.name),
           children: [
-            SimpleDialogOption(
-              onPressed: () => Navigator.of(context).pop('icon'),
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.image_outlined),
-                title: Text(s.changeIcon),
-              ),
-            ),
-            SimpleDialogOption(
-              onPressed: () => Navigator.of(context).pop('name'),
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.edit_outlined),
-                title: Text(s.changeName),
-              ),
-            ),
+            _option(context, Icons.image_outlined, s.changeIcon, 'icon'),
+            _option(context, Icons.edit_outlined, s.changeName, 'name'),
+            // A web app is defined by its address, so that's editable here
+            // too; an installed app instead offers to drop its changes.
+            if (entry.isWebApp)
+              _option(context, Icons.link, s.changeUrl, 'url'),
+            if (entry.isWebApp)
+              _option(context, Icons.delete_outline, s.remove, 'remove'),
             if (hasOverride)
-              SimpleDialogOption(
-                onPressed: () => Navigator.of(context).pop('reset'),
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.restore),
-                  title: Text(s.resetApp),
-                ),
-              ),
+              _option(context, Icons.restore, s.resetApp, 'reset'),
           ],
         );
       },
     );
 
     if (!mounted || choice == null) return;
+    if (entry.isWebApp) {
+      await _applyToWebApp(entry.webApp!, choice, s);
+    } else {
+      await _applyToApp(entry.app!, choice, s);
+    }
+  }
+
+  Future<void> _applyToApp(AppInfo app, String choice, AppStrings s) async {
+    final controller = AppOverridesController.instance;
     switch (choice) {
       case 'icon':
         await controller.pickIcon(app.packageName);
       case 'name':
-        await _renameApp(app, s);
+        final newName = await _promptText(
+          title: s.changeName,
+          label: s.nameLabel,
+          initialValue: controller.nameFor(app.packageName, app.name),
+          s: s,
+        );
+        if (newName == null) return;
+        // Clearing the field (or typing the original) means "use the system
+        // name again".
+        await controller.setName(
+          app.packageName,
+          newName.trim() == app.name ? null : newName,
+        );
       case 'reset':
         await controller.reset(app.packageName);
     }
   }
 
-  Future<void> _renameApp(AppInfo app, AppStrings s) async {
-    final controller = AppOverridesController.instance;
-    final field = TextEditingController(
-      text: controller.nameFor(app.packageName, app.name),
-    );
-
-    final newName = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(s.changeName),
-          content: TextField(
-            controller: field,
-            autofocus: true,
-            decoration: InputDecoration(labelText: s.nameLabel),
-            onSubmitted: (value) => Navigator.of(context).pop(value),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(s.cancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(field.text),
-              child: Text(s.save),
-            ),
-          ],
+  Future<void> _applyToWebApp(
+    WebApp webApp,
+    String choice,
+    AppStrings s,
+  ) async {
+    final controller = WebAppsController.instance;
+    switch (choice) {
+      case 'icon':
+        await controller.pickIcon(webApp.id);
+      case 'name':
+        final name = await _promptText(
+          title: s.changeName,
+          label: s.nameLabel,
+          initialValue: webApp.name,
+          s: s,
         );
-      },
-    );
-    field.dispose();
+        // A web app has no system name to fall back on, so an empty one is
+        // simply ignored.
+        if (name != null && name.trim().isNotEmpty) {
+          await controller.rename(webApp.id, name);
+        }
+      case 'url':
+        final url = await _promptText(
+          title: s.changeUrl,
+          label: s.urlLabel,
+          initialValue: webApp.url,
+          s: s,
+        );
+        if (url != null && url.trim().isNotEmpty) {
+          await controller.setUrl(webApp.id, url);
+        }
+      case 'remove':
+        await controller.remove(webApp.id);
+    }
+  }
 
-    if (newName == null) return;
-    // An empty field means "use the system name again".
-    await controller.setName(
-      app.packageName,
-      newName.trim() == app.name ? null : newName,
+  Widget _option(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String value,
+  ) {
+    return SimpleDialogOption(
+      onPressed: () => Navigator.of(context).pop(value),
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(icon),
+        title: Text(label),
+      ),
+    );
+  }
+
+  Future<String?> _promptText({
+    required String title,
+    required String label,
+    required String initialValue,
+    required AppStrings s,
+  }) {
+    return showDialog<String>(
+      context: context,
+      builder: (context) => TextPromptDialog(
+        title: title,
+        label: label,
+        initialValue: initialValue,
+        s: s,
+      ),
     );
   }
 
@@ -140,36 +170,39 @@ class _AppCustomizeScreenState extends State<AppCustomizeScreen> {
         final s = AppStrings(language);
         return Scaffold(
           appBar: AppBar(title: Text(s.customizeApps)),
-          body: !_loaded
-              ? const Center(child: CircularProgressIndicator())
-              : ValueListenableBuilder<Map<String, AppOverride>>(
-                  valueListenable: AppOverridesController.instance,
-                  builder: (context, overrides, child) {
-                    return ListView.builder(
-                      itemCount: _apps.length,
-                      itemBuilder: (context, index) {
-                        final app = _apps[index];
-                        final override = overrides[app.packageName];
-                        final name = AppOverridesController.instance.nameFor(
-                          app.packageName,
-                          app.name,
-                        );
-                        return ListTile(
-                          leading: AppIcon(app: app, size: 36),
-                          title: Text(name),
-                          // Only shown once something was customized, so the
-                          // original name stays findable after a rename.
-                          subtitle: override == null || name == app.name
-                              ? null
-                              : Text(app.name),
-                          onTap: () => _openOptions(app, s),
-                        );
-                      },
-                    );
-                  },
-                ),
+          body: ListenableBuilder(
+            listenable: LauncherEntriesController.instance,
+            builder: (context, child) {
+              if (!LauncherEntriesController.instance.isLoaded) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final entries = _entries();
+              return ListView.builder(
+                itemCount: entries.length,
+                itemBuilder: (context, index) {
+                  final entry = entries[index];
+                  return ListTile(
+                    leading: AppIcon(entry: entry, size: 36),
+                    title: Text(entry.name),
+                    // Web apps show their address; renamed apps show the
+                    // original name, so they stay findable.
+                    subtitle: _subtitleFor(entry),
+                    onTap: () => _openOptions(entry, s),
+                  );
+                },
+              );
+            },
+          ),
         );
       },
     );
+  }
+
+  Widget? _subtitleFor(LauncherEntry entry) {
+    final text = entry.isWebApp
+        ? entry.webApp!.url
+        : (entry.name == entry.app!.name ? null : entry.app!.name);
+    if (text == null) return null;
+    return Text(text, maxLines: 1, overflow: TextOverflow.ellipsis);
   }
 }

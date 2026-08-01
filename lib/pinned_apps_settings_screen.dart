@@ -1,43 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:installed_apps/app_info.dart';
-import 'package:installed_apps/installed_apps.dart';
 
 import 'app_icon.dart';
-import 'app_overrides_controller.dart';
 import 'app_strings.dart';
+import 'launcher_entries_controller.dart';
+import 'launcher_entry.dart';
 import 'locale_controller.dart';
 import 'pinned_apps_controller.dart';
 
-class PinnedAppsSettingsScreen extends StatefulWidget {
+class PinnedAppsSettingsScreen extends StatelessWidget {
   const PinnedAppsSettingsScreen({super.key});
 
-  @override
-  State<PinnedAppsSettingsScreen> createState() =>
-      _PinnedAppsSettingsScreenState();
-}
-
-class _PinnedAppsSettingsScreenState extends State<PinnedAppsSettingsScreen> {
-  List<AppInfo> _apps = [];
-  bool _loaded = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadApps();
-  }
-
-  Future<void> _loadApps() async {
-    final apps = await InstalledApps.getInstalledApps(
-      excludeSystemApps: false,
-      excludeNonLaunchableApps: true,
-      withIcon: true,
-    );
-    apps.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    if (!mounted) return;
-    setState(() {
-      _apps = apps;
-      _loaded = true;
-    });
+  /// Folders and web apps first: there are only a handful of them and they'd
+  /// be tedious to find among hundreds of packages otherwise.
+  List<LauncherEntry> _entries() {
+    final all = LauncherEntriesController.instance.entries;
+    return [
+      for (final entry in all)
+        if (entry.isFolder) entry,
+      for (final entry in all)
+        if (entry.isWebApp) entry,
+      for (final entry in all)
+        if (!entry.isFolder && !entry.isWebApp) entry,
+    ];
   }
 
   @override
@@ -49,61 +33,74 @@ class _PinnedAppsSettingsScreenState extends State<PinnedAppsSettingsScreen> {
         return ValueListenableBuilder<List<String>>(
           valueListenable: PinnedAppsController.instance,
           builder: (context, pinned, child) {
-            return Scaffold(
-              appBar: AppBar(
-                title: Text(s.pinnedApps),
-                bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(28),
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      s.pinnedAppsSubtitle(
-                        pinned.length,
-                        PinnedAppsController.maxPinned,
-                      ),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.black54,
+            return ListenableBuilder(
+              listenable: LauncherEntriesController.instance,
+              builder: (context, child) {
+                final entries = _entries();
+                return Scaffold(
+                  appBar: AppBar(
+                    title: Text(s.pinnedApps),
+                    bottom: PreferredSize(
+                      preferredSize: const Size.fromHeight(28),
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          s.pinnedAppsSubtitle(
+                            pinned.length,
+                            PinnedAppsController.maxPinned,
+                          ),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.black54,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              body: !_loaded
-                  ? const Center(child: CircularProgressIndicator())
-                  : ListView.builder(
-                      itemCount: _apps.length,
-                      itemBuilder: (context, index) {
-                        final app = _apps[index];
-                        final isPinned = pinned.contains(app.packageName);
-                        return CheckboxListTile(
-                          value: isPinned,
-                          // Greyed out once the limit is hit, except for the
-                          // ones already pinned so they stay removable.
-                          onChanged:
-                              !isPinned && PinnedAppsController.instance.isFull
-                              ? null
-                              : (_) async {
-                                  final ok = await PinnedAppsController.instance
-                                      .toggle(app.packageName);
-                                  if (!ok && context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(s.pinnedAppsFull),
-                                      ),
-                                    );
-                                  }
-                                },
-                          secondary: AppIcon(app: app, size: 36),
-                          title: Text(
-                            AppOverridesController.instance.nameFor(
-                              app.packageName,
-                              app.name,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                  body: !LauncherEntriesController.instance.isLoaded
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView.builder(
+                          itemCount: entries.length,
+                          itemBuilder: (context, index) {
+                            final entry = entries[index];
+                            final isPinned = pinned.contains(entry.key);
+                            return CheckboxListTile(
+                              value: isPinned,
+                              // Greyed out once the limit is hit, except for
+                              // the ones already pinned so they stay
+                              // removable.
+                              onChanged:
+                                  !isPinned &&
+                                      PinnedAppsController.instance.isFull
+                                  ? null
+                                  : (_) async {
+                                      final ok = await PinnedAppsController
+                                          .instance
+                                          .toggle(entry.key);
+                                      if (!ok && context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(s.pinnedAppsFull),
+                                          ),
+                                        );
+                                      }
+                                    },
+                              secondary: AppIcon(entry: entry, size: 36),
+                              title: Text(entry.name),
+                              subtitle: entry.isWebApp
+                                  ? Text(
+                                      entry.webApp!.url,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    )
+                                  : null,
+                            );
+                          },
+                        ),
+                );
+              },
             );
           },
         );

@@ -2,14 +2,14 @@ import 'dart:collection';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:installed_apps/app_info.dart';
-import 'package:installed_apps/installed_apps.dart';
 
 import 'app_icon.dart';
 import 'app_list_settings_controller.dart';
-import 'app_overrides_controller.dart';
 import 'clock_settings_controller.dart';
 import 'clock_widget.dart';
+import 'folder_sheet.dart';
+import 'launcher_entries_controller.dart';
+import 'launcher_entry.dart';
 import 'pinned_apps_controller.dart';
 
 /// Full app list for the home screen with an A-Z index bar on the right.
@@ -40,13 +40,10 @@ class _AppListViewState extends State<AppListView> {
   // it counts as aiming at an app row instead of just picking a letter.
   static const double _listTargetThreshold = 60;
 
-  // Every installed app, kept so the grouping below can be redone whenever a
-  // renamed app changes which letter it belongs under.
-  List<AppInfo> _apps = [];
-  final SplayTreeMap<String, List<AppInfo>> _grouped = SplayTreeMap();
+  final SplayTreeMap<String, List<LauncherEntry>> _grouped = SplayTreeMap();
   List<String> _letters = [];
 
-  bool _loaded = false;
+  bool get _loaded => LauncherEntriesController.instance.isLoaded;
   bool _isDragging = false;
   String? _activeLetter;
   // Index of the app row currently under the finger while dragged past the
@@ -64,11 +61,10 @@ class _AppListViewState extends State<AppListView> {
   @override
   void initState() {
     super.initState();
-    _loadApps();
+    LauncherEntriesController.instance.load();
+    LauncherEntriesController.instance.addListener(_onEntriesChanged);
     AppListSettingsController.instance.load();
     AppListSettingsController.instance.addListener(_onSettingsChanged);
-    AppOverridesController.instance.load();
-    AppOverridesController.instance.addListener(_onOverridesChanged);
     ClockSettingsController.instance.load();
     PinnedAppsController.instance.load();
   }
@@ -88,46 +84,27 @@ class _AppListViewState extends State<AppListView> {
     _safeSetState(() => _settings = AppListSettingsController.instance.value);
   }
 
-  // A renamed app can move to a different letter, so the whole grouping is
-  // rebuilt rather than just repainting the rows.
-  void _onOverridesChanged() => _safeSetState(_group);
+  // A rename can move an app to a different letter, and web apps or folders
+  // can appear or vanish at any time, so the whole grouping is rebuilt
+  // rather than just repainting the rows.
+  void _onEntriesChanged() => _safeSetState(_group);
 
   @override
   void dispose() {
     AppListSettingsController.instance.removeListener(_onSettingsChanged);
-    AppOverridesController.instance.removeListener(_onOverridesChanged);
+    LauncherEntriesController.instance.removeListener(_onEntriesChanged);
     _bubblePosition.dispose();
     super.dispose();
   }
 
-  String _nameOf(AppInfo app) =>
-      AppOverridesController.instance.nameFor(app.packageName, app.name);
-
-  Future<void> _loadApps() async {
-    final apps = await InstalledApps.getInstalledApps(
-      excludeSystemApps: false,
-      excludeNonLaunchableApps: true,
-      withIcon: true,
-    );
-    _apps = apps;
-
-    _safeSetState(() {
-      _group();
-      _loaded = true;
-    });
-  }
-
-  /// Sorts and buckets [_apps] by their displayed (possibly renamed) name.
+  /// Buckets the entries (apps, web apps and folders) by the displayed -
+  /// possibly renamed - name.
   void _group() {
-    _apps.sort(
-      (a, b) => _nameOf(a).toLowerCase().compareTo(_nameOf(b).toLowerCase()),
-    );
-
     _grouped.clear();
-    for (final app in _apps) {
-      final name = _nameOf(app);
+    for (final entry in LauncherEntriesController.instance.entries) {
+      final name = entry.name;
       final letter = name.isEmpty ? '#' : name[0].toUpperCase();
-      _grouped.putIfAbsent(letter, () => []).add(app);
+      _grouped.putIfAbsent(letter, () => []).add(entry);
     }
     _letters = _grouped.keys.toList();
   }
@@ -184,7 +161,16 @@ class _AppListViewState extends State<AppListView> {
     if (letter == null || index == null) return;
     final group = _grouped[letter];
     if (group == null || index >= group.length) return;
-    InstalledApps.startApp(group[index].packageName);
+    _open(group[index]);
+  }
+
+  /// Launches an entry, or - for a folder - shows its contents instead.
+  void _open(LauncherEntry entry) {
+    if (entry.isFolder) {
+      showFolderSheet(context, entry.folder!);
+    } else {
+      entry.launch();
+    }
   }
 
   @override
@@ -395,19 +381,15 @@ class _AppListViewState extends State<AppListView> {
   Widget _buildPinnedApps() {
     return ValueListenableBuilder<List<String>>(
       valueListenable: PinnedAppsController.instance,
-      builder: (context, pinnedPackages, child) {
-        if (pinnedPackages.isEmpty) return const SizedBox.shrink();
+      builder: (context, pinnedKeys, child) {
+        if (pinnedKeys.isEmpty) return const SizedBox.shrink();
 
-        // Resolve packages against the already loaded app list so the icons
-        // come for free; anything uninstalled meanwhile is skipped.
-        final byPackage = {
-          for (final apps in _grouped.values)
-            for (final app in apps) app.packageName: app,
-        };
-        final pinnedApps = [
-          for (final package in pinnedPackages)
-            if (byPackage[package] != null) byPackage[package]!,
-        ];
+        // Resolve the pinned keys against the already loaded entries so the
+        // icons come for free; anything uninstalled (or a web app / folder
+        // deleted meanwhile) is skipped.
+        final pinnedApps = LauncherEntriesController.instance.resolve(
+          pinnedKeys,
+        );
         if (pinnedApps.isEmpty) return const SizedBox.shrink();
 
         // Positioning is handled by the caller; this just lays the icons out.
@@ -417,12 +399,12 @@ class _AppListViewState extends State<AppListView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              for (final app in pinnedApps)
+              for (final entry in pinnedApps)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   child: GestureDetector(
-                    onTap: () => InstalledApps.startApp(app.packageName),
-                    child: AppIcon(app: app, size: 48),
+                    onTap: () => _open(entry),
+                    child: AppIcon(entry: entry, size: 48),
                   ),
                 ),
             ],
@@ -432,7 +414,7 @@ class _AppListViewState extends State<AppListView> {
     );
   }
 
-  Widget _buildAppRow(AppInfo app, int index) {
+  Widget _buildAppRow(LauncherEntry entry, int index) {
     final isTargeted = index == _targetAppIndex;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 100),
@@ -441,11 +423,11 @@ class _AppListViewState extends State<AppListView> {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
         children: [
-          AppIcon(app: app, size: 32),
+          AppIcon(entry: entry, size: 32),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              _nameOf(app),
+              entry.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(

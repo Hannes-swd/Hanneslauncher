@@ -21,6 +21,18 @@ class PinnedAppsController extends ValueNotifier<List<String>> {
 
   bool get isFull => value.length >= maxPinned;
 
+  /// Unpins an entry that no longer exists (a deleted web app or folder),
+  /// so it doesn't keep occupying one of the [maxPinned] slots invisibly.
+  Future<void> remove(String key) async {
+    if (!value.contains(key)) return;
+    value = [
+      for (final entry in value)
+        if (entry != key) entry,
+    ];
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_key, value);
+  }
+
   /// Adds or removes a package. Returns false if it couldn't be added
   /// because the limit is already reached.
   Future<bool> toggle(String packageName) async {

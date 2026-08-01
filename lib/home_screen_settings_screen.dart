@@ -4,10 +4,14 @@ import 'app_customize_screen.dart';
 import 'app_list_settings_screen.dart';
 import 'app_strings.dart';
 import 'clock_settings_screen.dart';
+import 'folders_controller.dart';
+import 'folders_settings_screen.dart';
 import 'locale_controller.dart';
 import 'pinned_apps_controller.dart';
 import 'pinned_apps_settings_screen.dart';
 import 'wallpaper_controller.dart';
+import 'web_apps_controller.dart';
+import 'web_apps_settings_screen.dart';
 
 class HomeScreenSettingsScreen extends StatelessWidget {
   const HomeScreenSettingsScreen({super.key});
@@ -84,6 +88,42 @@ class HomeScreenSettingsScreen extends StatelessWidget {
                         MaterialPageRoute(
                           builder: (context) => const AppCustomizeScreen(),
                         ),
+                      );
+                    },
+                  ),
+                  ValueListenableBuilder<List<LauncherFolder>>(
+                    valueListenable: FoldersController.instance,
+                    builder: (context, folders, child) {
+                      return ListTile(
+                        leading: const Icon(Icons.folder_outlined),
+                        title: Text(s.folders),
+                        subtitle: Text(s.foldersSubtitle(folders.length)),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const FoldersSettingsScreen(),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                  ValueListenableBuilder<List<WebApp>>(
+                    valueListenable: WebAppsController.instance,
+                    builder: (context, webApps, child) {
+                      return ListTile(
+                        leading: const Icon(Icons.public),
+                        title: Text(s.webApps),
+                        subtitle: Text(s.webAppsSubtitle(webApps.length)),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const WebAppsSettingsScreen(),
+                            ),
+                          );
+                        },
                       );
                     },
                   ),

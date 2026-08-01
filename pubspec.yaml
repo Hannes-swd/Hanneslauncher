@@ -44,6 +44,8 @@ dependencies:
   shared_preferences: ^2.3.3
   # Lists installed apps (with icons) and launches them.
   installed_apps: ^2.1.1
+  # Opens web apps (saved links / PWAs) in the browser.
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:
