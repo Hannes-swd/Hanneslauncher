@@ -11,6 +11,7 @@ import 'folder_sheet.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'pinned_apps_controller.dart';
+import 'pinned_quick_actions.dart';
 
 /// Full app list for the home screen with an A-Z index bar on the right.
 /// All present letters are shown at all times; hovering/dragging over one
@@ -404,6 +405,9 @@ class _AppListViewState extends State<AppListView> {
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   child: GestureDetector(
                     onTap: () => _open(entry),
+                    // Long press edits the pin itself (icon, or a folder's
+                    // color) instead of opening it.
+                    onLongPress: () => showPinnedQuickActions(context, entry),
                     child: AppIcon(entry: entry, size: 48),
                   ),
                 ),

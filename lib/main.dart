@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_list_view.dart';
+import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
 import 'settings_screen.dart';
 import 'system_gesture_exclusion.dart';
@@ -42,6 +43,7 @@ class _LauncherRootState extends State<LauncherRoot>
     super.initState();
     WallpaperController.instance.load();
     LocaleController.instance.load();
+    IconThemeController.instance.load();
   }
 
   @override

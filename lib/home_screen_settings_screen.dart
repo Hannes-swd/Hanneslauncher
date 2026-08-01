@@ -6,6 +6,8 @@ import 'app_strings.dart';
 import 'clock_settings_screen.dart';
 import 'folders_controller.dart';
 import 'folders_settings_screen.dart';
+import 'icon_theme_controller.dart';
+import 'icon_theme_settings_screen.dart';
 import 'locale_controller.dart';
 import 'pinned_apps_controller.dart';
 import 'pinned_apps_settings_screen.dart';
@@ -88,6 +90,30 @@ class HomeScreenSettingsScreen extends StatelessWidget {
                         MaterialPageRoute(
                           builder: (context) => const AppCustomizeScreen(),
                         ),
+                      );
+                    },
+                  ),
+                  ValueListenableBuilder<IconThemeSettings>(
+                    valueListenable: IconThemeController.instance,
+                    builder: (context, iconTheme, child) {
+                      return ListTile(
+                        leading: const Icon(Icons.palette_outlined),
+                        title: Text(s.iconTheme),
+                        subtitle: Text(s.iconThemeSubtitle),
+                        trailing: iconTheme.enabled
+                            ? CircleAvatar(
+                                radius: 12,
+                                backgroundColor: iconTheme.color,
+                              )
+                            : null,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const IconThemeSettingsScreen(),
+                            ),
+                          );
+                        },
                       );
                     },
                   ),

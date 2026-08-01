@@ -87,6 +87,16 @@ class AppStrings {
   String get nameAndUrlRequired =>
       _en ? 'Name and address are required' : 'Name und Adresse sind nötig';
 
+  String get iconTheme => _en ? 'Icon design' : 'Icon-Design';
+  String get iconThemeSubtitle =>
+      _en ? 'All icons in one color' : 'Alle Icons in einer Farbe';
+  String get iconThemeEnabled =>
+      _en ? 'Theme icons' : 'Icons einfärben';
+  String get iconThemeHint => _en
+      ? 'The original icons are kept - switching this off brings them back.'
+      : 'Die Original-Icons bleiben erhalten - beim Ausschalten sind sie '
+            'wieder da.';
+
   String get folders => _en ? 'Folders' : 'Ordner';
   String foldersSubtitle(int count) => _en
       ? 'Groups of apps in the app list ($count)'
