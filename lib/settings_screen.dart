@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'app_strings.dart';
+import 'data_sources_controller.dart';
+import 'data_sources_settings_screen.dart';
 import 'home_screen_settings_screen.dart';
 import 'locale_controller.dart';
 import 'system_settings_screen.dart';
@@ -25,6 +27,21 @@ class SettingsScreen extends StatelessWidget {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => const HomeScreenSettingsScreen(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.cloud_outlined),
+                title: Text(s.dataSources),
+                subtitle: Text(s.dataSourcesSubtitle(
+                  DataSourcesController.instance.value.length,
+                )),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const DataSourcesSettingsScreen(),
                     ),
                   );
                 },

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'app_list_view.dart';
+import 'data_sources_controller.dart';
 import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
-import 'settings_screen.dart';
+import 'panel_view.dart';
 import 'system_gesture_exclusion.dart';
 import 'wallpaper_controller.dart';
 
@@ -56,6 +57,11 @@ class _LauncherRootState extends State<LauncherRoot>
     _controller.value += details.delta.dy / height;
   }
 
+  void _closePanel() {
+    if (_controller.value == 0) return;
+    _controller.animateTo(0, curve: Curves.easeOut);
+  }
+
   void _onDragEnd(DragEndDetails details) {
     final velocity = details.primaryVelocity ?? 0;
     final bool open;
@@ -67,6 +73,10 @@ class _LauncherRootState extends State<LauncherRoot>
       open = _controller.value > 0.5;
     }
     _controller.animateTo(open ? 1 : 0, curve: Curves.easeOut);
+    // Opening the panel is the moment its widgets become visible, so that's
+    // when anything past its refresh interval is fetched - a panel nobody
+    // pulls down costs no data at all.
+    if (open) DataSourcesController.instance.refreshStale();
   }
 
   static const _panelRadius = BorderRadius.only(
@@ -97,6 +107,11 @@ class _LauncherRootState extends State<LauncherRoot>
 
   @override
   Widget build(BuildContext context) {
+    // Read here because this is the highest place that sees the phone's
+    // clock setting; the widget cards format {{zeit}} from it.
+    DataSourcesController.use24HourFormat =
+        MediaQuery.of(context).alwaysUse24HourFormat;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final height = constraints.maxHeight;
@@ -156,43 +171,32 @@ class _LauncherRootState extends State<LauncherRoot>
                     child: child,
                   );
                 },
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onVerticalDragUpdate: (details) =>
-                      _onDragUpdate(details, height),
-                  onVerticalDragEnd: _onDragEnd,
-                  child: Scaffold(
-                    backgroundColor: Colors.transparent,
-                    body: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: _panelRadius,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: _panelRadius,
-                        child: Container(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          child: SafeArea(
-                            child: Align(
-                              alignment: Alignment.topRight,
-                              child: IconButton(
-                                icon: const Icon(Icons.settings),
-                                onPressed: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const SettingsScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
+                // No drag handler around the whole panel any more: the block
+                // list inside scrolls, and the two gestures would fight over
+                // every touch. The panel is dragged by its header instead.
+                child: Scaffold(
+                  backgroundColor: Colors.transparent,
+                  body: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: _panelRadius,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: _panelRadius,
+                      child: Container(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        child: SafeArea(
+                          child: PanelView(
+                            onHandleDragUpdate: (details) =>
+                                _onDragUpdate(details, height),
+                            onHandleDragEnd: _onDragEnd,
+                            onCloseRequested: _closePanel,
                           ),
                         ),
                       ),

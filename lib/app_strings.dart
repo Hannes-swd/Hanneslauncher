@@ -87,6 +87,107 @@ class AppStrings {
   String get nameAndUrlRequired =>
       _en ? 'Name and address are required' : 'Name und Adresse sind nötig';
 
+  String get addBlock => _en ? 'Add' : 'Hinzufügen';
+  String get blockWidget => 'Widget';
+  String get blockAppRow => _en ? 'Apps' : 'Apps';
+  String get blockAppRowTitle => _en ? 'App row' : 'App-Reihe';
+  String get emptyPanel => _en
+      ? 'Nothing here yet. Add widgets or a row of apps with + above.'
+      : 'Noch nichts hier. Oben mit + Widgets oder eine App-Reihe '
+            'hinzufügen.';
+  String get emptyAppRow =>
+      _en ? 'No apps selected yet' : 'Noch keine Apps ausgewählt';
+  String get editBlock => _en ? 'Edit' : 'Bearbeiten';
+  String get deleteBlock => _en ? 'Delete' : 'Löschen';
+  String get columnsLabel => _en ? 'Per row' : 'Pro Zeile';
+  String get showLabelsLabel => _en ? 'Show names' : 'Namen anzeigen';
+  String get chooseApps => _en ? 'Choose apps' : 'Apps auswählen';
+  String get widgetPlaceholder => _en
+      ? 'Widget content comes in the next step'
+      : 'Widget-Inhalt kommt im nächsten Schritt';
+  String get emptyWidget =>
+      _en ? 'Empty widget - hold to edit' : 'Leeres Widget - halten zum Bearbeiten';
+  String get widgetTitle => _en ? 'Widget name' : 'Widget-Name';
+  String get addElement => _en ? 'Add line' : 'Zeile hinzufügen';
+  String get elementText => _en ? 'Text' : 'Text';
+  String get elementIcon => _en ? 'Icon by rule' : 'Symbol nach Regel';
+  String get elementImage => _en ? 'Picture' : 'Bild';
+  String get elementBox => _en ? 'Box' : 'Fläche';
+  String get colorLabel => _en ? 'Color' : 'Farbe';
+  String currentValue(String value) =>
+      _en ? 'Value right now: $value' : 'Wert gerade: $value';
+  String get noRuleMatches =>
+      _en ? 'No rule matches it' : 'Keine Regel trifft darauf zu';
+  String ruleMatches(String icon) =>
+      _en ? 'Matches: $icon' : 'Passende Regel: $icon';
+  String get valueMissing => _en
+      ? 'The value is empty - check the placeholder above'
+      : 'Der Wert ist leer - Platzhalter oben prüfen';
+  String get canvasHint => _en
+      ? 'Drag to move, tap to edit'
+      : 'Ziehen zum Verschieben, antippen zum Bearbeiten';
+  String get layersHint => _en
+      ? 'Layers, bottom first - the arrows move an element forward or back'
+      : 'Ebenen, unterste zuerst - die Pfeile legen ein Element nach vorne '
+            'oder hinten';
+  String get cardHeightLabel => _en ? 'Card height' : 'Kartenhöhe';
+  String get widthShort => _en ? 'Width' : 'Breite';
+  String get radiusShort => _en ? 'Corners' : 'Ecken';
+  String get opacityShort => _en ? 'Opacity' : 'Deckkraft';
+  String get elementValue => _en ? 'Value' : 'Wert';
+  String get availableValues => _en ? 'Insert value' : 'Wert einfügen';
+  String get textSizeShort => _en ? 'Size' : 'Größe';
+  String get iconSizeShort => _en ? 'Icon size' : 'Symbolgröße';
+  String get heightShort => _en ? 'Height' : 'Höhe';
+  String get boldLabel => _en ? 'Bold' : 'Fett';
+  String get alignLabel => _en ? 'Alignment' : 'Ausrichtung';
+  String get rulesLabel => _en ? 'Rules' : 'Regeln';
+  String get addRule => _en ? 'Add rule' : 'Regel hinzufügen';
+  String get ruleFrom => _en ? 'From' : 'Von';
+  String get ruleTo => _en ? 'To' : 'Bis';
+  String get ruleEquals => _en ? 'Exactly' : 'Genau';
+  String get ruleAny => _en ? 'anything' : 'alles';
+  String get preview => _en ? 'Preview' : 'Vorschau';
+
+  String get dataSources => _en ? 'Data sources' : 'Datenquellen';
+  String dataSourcesSubtitle(int count) => _en
+      ? 'APIs the widgets read from ($count)'
+      : 'APIs, aus denen die Widgets lesen ($count)';
+  String get addDataSource => _en ? 'Add source' : 'Quelle hinzufügen';
+  String get sourceKey => _en ? 'Short key' : 'Kurzschlüssel';
+  String get sourceKeyHint =>
+      _en ? 'used in placeholders, e.g. weather' : 'für Platzhalter, z.B. wetter';
+  String get sourceName => _en ? 'Name' : 'Name';
+  String get sourceUrl => 'URL';
+  String get sourceHeaders =>
+      _en ? 'Headers (one per line, name: value)' : 'Header (pro Zeile, Name: Wert)';
+  String refreshEvery(int minutes) =>
+      _en ? 'Refresh every $minutes min' : 'Alle $minutes min aktualisieren';
+  String get testSource => _en ? 'Test' : 'Testen';
+  String get presets => _en ? 'Templates' : 'Vorlagen';
+  String get presetWeather =>
+      _en ? 'Weather, fixed place' : 'Wetter, fester Ort';
+  String get presetWeatherHere =>
+      _en ? 'Weather here' : 'Wetter am aktuellen Ort';
+  String get presetWeatherHereHint => _en
+      ? 'Follows the phone, asks for location'
+      : 'Folgt dem Handy, fragt nach dem Standort';
+  String get presetCustom => _en ? 'Own URL' : 'Eigene URL';
+  String get noDataYet =>
+      _en ? 'No data yet - press Test' : 'Noch keine Daten - Testen drücken';
+  String get tapValueToInsert => _en
+      ? 'Tap a value to insert it'
+      : 'Einen Wert antippen, um ihn einzufügen';
+  String get onlyHttps =>
+      _en ? 'Only https addresses are allowed' : 'Nur https-Adressen sind erlaubt';
+  String get keyAndUrlRequired => _en
+      ? 'Short key and URL are required'
+      : 'Kurzschlüssel und URL sind nötig';
+
+  String get blockHint => _en
+      ? 'Hold to move, hold and release to edit'
+      : 'Halten zum Verschieben, halten und loslassen zum Bearbeiten';
+
   String get iconTheme => _en ? 'Icon design' : 'Icon-Design';
   String get iconThemeSubtitle =>
       _en ? 'All icons in one color' : 'Alle Icons in einer Farbe';

@@ -118,12 +118,21 @@ class FoldersController extends ValueNotifier<List<LauncherFolder>> {
       : null;
 
   Future<LauncherFolder> add(String name) async {
-    final folder = LauncherFolder(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
-      name: name.trim(),
-    );
+    final folder = LauncherFolder(id: _newId(), name: name.trim());
     await _save([...value, folder]);
     return folder;
+  }
+
+  /// Ids are the creation time. If the clock hasn't advanced since the last
+  /// one - two folders created in quick succession - they would share an id
+  /// and then be renamed, refilled and deleted together, which looks exactly
+  /// like a folder vanishing on its own. Step past anything already taken.
+  String _newId() {
+    var stamp = DateTime.now().microsecondsSinceEpoch;
+    while (byId(stamp.toString()) != null) {
+      stamp++;
+    }
+    return stamp.toString();
   }
 
   Future<void> rename(String id, String name) async {

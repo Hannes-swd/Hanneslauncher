@@ -98,12 +98,23 @@ class WebAppsController extends ValueNotifier<List<WebApp>> {
 
   Future<WebApp> add({required String name, required String url}) async {
     final app = WebApp(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      id: _newId(),
       name: name.trim(),
       url: normalizeUrl(url),
     );
     await _save([...value, app]);
     return app;
+  }
+
+  /// Ids are the creation time. If the clock hasn't advanced since the last
+  /// one, two web apps would share an id and then be edited and deleted
+  /// together. Step past anything already taken.
+  String _newId() {
+    var stamp = DateTime.now().microsecondsSinceEpoch;
+    while (byId(stamp.toString()) != null) {
+      stamp++;
+    }
+    return stamp.toString();
   }
 
   Future<void> rename(String id, String name) async {

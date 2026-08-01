@@ -46,6 +46,12 @@ dependencies:
   installed_apps: ^2.1.1
   # Opens web apps (saved links / PWAs) in the browser.
   url_launcher: ^6.3.1
+  # Fetches the widgets' data sources.
+  http: ^1.2.2
+  # Supplies {{lat}}/{{lon}} so a source can follow the current location.
+  geolocator: ^13.0.2
+  # Turns those coordinates into a town name for {{ort}}.
+  geocoding: ^3.0.0
 
 dev_dependencies:
   flutter_test:
