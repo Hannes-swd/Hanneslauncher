@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'app_customize_screen.dart';
 import 'app_list_settings_screen.dart';
 import 'app_strings.dart';
 import 'clock_settings_screen.dart';
@@ -77,18 +76,6 @@ class HomeScreenSettingsScreen extends StatelessWidget {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => const ClockSettingsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.apps_outlined),
-                    title: Text(s.customizeApps),
-                    subtitle: Text(s.customizeAppsSubtitle),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const AppCustomizeScreen(),
                         ),
                       );
                     },

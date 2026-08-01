@@ -454,12 +454,15 @@ class _AppListViewState extends State<AppListView> {
     final s = AppStrings(LocaleController.instance.value);
     final query = _searchController.text.trim().toLowerCase();
     final allEntries = LauncherEntriesController.instance.entries;
-    final results = query.isEmpty
-        ? allEntries
-        : [
-            for (final entry in allEntries)
-              if (entry.name.toLowerCase().contains(query)) entry,
-          ];
+    final results = [
+      for (final entry in allEntries)
+        if (query.isEmpty || entry.name.toLowerCase().contains(query)) entry,
+    ];
+    // The controller's own list is already alphabetical - only "newest
+    // first" needs a resort here.
+    if (_settings.sortMode == AppListSortMode.newestFirst) {
+      results.sort((a, b) => b.addedAt.compareTo(a.addedAt));
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -482,6 +485,27 @@ class _AppListViewState extends State<AppListView> {
                     onChanged: (_) => setState(() {}),
                   ),
                 ),
+              ),
+              PopupMenuButton<AppListSortMode>(
+                icon: const Icon(Icons.sort),
+                tooltip: s.sortBy,
+                initialValue: _settings.sortMode,
+                onSelected: (mode) => AppListSettingsController.instance
+                    .update(_settings.copyWith(sortMode: mode)),
+                itemBuilder: (context) => [
+                  CheckedPopupMenuItem(
+                    value: AppListSortMode.alphabetical,
+                    checked: _settings.sortMode ==
+                        AppListSortMode.alphabetical,
+                    child: Text(s.sortAlphabetical),
+                  ),
+                  CheckedPopupMenuItem(
+                    value: AppListSortMode.newestFirst,
+                    checked:
+                        _settings.sortMode == AppListSortMode.newestFirst,
+                    child: Text(s.sortNewestFirst),
+                  ),
+                ],
               ),
               IconButton(
                 icon: const Icon(Icons.close),

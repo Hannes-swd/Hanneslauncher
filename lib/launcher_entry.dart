@@ -36,6 +36,18 @@ class LauncherEntry {
     return FoldersController.keyFor(folder!.id);
   }
 
+  /// When this was installed (an app) or added to the launcher (a web app or
+  /// folder) - milliseconds since epoch, so it lines up with
+  /// [AppInfo.installedTimestamp]. Used to sort "newest first".
+  int get addedAt {
+    if (app != null) return app!.installedTimestamp;
+    // Web app/folder ids are DateTime.microsecondsSinceEpoch - divided down
+    // to milliseconds, otherwise they'd always sort as newer than every
+    // installed app just from being a bigger raw number.
+    if (webApp != null) return (int.tryParse(webApp!.id) ?? 0) ~/ 1000;
+    return (int.tryParse(folder!.id) ?? 0) ~/ 1000;
+  }
+
   /// Displayed name: for installed apps this honours a rename made in the
   /// app customization screen.
   String get name {

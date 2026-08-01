@@ -57,6 +57,7 @@ class SettingsBackupService {
         'fontFamily': appList.fontFamily,
         'fontSize': appList.fontSize,
         'rowHeight': appList.rowHeight,
+        'sortMode': appList.sortMode.name,
       },
       'iconTheme': {
         'enabled': iconTheme.enabled,
@@ -174,6 +175,11 @@ class SettingsBackupService {
           fontFamily: appListJson['fontFamily'] as String? ?? '',
           fontSize: (appListJson['fontSize'] as num?)?.toDouble() ?? 16,
           rowHeight: (appListJson['rowHeight'] as num?)?.toDouble() ?? 72,
+          sortMode: _enumOr(
+            AppListSortMode.values,
+            appListJson['sortMode'],
+            AppListSortMode.alphabetical,
+          ),
         ),
       );
     }

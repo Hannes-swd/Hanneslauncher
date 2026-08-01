@@ -24,18 +24,26 @@ List<Color> get appListColorPalette => [
   ...CustomColorsController.instance.value,
 ];
 
+/// How the app list's flat view (search, or the search icon tapped with no
+/// query) orders its entries. The letter-scrub grid above it stays
+/// alphabetical regardless - that's inherent to a letter index, sorting it
+/// any other way would make the bar itself meaningless.
+enum AppListSortMode { alphabetical, newestFirst }
+
 class AppListSettings {
   const AppListSettings({
     this.colorIndex = 0,
     this.fontFamily = '',
     this.fontSize = 16,
     this.rowHeight = 72,
+    this.sortMode = AppListSortMode.alphabetical,
   });
 
   final int colorIndex;
   final String fontFamily;
   final double fontSize;
   final double rowHeight;
+  final AppListSortMode sortMode;
 
   Color get color => appListColorPalette[colorIndex];
 
@@ -44,12 +52,14 @@ class AppListSettings {
     String? fontFamily,
     double? fontSize,
     double? rowHeight,
+    AppListSortMode? sortMode,
   }) {
     return AppListSettings(
       colorIndex: colorIndex ?? this.colorIndex,
       fontFamily: fontFamily ?? this.fontFamily,
       fontSize: fontSize ?? this.fontSize,
       rowHeight: rowHeight ?? this.rowHeight,
+      sortMode: sortMode ?? this.sortMode,
     );
   }
 }
@@ -65,6 +75,7 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
   static const _fontFamilyKey = 'applist_font_family';
   static const _fontSizeKey = 'applist_font_size';
   static const _rowHeightKey = 'applist_row_height';
+  static const _sortModeKey = 'applist_sort_mode';
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -73,6 +84,8 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
       fontFamily: prefs.getString(_fontFamilyKey) ?? '',
       fontSize: prefs.getDouble(_fontSizeKey) ?? 16,
       rowHeight: prefs.getDouble(_rowHeightKey) ?? 72,
+      sortMode:
+          AppListSortMode.values[prefs.getInt(_sortModeKey) ?? 0],
     );
   }
 
@@ -83,5 +96,6 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
     await prefs.setString(_fontFamilyKey, newValue.fontFamily);
     await prefs.setDouble(_fontSizeKey, newValue.fontSize);
     await prefs.setDouble(_rowHeightKey, newValue.rowHeight);
+    await prefs.setInt(_sortModeKey, newValue.sortMode.index);
   }
 }

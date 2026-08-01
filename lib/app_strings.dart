@@ -27,6 +27,10 @@ class AppStrings {
   String get searchApps => _en ? 'Search apps' : 'App suchen';
   String get noSearchResults =>
       _en ? 'No app found' : 'Keine App gefunden';
+  String get sortBy => _en ? 'Sort' : 'Sortieren';
+  String get sortAlphabetical => _en ? 'A to Z' : 'Alphabetisch';
+  String get sortNewestFirst =>
+      _en ? 'Newest first' : 'Neueste zuerst';
   String get textColor => _en ? 'Text color' : 'Textfarbe';
   String get font => _en ? 'Font' : 'Schriftart';
   String get fontStandard => _en ? 'Default' : 'Standard';
@@ -90,6 +94,10 @@ class AppStrings {
   String get changeIcon => _en ? 'Change icon' : 'Icon ändern';
   String get changeName => _en ? 'Change name' : 'Namen ändern';
   String get resetApp => _en ? 'Reset' : 'Zurücksetzen';
+  String get uninstallApp => _en ? 'Uninstall' : 'Deinstallieren';
+  String get uninstallFailed => _en
+      ? 'Could not uninstall this app'
+      : 'App konnte nicht deinstalliert werden';
   String get cancel => _en ? 'Cancel' : 'Abbrechen';
   String get save => _en ? 'Save' : 'Speichern';
   String get nameLabel => _en ? 'Name' : 'Name';

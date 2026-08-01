@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'app_customize_screen.dart';
 import 'app_strings.dart';
 import 'locale_controller.dart';
 import 'settings_backup_screen.dart';
@@ -47,6 +48,18 @@ class SystemSettingsScreen extends StatelessWidget {
                 onTap: () => LocaleController.instance.update(AppLanguage.en),
               ),
               const Divider(height: 32),
+              ListTile(
+                leading: const Icon(Icons.apps_outlined),
+                title: Text(s.customizeApps),
+                subtitle: Text(s.customizeAppsSubtitle),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const AppCustomizeScreen(),
+                    ),
+                  );
+                },
+              ),
               ListTile(
                 leading: const Icon(Icons.save_outlined),
                 title: Text(s.backup),

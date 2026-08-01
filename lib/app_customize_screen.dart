@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:installed_apps/app_info.dart';
+import 'package:installed_apps/installed_apps.dart';
 
 import 'app_icon.dart';
 import 'app_overrides_controller.dart';
@@ -11,8 +12,9 @@ import 'text_prompt_dialog.dart';
 import 'web_apps_controller.dart';
 
 /// Lists everything that appears in the app list - installed apps and saved
-/// web apps - and lets each one be given its own icon and name. Changes show
-/// up everywhere the entry is used (app list and pinned apps).
+/// web apps - and lets each one be given its own icon and name, or an
+/// installed app be uninstalled. Changes show up everywhere the entry is
+/// used (app list and pinned apps).
 class AppCustomizeScreen extends StatefulWidget {
   const AppCustomizeScreen({super.key});
 
@@ -20,7 +22,30 @@ class AppCustomizeScreen extends StatefulWidget {
   State<AppCustomizeScreen> createState() => _AppCustomizeScreenState();
 }
 
-class _AppCustomizeScreenState extends State<AppCustomizeScreen> {
+class _AppCustomizeScreenState extends State<AppCustomizeScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // The system's own uninstall confirmation runs in front of this screen -
+  // by the time the app is foregrounded again, whatever the user decided has
+  // already happened, so this is the moment to find out whether the app is
+  // still there.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      LauncherEntriesController.instance.load();
+    }
+  }
   /// Web apps first: there are only a handful of them and they'd be tedious
   /// to find among hundreds of packages otherwise. Folders are left out -
   /// they get their own screen, where their contents are editable too.
@@ -56,6 +81,13 @@ class _AppCustomizeScreenState extends State<AppCustomizeScreen> {
               _option(context, Icons.delete_outline, s.remove, 'remove'),
             if (hasOverride)
               _option(context, Icons.restore, s.resetApp, 'reset'),
+            if (entry.app != null)
+              _option(
+                context,
+                Icons.delete_forever_outlined,
+                s.uninstallApp,
+                'uninstall',
+              ),
           ],
         );
       },
@@ -90,6 +122,16 @@ class _AppCustomizeScreenState extends State<AppCustomizeScreen> {
         );
       case 'reset':
         await controller.reset(app.packageName);
+      case 'uninstall':
+        // Fires the system's own uninstall confirmation; whatever the user
+        // decides there is picked up in didChangeAppLifecycleState once this
+        // screen is foregrounded again, not here.
+        final started = await InstalledApps.uninstallApp(app.packageName);
+        if (started != true && mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(s.uninstallFailed)));
+        }
     }
   }
 
