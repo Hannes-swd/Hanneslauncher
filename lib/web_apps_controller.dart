@@ -184,6 +184,9 @@ class WebAppsController extends ValueNotifier<List<WebApp>> {
     ]);
   }
 
+  /// Replaces every web app wholesale - used to restore a settings backup.
+  Future<void> replaceAll(List<WebApp> apps) => _save(apps);
+
   Future<void> _save(List<WebApp> apps) async {
     value = apps;
     final prefs = await SharedPreferences.getInstance();

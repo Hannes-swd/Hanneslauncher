@@ -218,6 +218,9 @@ class FoldersController extends ValueNotifier<List<LauncherFolder>> {
     ]);
   }
 
+  /// Replaces every folder wholesale - used to restore a settings backup.
+  Future<void> replaceAll(List<LauncherFolder> folders) => _save(folders);
+
   Future<void> _save(List<LauncherFolder> folders) async {
     value = folders;
     final prefs = await SharedPreferences.getInstance();

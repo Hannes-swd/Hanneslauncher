@@ -250,6 +250,9 @@ class PanelBlocksController extends ValueNotifier<List<PanelBlock>> {
     ]);
   }
 
+  /// Replaces every block wholesale - used to restore a settings backup.
+  Future<void> replaceAll(List<PanelBlock> blocks) => _save(blocks);
+
   /// Moves a block, taking [oldIndex]/[newIndex] exactly as
   /// `ReorderableListView.onReorder` reports them.
   Future<void> reorder(int oldIndex, int newIndex) async {

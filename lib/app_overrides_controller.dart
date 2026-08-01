@@ -116,6 +116,28 @@ class AppOverridesController extends ValueNotifier<Map<String, AppOverride>> {
     await _write(packageName, const AppOverride());
   }
 
+  /// Restores just the renames from a settings backup. Icons aren't part of
+  /// a backup (their files live in this install's private storage and
+  /// wouldn't exist in whatever restores it), so any icon already set here
+  /// is left untouched.
+  Future<void> restoreNames(Map<String, String> names) async {
+    final updated = Map<String, AppOverride>.from(value);
+    for (final entry in names.entries) {
+      updated[entry.key] = AppOverride(
+        name: entry.value,
+        iconPath: updated[entry.key]?.iconPath,
+      );
+    }
+    value = updated;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _key,
+      jsonEncode({
+        for (final entry in updated.entries) entry.key: entry.value.toJson(),
+      }),
+    );
+  }
+
   Future<void> _write(String packageName, AppOverride override) async {
     final updated = Map<String, AppOverride>.from(value);
     if (override.isEmpty) {

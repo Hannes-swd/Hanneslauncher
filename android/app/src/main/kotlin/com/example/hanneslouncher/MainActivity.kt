@@ -1,6 +1,7 @@
 package com.example.hanneslouncher
 
 import android.Manifest
+import android.app.Activity
 import android.content.ContentUris
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -10,21 +11,26 @@ import android.os.Build
 import android.provider.CalendarContract
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.File
 
 class MainActivity : FlutterActivity() {
     private val gestureChannelName = "hanneslouncher/system_gestures"
     private val calendarChannelName = "hanneslouncher/calendar"
     private val systemAppsChannelName = "hanneslouncher/system_apps"
+    private val backupChannelName = "hanneslouncher/backup"
     private val calendarPermissionRequestCode = 4201
+    private val importFileRequestCode = 4202
 
     // A plugin (device_calendar) returning every field as null on some
     // Android versions is what this replaces - reading Android's own
     // CalendarContract directly, with no library in between to disagree
     // with the platform about column types.
     private var pendingPermissionResult: MethodChannel.Result? = null
+    private var pendingImportResult: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -111,6 +117,68 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        // A settings backup as a real file, so it can go through Android's
+        // own share sheet (Drive, email, Files, ...) and come back the same
+        // way - rather than a plugin dependency for the one-off job of
+        // sending/picking a single file.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, backupChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "export" -> {
+                        val json = call.argument<String>("json")
+                        result.success(if (json == null) false else exportAndShare(json))
+                    }
+                    "import" -> {
+                        pendingImportResult?.success(null)
+                        pendingImportResult = result
+                        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                            type = "*/*"
+                        }
+                        startActivityForResult(intent, importFileRequestCode)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    private fun exportAndShare(json: String): Boolean {
+        return try {
+            val backupDir = File(filesDir, "backup")
+            if (!backupDir.exists()) backupDir.mkdirs()
+            val file = File(backupDir, "hanneslouncher_backup.json")
+            file.writeText(json)
+            val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/json"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(intent, null))
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == importFileRequestCode) {
+            val result = pendingImportResult
+            pendingImportResult = null
+            val uri = data?.data
+            if (resultCode != Activity.RESULT_OK || uri == null) {
+                result?.success(null)
+                return
+            }
+            try {
+                val text = contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                result?.success(text)
+            } catch (e: Exception) {
+                result?.success(null)
+            }
+        }
     }
 
     private fun startIfResolvable(intent: Intent): Boolean {

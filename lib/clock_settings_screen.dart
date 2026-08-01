@@ -34,6 +34,24 @@ class ClockSettingsScreen extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                     child: Text(
+                      s.position,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
+                  Opacity(
+                    opacity: settings.enabled ? 1 : 0.4,
+                    child: IgnorePointer(
+                      ignoring: !settings.enabled,
+                      child: _PositionSettings(settings: settings, s: s),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Text(
                       s.style,
                       style: const TextStyle(
                         fontSize: 14,
@@ -139,6 +157,79 @@ class ClockSettingsScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _PositionSettings extends StatelessWidget {
+  const _PositionSettings({required this.settings, required this.s});
+
+  final ClockSettings settings;
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    final centered = settings.alignment == ClockAlignment.center;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8,
+            children: [
+              ChoiceChip(
+                label: Text(s.alignLeft),
+                selected: settings.alignment == ClockAlignment.left,
+                onSelected: (_) => ClockSettingsController.instance.update(
+                  settings.copyWith(alignment: ClockAlignment.left),
+                ),
+              ),
+              ChoiceChip(
+                label: Text(s.alignCenter),
+                selected: centered,
+                onSelected: (_) => ClockSettingsController.instance.update(
+                  settings.copyWith(alignment: ClockAlignment.center),
+                ),
+              ),
+              ChoiceChip(
+                label: Text(s.alignRight),
+                selected: settings.alignment == ClockAlignment.right,
+                onSelected: (_) => ClockSettingsController.instance.update(
+                  settings.copyWith(alignment: ClockAlignment.right),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _Label(s.distanceFromTop(settings.topPadding.round())),
+          Slider(
+            value: settings.topPadding,
+            min: 0,
+            max: 200,
+            divisions: 40,
+            onChanged: (value) => ClockSettingsController.instance.update(
+              settings.copyWith(topPadding: value),
+            ),
+          ),
+          // Meaningless while centered - there's no edge it's pushed
+          // against yet.
+          if (!centered) ...[
+            const SizedBox(height: 8),
+            _Label(s.distanceFromSide(settings.sidePadding.round())),
+            Slider(
+              value: settings.sidePadding,
+              min: 0,
+              max: 150,
+              divisions: 30,
+              onChanged: (value) => ClockSettingsController.instance.update(
+                settings.copyWith(sidePadding: value),
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+        ],
+      ),
     );
   }
 }

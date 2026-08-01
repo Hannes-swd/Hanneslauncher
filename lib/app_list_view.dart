@@ -221,7 +221,35 @@ class _AppListViewState extends State<AppListView> {
               // edge happened to be instead of a spot the user picks.
               return Column(
                 children: [
-                  Center(
+                  ValueListenableBuilder<ClockSettings>(
+                    valueListenable: ClockSettingsController.instance,
+                    builder: (context, settings, child) {
+                      // Always anchored to the top - only how far down and
+                      // how far to the side is adjustable.
+                      final alignment = switch (settings.alignment) {
+                        ClockAlignment.left => Alignment.topLeft,
+                        ClockAlignment.center => Alignment.topCenter,
+                        ClockAlignment.right => Alignment.topRight,
+                      };
+                      return Padding(
+                        padding: EdgeInsets.only(top: settings.topPadding),
+                        child: Align(
+                          alignment: alignment,
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              left: settings.alignment == ClockAlignment.left
+                                  ? settings.sidePadding
+                                  : 0,
+                              right:
+                                  settings.alignment == ClockAlignment.right
+                                  ? settings.sidePadding
+                                  : 0,
+                            ),
+                            child: child,
+                          ),
+                        ),
+                      );
+                    },
                     // deferToChild: only the clock's own painted area
                     // reacts, so touches beside it fall through to what's
                     // underneath.

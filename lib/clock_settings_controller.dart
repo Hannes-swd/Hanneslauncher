@@ -5,6 +5,10 @@ import 'app_list_settings_controller.dart' show appListColorPalette;
 
 enum ClockStyle { digital, word, roman, bars }
 
+/// Horizontal position on the home screen. Always anchored to the top -
+/// there's no bottom option, only how far down from the top it sits.
+enum ClockAlignment { left, center, right }
+
 class ClockSettings {
   const ClockSettings({
     this.enabled = true,
@@ -19,10 +23,21 @@ class ClockSettings {
     this.barsUnfilledColorIndex = 0,
     this.barsUnfilledOpacity = 0.12,
     this.barsTextColorIndex = 0,
+    this.alignment = ClockAlignment.center,
+    this.topPadding = 0,
+    this.sidePadding = 16,
   });
 
   final bool enabled;
   final ClockStyle style;
+
+  // Where the clock sits: always top-anchored, but movable left/right and
+  // further down from the top.
+  final ClockAlignment alignment;
+  final double topPadding;
+  // Only used when not centered - the gap to whichever edge it's pushed
+  // against.
+  final double sidePadding;
 
   // Word clock appearance, independent of the wallpaper/app list colors so
   // choosing a theme elsewhere doesn't force the clock into the same color.
@@ -70,6 +85,9 @@ class ClockSettings {
     int? barsUnfilledColorIndex,
     double? barsUnfilledOpacity,
     int? barsTextColorIndex,
+    ClockAlignment? alignment,
+    double? topPadding,
+    double? sidePadding,
   }) {
     return ClockSettings(
       enabled: enabled ?? this.enabled,
@@ -87,6 +105,9 @@ class ClockSettings {
           barsUnfilledColorIndex ?? this.barsUnfilledColorIndex,
       barsUnfilledOpacity: barsUnfilledOpacity ?? this.barsUnfilledOpacity,
       barsTextColorIndex: barsTextColorIndex ?? this.barsTextColorIndex,
+      alignment: alignment ?? this.alignment,
+      topPadding: topPadding ?? this.topPadding,
+      sidePadding: sidePadding ?? this.sidePadding,
     );
   }
 }
@@ -110,6 +131,9 @@ class ClockSettingsController extends ValueNotifier<ClockSettings> {
   static const _barsUnfilledColorKey = 'clock_bars_unfilled_color';
   static const _barsUnfilledOpacityKey = 'clock_bars_unfilled_opacity';
   static const _barsTextColorKey = 'clock_bars_text_color';
+  static const _alignmentKey = 'clock_alignment';
+  static const _topPaddingKey = 'clock_top_padding';
+  static const _sidePaddingKey = 'clock_side_padding';
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -126,6 +150,9 @@ class ClockSettingsController extends ValueNotifier<ClockSettings> {
       barsUnfilledColorIndex: prefs.getInt(_barsUnfilledColorKey) ?? 0,
       barsUnfilledOpacity: prefs.getDouble(_barsUnfilledOpacityKey) ?? 0.12,
       barsTextColorIndex: prefs.getInt(_barsTextColorKey) ?? 0,
+      alignment: ClockAlignment.values[prefs.getInt(_alignmentKey) ?? 1],
+      topPadding: prefs.getDouble(_topPaddingKey) ?? 0,
+      sidePadding: prefs.getDouble(_sidePaddingKey) ?? 16,
     );
   }
 
@@ -153,5 +180,8 @@ class ClockSettingsController extends ValueNotifier<ClockSettings> {
       newValue.barsUnfilledOpacity,
     );
     await prefs.setInt(_barsTextColorKey, newValue.barsTextColorIndex);
+    await prefs.setInt(_alignmentKey, newValue.alignment.index);
+    await prefs.setDouble(_topPaddingKey, newValue.topPadding);
+    await prefs.setDouble(_sidePaddingKey, newValue.sidePadding);
   }
 }

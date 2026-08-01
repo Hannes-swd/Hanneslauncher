@@ -46,6 +46,15 @@ class AppStrings {
   String get custom => 'Custom';
   String get roman => _en ? 'Roman numerals' : 'Römische Zahlen';
   String get bars => _en ? 'Bars' : 'Balken';
+  String get position => _en ? 'Position' : 'Position';
+  String get alignLeft => _en ? 'Left' : 'Links';
+  String get alignCenter => _en ? 'Center' : 'Mittig';
+  String get alignRight => _en ? 'Right' : 'Rechts';
+  String distanceFromTop(int pixels) =>
+      _en ? 'Distance from top ($pixels)' : 'Abstand von oben ($pixels)';
+  String distanceFromSide(int pixels) => _en
+      ? 'Distance from edge ($pixels)'
+      : 'Abstand vom Rand ($pixels)';
   String get appearanceCustom => _en ? 'Appearance' : 'Aussehen';
   String get backgroundColor =>
       _en ? 'Background color' : 'Hintergrundfarbe';
@@ -286,4 +295,33 @@ class AppStrings {
   String get languageSubtitle => _en ? 'App language' : 'App-Sprache';
   String get german => 'Deutsch';
   String get english => 'English';
+
+  String get backup => _en ? 'Backup' : 'Sicherung';
+  String get backupSubtitle => _en
+      ? 'Export or import all settings as a file'
+      : 'Alle Einstellungen als Datei exportieren oder importieren';
+  String get backupHint => _en
+      ? 'Exports the clock, widgets, panel, pinned apps, folders, web apps, '
+            'data sources, app renames and language into one file. Custom '
+            'pictures (wallpaper, replaced icons) aren\'t included - their '
+            'files stay behind on this install.'
+      : 'Exportiert Uhr, Widgets, Panel, angepinnte Apps, Ordner, Web-Apps, '
+            'Datenquellen, App-Umbenennungen und Sprache in eine Datei. '
+            'Eigene Bilder (Hintergrund, ersetzte Icons) sind nicht '
+            'enthalten - deren Dateien bleiben auf diesem Gerät.';
+  String get backupExport => _en ? 'Export' : 'Exportieren';
+  String get backupImport => _en ? 'Import' : 'Importieren';
+  String get backupImportConfirm => _en
+      ? 'This replaces all current settings with the ones from the file. '
+            'Continue?'
+      : 'Das ersetzt alle aktuellen Einstellungen durch die aus der Datei. '
+            'Fortfahren?';
+  String get backupExportFailed => _en
+      ? 'Couldn\'t create or share the backup file'
+      : 'Sicherungsdatei konnte nicht erstellt oder geteilt werden';
+  String get backupImportSuccess =>
+      _en ? 'Settings imported' : 'Einstellungen importiert';
+  String get backupImportFailed => _en
+      ? 'Not a readable backup file'
+      : 'Keine lesbare Sicherungsdatei';
 }

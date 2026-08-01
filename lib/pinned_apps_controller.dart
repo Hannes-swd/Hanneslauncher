@@ -55,6 +55,14 @@ class PinnedAppsController extends ValueNotifier<List<String>> {
     await prefs.setStringList(_key, value);
     return true;
   }
+
+  /// Replaces the whole pinned list wholesale - used to restore a settings
+  /// backup. Capped at [maxPinned] the same way [toggle] enforces it live.
+  Future<void> restore(List<String> keys) async {
+    value = keys.take(maxPinned).toList();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_key, value);
+  }
 }
 
 /// How far the pinned apps sit from the left edge of the screen. Kept

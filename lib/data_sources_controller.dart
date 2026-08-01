@@ -612,6 +612,12 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
     );
   }
 
+  /// Replaces every source wholesale, keeping their caches - used to
+  /// restore a settings backup. Doesn't touch [_data]/[_bodies]/[_fetchedAt]:
+  /// anything still matching an id keeps showing its last value until the
+  /// next refresh, exactly like a normal restart would.
+  Future<void> replaceAll(List<DataSource> sources) => _save(sources);
+
   Future<void> _save(List<DataSource> sources) async {
     value = sources;
     final prefs = await SharedPreferences.getInstance();

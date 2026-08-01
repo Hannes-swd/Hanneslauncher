@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_strings.dart';
 import 'locale_controller.dart';
+import 'settings_backup_screen.dart';
 
 class SystemSettingsScreen extends StatelessWidget {
   const SystemSettingsScreen({super.key});
@@ -44,6 +45,19 @@ class SystemSettingsScreen extends StatelessWidget {
                       : Icons.radio_button_off,
                 ),
                 onTap: () => LocaleController.instance.update(AppLanguage.en),
+              ),
+              const Divider(height: 32),
+              ListTile(
+                leading: const Icon(Icons.save_outlined),
+                title: Text(s.backup),
+                subtitle: Text(s.backupSubtitle),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const SettingsBackupScreen(),
+                    ),
+                  );
+                },
               ),
             ],
           ),
