@@ -1,8 +1,11 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart' show Color;
+
 import 'app_list_settings_controller.dart';
 import 'app_overrides_controller.dart';
 import 'clock_settings_controller.dart';
+import 'custom_colors_controller.dart';
 import 'data_sources_controller.dart';
 import 'folders_controller.dart';
 import 'icon_theme_controller.dart';
@@ -81,6 +84,14 @@ class SettingsBackupService {
         for (final source in DataSourcesController.instance.value)
           source.toJson(),
       ],
+      // Colors are stored everywhere as an index into the base palette plus
+      // these - restoring them first is what keeps a `colorIndex` above 6
+      // pointing at the right color instead of throwing or landing on
+      // whatever now happens to sit at that index.
+      'customColors': [
+        for (final color in CustomColorsController.instance.value)
+          color.toARGB32(),
+      ],
     };
   }
 
@@ -99,6 +110,16 @@ class SettingsBackupService {
     }
     if (decoded is! Map<String, dynamic> || decoded['formatVersion'] == null) {
       throw const FormatException('Not a hanneslouncher backup file');
+    }
+
+    // First: every `colorIndex` below references this list (appended after
+    // the fixed base palette), so it has to be in place before anything
+    // that reads one is restored.
+    final customColorsJson = decoded['customColors'] as List<dynamic>?;
+    if (customColorsJson != null) {
+      await CustomColorsController.instance.restore([
+        for (final value in customColorsJson) Color(value as int),
+      ]);
     }
 
     final localeName = decoded['locale'] as String?;

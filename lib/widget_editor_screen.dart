@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'app_icon.dart';
-import 'app_list_settings_controller.dart' show appListColorPalette;
 import 'app_strings.dart';
+import 'color_swatch_picker.dart';
 import 'data_sources_controller.dart';
 import 'data_sources_settings_screen.dart';
 import 'launcher_entries_controller.dart';
@@ -596,32 +596,13 @@ class ElementEditorScreen extends StatelessWidget {
                       ),
                     ),
                     _sectionLabel(s.colorLabel),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        for (var i = 0; i < appListColorPalette.length; i++)
-                          GestureDetector(
-                            onTap: () => _update(
-                              block,
-                              element.copyWith(colorIndex: i),
-                            ),
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: appListColorPalette[i],
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: i == element.colorIndex
-                                      ? Colors.black
-                                      : Colors.black26,
-                                  width: i == element.colorIndex ? 3 : 1,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+                    ColorSwatchPicker(
+                      s: s,
+                      selectedIndex: element.colorIndex,
+                      onSelected: (i) => _update(
+                        block,
+                        element.copyWith(colorIndex: i),
+                      ),
                     ),
                   ],
 
@@ -654,32 +635,13 @@ class ElementEditorScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     _sectionLabel(s.colorLabel),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        for (var i = 0; i < appListColorPalette.length; i++)
-                          GestureDetector(
-                            onTap: () => _update(
-                              block,
-                              element.copyWith(colorIndex: i),
-                            ),
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: appListColorPalette[i],
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: i == element.colorIndex
-                                      ? Colors.black
-                                      : Colors.black26,
-                                  width: i == element.colorIndex ? 3 : 1,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+                    ColorSwatchPicker(
+                      s: s,
+                      selectedIndex: element.colorIndex,
+                      onSelected: (i) => _update(
+                        block,
+                        element.copyWith(colorIndex: i),
+                      ),
                     ),
                   ],
 

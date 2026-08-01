@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'app_icon.dart';
-import 'app_list_settings_controller.dart' show appListColorPalette;
 import 'app_strings.dart';
+import 'color_swatch_picker.dart';
 import 'icon_theme_controller.dart';
 import 'launcher_entries_controller.dart';
 import 'locale_controller.dart';
@@ -44,39 +44,18 @@ class IconThemeSettingsScreen extends StatelessWidget {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        for (var i = 0; i < appListColorPalette.length; i++)
-                          GestureDetector(
-                            onTap: () {
-                              // Picking a color also switches the theme on -
-                              // choosing one and seeing nothing happen would
-                              // just be confusing.
-                              IconThemeController.instance.update(
-                                iconTheme.copyWith(
-                                  colorIndex: i,
-                                  enabled: true,
-                                ),
-                              );
-                            },
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: appListColorPalette[i],
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: i == iconTheme.colorIndex
-                                      ? Colors.black
-                                      : Colors.black26,
-                                  width: i == iconTheme.colorIndex ? 3 : 1,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+                    child: ColorSwatchPicker(
+                      s: s,
+                      swatchSize: 40,
+                      selectedIndex: iconTheme.colorIndex,
+                      onSelected: (i) {
+                        // Picking a color also switches the theme on -
+                        // choosing one and seeing nothing happen would just
+                        // be confusing.
+                        IconThemeController.instance.update(
+                          iconTheme.copyWith(colorIndex: i, enabled: true),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 24),

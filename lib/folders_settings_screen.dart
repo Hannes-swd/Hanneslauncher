@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'app_icon.dart';
-import 'app_list_settings_controller.dart' show appListColorPalette;
 import 'app_strings.dart';
+import 'color_swatch_picker.dart';
 import 'folders_controller.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
@@ -169,31 +169,11 @@ class FolderEditScreen extends StatelessWidget {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Wrap(
-                      spacing: 12,
-                      children: [
-                        for (var i = 0; i < appListColorPalette.length; i++)
-                          GestureDetector(
-                            onTap: () => FoldersController.instance.setColor(
-                              folder.id,
-                              i,
-                            ),
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: appListColorPalette[i],
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: i == folder.colorIndex
-                                      ? Colors.black
-                                      : Colors.black26,
-                                  width: i == folder.colorIndex ? 3 : 1,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+                    child: ColorSwatchPicker(
+                      s: s,
+                      selectedIndex: folder.colorIndex,
+                      onSelected: (i) =>
+                          FoldersController.instance.setColor(folder.id, i),
                     ),
                   ),
                   Padding(

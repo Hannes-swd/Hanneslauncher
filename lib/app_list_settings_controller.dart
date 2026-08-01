@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Selectable text colors for the app list. Stored as an index into this
-/// fixed palette rather than a raw ARGB value, to keep persistence simple.
-const List<Color> appListColorPalette = [
+import 'custom_colors_controller.dart';
+
+/// The fixed colors every color picker starts out with.
+const List<Color> _baseColorPalette = [
   Colors.black,
   Colors.white,
   Color(0xFF37474F), // blue grey
@@ -11,6 +12,16 @@ const List<Color> appListColorPalette = [
   Color(0xFF2E7D32), // green
   Color(0xFF6A1B9A), // purple
   Color(0xFFC62828), // red
+];
+
+/// Selectable colors everywhere in the app: the fixed base palette, plus
+/// whatever the user has added themselves through a color picker's "+".
+/// Stored as an index into this (rather than a raw ARGB value) to keep
+/// persistence simple - which is also why colors are only ever appended,
+/// never removed: removing one would shift every index after it.
+List<Color> get appListColorPalette => [
+  ..._baseColorPalette,
+  ...CustomColorsController.instance.value,
 ];
 
 class AppListSettings {

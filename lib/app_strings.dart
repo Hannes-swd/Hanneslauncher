@@ -324,4 +324,6 @@ class AppStrings {
   String get backupImportFailed => _en
       ? 'Not a readable backup file'
       : 'Keine lesbare Sicherungsdatei';
+
+  String get addColor => _en ? 'Add color' : 'Farbe hinzufügen';
 }

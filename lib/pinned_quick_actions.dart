@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'app_list_settings_controller.dart' show appListColorPalette;
 import 'app_overrides_controller.dart';
 import 'app_strings.dart';
+import 'color_swatch_picker.dart';
 import 'folders_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
@@ -58,32 +58,14 @@ Future<void> _pickFolderColor(
     builder: (context) {
       return AlertDialog(
         title: Text(s.folderColor),
-        content: Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            for (var i = 0; i < appListColorPalette.length; i++)
-              GestureDetector(
-                onTap: () {
-                  FoldersController.instance.setColor(folder.id, i);
-                  Navigator.of(context).pop();
-                },
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: appListColorPalette[i],
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: i == folder.colorIndex
-                          ? Colors.black
-                          : Colors.black26,
-                      width: i == folder.colorIndex ? 3 : 1,
-                    ),
-                  ),
-                ),
-              ),
-          ],
+        content: ColorSwatchPicker(
+          s: s,
+          swatchSize: 40,
+          selectedIndex: folder.colorIndex,
+          onSelected: (i) {
+            FoldersController.instance.setColor(folder.id, i);
+            Navigator.of(context).pop();
+          },
         ),
       );
     },

@@ -8,6 +8,7 @@ import 'app_list_settings_controller.dart';
 import 'app_strings.dart';
 import 'clock_settings_controller.dart';
 import 'clock_widget.dart';
+import 'custom_colors_controller.dart';
 import 'folder_sheet.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
@@ -76,6 +77,7 @@ class _AppListViewState extends State<AppListView> {
     LauncherEntriesController.instance.addListener(_onEntriesChanged);
     AppListSettingsController.instance.load();
     AppListSettingsController.instance.addListener(_onSettingsChanged);
+    CustomColorsController.instance.load();
     ClockSettingsController.instance.load();
     PinnedAppsController.instance.load();
     PinnedAppsLayoutController.instance.load();

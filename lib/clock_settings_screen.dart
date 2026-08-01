@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'app_list_settings_controller.dart' show appListColorPalette;
 import 'app_strings.dart';
 import 'clock_settings_controller.dart';
 import 'clock_widget.dart';
+import 'color_swatch_picker.dart';
 import 'locale_controller.dart';
 
 class ClockSettingsScreen extends StatelessWidget {
@@ -246,7 +246,8 @@ class _DigitalAppearance extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _Label(s.textColor),
-        _ColorSwatchRow(
+        ColorSwatchPicker(
+          s: s,
           selectedIndex: settings.digitalColorIndex,
           onSelected: (i) {
             ClockSettingsController.instance.update(
@@ -272,7 +273,8 @@ class _RomanAppearance extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _Label(s.textColor),
-        _ColorSwatchRow(
+        ColorSwatchPicker(
+          s: s,
           selectedIndex: settings.romanColorIndex,
           onSelected: (i) {
             ClockSettingsController.instance.update(
@@ -298,7 +300,8 @@ class _BarsAppearance extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _Label(s.barsFilledColor),
-        _ColorSwatchRow(
+        ColorSwatchPicker(
+          s: s,
           selectedIndex: settings.barsFilledColorIndex,
           onSelected: (i) {
             ClockSettingsController.instance.update(
@@ -308,7 +311,8 @@ class _BarsAppearance extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _Label(s.barsUnfilledColor),
-        _ColorSwatchRow(
+        ColorSwatchPicker(
+          s: s,
           selectedIndex: settings.barsUnfilledColorIndex,
           onSelected: (i) {
             ClockSettingsController.instance.update(
@@ -335,7 +339,8 @@ class _BarsAppearance extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         _Label(s.barsTextColor),
-        _ColorSwatchRow(
+        ColorSwatchPicker(
+          s: s,
           selectedIndex: settings.barsTextColorIndex,
           onSelected: (i) {
             ClockSettingsController.instance.update(
@@ -361,7 +366,8 @@ class _WordAppearance extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _Label(s.backgroundColor),
-        _ColorSwatchRow(
+        ColorSwatchPicker(
+          s: s,
           selectedIndex: settings.wordBgColorIndex,
           onSelected: (i) {
             ClockSettingsController.instance.update(
@@ -384,7 +390,8 @@ class _WordAppearance extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         _Label(s.activeLetters),
-        _ColorSwatchRow(
+        ColorSwatchPicker(
+          s: s,
           selectedIndex: settings.wordActiveColorIndex,
           onSelected: (i) {
             ClockSettingsController.instance.update(
@@ -394,7 +401,8 @@ class _WordAppearance extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _Label(s.inactiveLetters),
-        _ColorSwatchRow(
+        ColorSwatchPicker(
+          s: s,
           selectedIndex: settings.wordInactiveColorIndex,
           onSelected: (i) {
             ClockSettingsController.instance.update(
@@ -425,37 +433,6 @@ class _Label extends StatelessWidget {
   }
 }
 
-class _ColorSwatchRow extends StatelessWidget {
-  const _ColorSwatchRow({required this.selectedIndex, required this.onSelected});
-
-  final int selectedIndex;
-  final ValueChanged<int> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      children: [
-        for (var i = 0; i < appListColorPalette.length; i++)
-          GestureDetector(
-            onTap: () => onSelected(i),
-            child: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: appListColorPalette[i],
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: i == selectedIndex ? Colors.black : Colors.black26,
-                  width: i == selectedIndex ? 3 : 1,
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
 
 class _StyleOption extends StatelessWidget {
   const _StyleOption({

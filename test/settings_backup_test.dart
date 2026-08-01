@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart' show Color;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hanneslouncher/app_list_settings_controller.dart';
 import 'package:hanneslouncher/app_overrides_controller.dart';
 import 'package:hanneslouncher/clock_settings_controller.dart';
+import 'package:hanneslouncher/custom_colors_controller.dart';
 import 'package:hanneslouncher/data_sources_controller.dart';
 import 'package:hanneslouncher/folders_controller.dart';
 import 'package:hanneslouncher/icon_theme_controller.dart';
@@ -66,6 +68,9 @@ void main() {
     ]);
     await PinnedAppsController.instance.restore(['com.example.mail']);
     await PinnedAppsLayoutController.instance.setLeftMargin(42);
+    await CustomColorsController.instance.restore([
+      const Color(0xFF123456),
+    ]);
 
     final exported = SettingsBackupService.exportJson();
 
@@ -81,6 +86,7 @@ void main() {
     await DataSourcesController.instance.replaceAll([]);
     await PinnedAppsController.instance.restore([]);
     await PinnedAppsLayoutController.instance.setLeftMargin(16);
+    await CustomColorsController.instance.restore([]);
 
     await SettingsBackupService.apply(exported);
 
@@ -118,6 +124,10 @@ void main() {
     expect(DataSourcesController.instance.value.single.key, 'wetter');
     expect(PinnedAppsController.instance.value, ['com.example.mail']);
     expect(PinnedAppsLayoutController.instance.value, 42);
+    expect(
+      CustomColorsController.instance.value,
+      [const Color(0xFF123456)],
+    );
   });
 
   test('apply rejects anything that is not a backup file', () async {

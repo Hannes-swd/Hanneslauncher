@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_list_settings_controller.dart';
 import 'app_strings.dart';
+import 'color_swatch_picker.dart';
 import 'locale_controller.dart';
 
 class AppListSettingsScreen extends StatelessWidget {
@@ -24,7 +25,15 @@ class AppListSettingsScreen extends StatelessWidget {
                   _PreviewRow(settings: settings, s: s),
                   const SizedBox(height: 24),
                   _SectionLabel(s.textColor),
-                  _ColorPicker(settings: settings),
+                  ColorSwatchPicker(
+                    s: s,
+                    selectedIndex: settings.colorIndex,
+                    onSelected: (i) {
+                      AppListSettingsController.instance.update(
+                        settings.copyWith(colorIndex: i),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 24),
                   _SectionLabel(s.font),
                   _FontFamilyPicker(settings: settings, s: s),
@@ -113,43 +122,6 @@ class _PreviewRow extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _ColorPicker extends StatelessWidget {
-  const _ColorPicker({required this.settings});
-
-  final AppListSettings settings;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      children: [
-        for (var i = 0; i < appListColorPalette.length; i++)
-          GestureDetector(
-            onTap: () {
-              AppListSettingsController.instance.update(
-                settings.copyWith(colorIndex: i),
-              );
-            },
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: appListColorPalette[i],
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: i == settings.colorIndex
-                      ? Colors.black
-                      : Colors.black26,
-                  width: i == settings.colorIndex ? 3 : 1,
-                ),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }
