@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_list_settings_controller.dart' show appListColorPalette;
 
-enum ClockStyle { digital, word, roman, bars }
+enum ClockStyle { digital, word, roman, bars, dotMatrix }
 
 /// Horizontal position on the home screen. Always anchored to the top -
 /// there's no bottom option, only how far down from the top it sits.
@@ -19,6 +19,7 @@ class ClockSettings {
     this.wordInactiveColorIndex = 0,
     this.digitalColorIndex = 0,
     this.romanColorIndex = 0,
+    this.dotColorIndex = 0,
     this.barsFilledColorIndex = 0,
     this.barsUnfilledColorIndex = 0,
     this.barsUnfilledOpacity = 0.12,
@@ -46,9 +47,11 @@ class ClockSettings {
   final int wordActiveColorIndex;
   final int wordInactiveColorIndex;
 
-  // Digital and Roman clock: the one text color each draws with.
+  // Digital, Roman and Dot Matrix clock: the one text/dot color each draws
+  // with.
   final int digitalColorIndex;
   final int romanColorIndex;
+  final int dotColorIndex;
 
   // Bars clock: filled part, empty track (plus its own opacity, since a
   // fully solid track would hide the bars sitting on the wallpaper) and the
@@ -64,6 +67,7 @@ class ClockSettings {
 
   Color get digitalColor => appListColorPalette[digitalColorIndex];
   Color get romanColor => appListColorPalette[romanColorIndex];
+  Color get dotColor => appListColorPalette[dotColorIndex];
 
   Color get barsFilledColor => appListColorPalette[barsFilledColorIndex];
   Color get barsUnfilledColor =>
@@ -81,6 +85,7 @@ class ClockSettings {
     int? wordInactiveColorIndex,
     int? digitalColorIndex,
     int? romanColorIndex,
+    int? dotColorIndex,
     int? barsFilledColorIndex,
     int? barsUnfilledColorIndex,
     double? barsUnfilledOpacity,
@@ -99,6 +104,7 @@ class ClockSettings {
           wordInactiveColorIndex ?? this.wordInactiveColorIndex,
       digitalColorIndex: digitalColorIndex ?? this.digitalColorIndex,
       romanColorIndex: romanColorIndex ?? this.romanColorIndex,
+      dotColorIndex: dotColorIndex ?? this.dotColorIndex,
       barsFilledColorIndex:
           barsFilledColorIndex ?? this.barsFilledColorIndex,
       barsUnfilledColorIndex:
@@ -127,6 +133,7 @@ class ClockSettingsController extends ValueNotifier<ClockSettings> {
   static const _wordInactiveColorKey = 'clock_word_inactive_color';
   static const _digitalColorKey = 'clock_digital_color';
   static const _romanColorKey = 'clock_roman_color';
+  static const _dotColorKey = 'clock_dot_color';
   static const _barsFilledColorKey = 'clock_bars_filled_color';
   static const _barsUnfilledColorKey = 'clock_bars_unfilled_color';
   static const _barsUnfilledOpacityKey = 'clock_bars_unfilled_opacity';
@@ -146,6 +153,7 @@ class ClockSettingsController extends ValueNotifier<ClockSettings> {
       wordInactiveColorIndex: prefs.getInt(_wordInactiveColorKey) ?? 0,
       digitalColorIndex: prefs.getInt(_digitalColorKey) ?? 0,
       romanColorIndex: prefs.getInt(_romanColorKey) ?? 0,
+      dotColorIndex: prefs.getInt(_dotColorKey) ?? 0,
       barsFilledColorIndex: prefs.getInt(_barsFilledColorKey) ?? 0,
       barsUnfilledColorIndex: prefs.getInt(_barsUnfilledColorKey) ?? 0,
       barsUnfilledOpacity: prefs.getDouble(_barsUnfilledOpacityKey) ?? 0.12,
@@ -170,6 +178,7 @@ class ClockSettingsController extends ValueNotifier<ClockSettings> {
     );
     await prefs.setInt(_digitalColorKey, newValue.digitalColorIndex);
     await prefs.setInt(_romanColorKey, newValue.romanColorIndex);
+    await prefs.setInt(_dotColorKey, newValue.dotColorIndex);
     await prefs.setInt(_barsFilledColorKey, newValue.barsFilledColorIndex);
     await prefs.setInt(
       _barsUnfilledColorKey,

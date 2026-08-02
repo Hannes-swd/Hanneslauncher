@@ -32,6 +32,7 @@ class ClockDisplay extends StatelessWidget {
               ClockStyle.word => const WordClock(),
               ClockStyle.roman => const RomanClock(),
               ClockStyle.bars => const BarsClock(),
+              ClockStyle.dotMatrix => const DotMatrixClock(),
             },
           ),
         );
@@ -316,6 +317,202 @@ class _Bar extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Hour and minute rendered as a classic LED-style 3x5 dot matrix. One
+/// accent color throughout - a digit's dots are either lit or dimmed, never
+/// a different color.
+class DotMatrixClock extends StatefulWidget {
+  const DotMatrixClock({super.key, this.dotSize = 8});
+
+  final double dotSize;
+
+  @override
+  State<DotMatrixClock> createState() => _DotMatrixClockState();
+}
+
+class _DotMatrixClockState extends State<DotMatrixClock> {
+  late DateTime _now = DateTime.now();
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      Future.microtask(() {
+        if (!mounted) return;
+        setState(() => _now = DateTime.now());
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hh = _now.hour.toString().padLeft(2, '0');
+    final mm = _now.minute.toString().padLeft(2, '0');
+    return ValueListenableBuilder<ClockSettings>(
+      valueListenable: ClockSettingsController.instance,
+      builder: (context, settings, child) {
+        final color = settings.dotColor;
+        final digitGap = widget.dotSize * 0.7;
+        final groupGap = widget.dotSize * 1.1;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _DotDigit(
+                  digit: int.parse(hh[0]),
+                  color: color,
+                  dotSize: widget.dotSize,
+                ),
+                SizedBox(width: digitGap),
+                _DotDigit(
+                  digit: int.parse(hh[1]),
+                  color: color,
+                  dotSize: widget.dotSize,
+                ),
+                SizedBox(width: groupGap),
+                _DotColon(color: color, dotSize: widget.dotSize),
+                SizedBox(width: groupGap),
+                _DotDigit(
+                  digit: int.parse(mm[0]),
+                  color: color,
+                  dotSize: widget.dotSize,
+                ),
+                SizedBox(width: digitGap),
+                _DotDigit(
+                  digit: int.parse(mm[1]),
+                  color: color,
+                  dotSize: widget.dotSize,
+                ),
+              ],
+            ),
+            SizedBox(height: widget.dotSize),
+            Text(
+              '${_now.day.toString().padLeft(2, '0')}.'
+              '${_now.month.toString().padLeft(2, '0')}.'
+              '${_now.year}',
+              style: TextStyle(
+                fontSize: widget.dotSize * 1.4,
+                color: color.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+const Map<int, List<String>> _dotDigitPatterns = {
+  0: ['111', '101', '101', '101', '111'],
+  1: ['010', '110', '010', '010', '111'],
+  2: ['111', '001', '111', '100', '111'],
+  3: ['111', '001', '111', '001', '111'],
+  4: ['101', '101', '111', '001', '001'],
+  5: ['111', '100', '111', '001', '111'],
+  6: ['111', '100', '111', '101', '111'],
+  7: ['111', '001', '010', '010', '010'],
+  8: ['111', '101', '111', '101', '111'],
+  9: ['111', '101', '111', '001', '111'],
+};
+
+class _DotDigit extends StatelessWidget {
+  const _DotDigit({
+    required this.digit,
+    required this.color,
+    required this.dotSize,
+  });
+
+  final int digit;
+  final Color color;
+  final double dotSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final pattern = _dotDigitPatterns[digit]!;
+    final gap = dotSize * 0.35;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var r = 0; r < pattern.length; r++) ...[
+          if (r > 0) SizedBox(height: gap),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var c = 0; c < pattern[r].length; c++) ...[
+                if (c > 0) SizedBox(width: gap),
+                _MatrixDot(
+                  lit: pattern[r][c] == '1',
+                  color: color,
+                  size: dotSize,
+                ),
+              ],
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// The two dots between hour and minute, vertically centered to the same
+/// height as a digit so the whole row lines up.
+class _DotColon extends StatelessWidget {
+  const _DotColon({required this.color, required this.dotSize});
+
+  final Color color;
+  final double dotSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = dotSize * 0.35;
+    final digitHeight = dotSize * 5 + gap * 4;
+    return SizedBox(
+      height: digitHeight,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _MatrixDot(lit: true, color: color, size: dotSize),
+          SizedBox(height: gap * 2 + dotSize),
+          _MatrixDot(lit: true, color: color, size: dotSize),
+        ],
+      ),
+    );
+  }
+}
+
+class _MatrixDot extends StatelessWidget {
+  const _MatrixDot({
+    required this.lit,
+    required this.color,
+    required this.size,
+  });
+
+  final bool lit;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color.withValues(alpha: lit ? 1 : 0.12),
+      ),
     );
   }
 }

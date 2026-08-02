@@ -51,6 +51,7 @@ class AppStrings {
   String get custom => 'Custom';
   String get roman => _en ? 'Roman numerals' : 'Römische Zahlen';
   String get bars => _en ? 'Bars' : 'Balken';
+  String get dotMatrix => _en ? 'Dot matrix' : 'Punktraster';
   String get position => _en ? 'Position' : 'Position';
   String get alignLeft => _en ? 'Left' : 'Links';
   String get alignCenter => _en ? 'Center' : 'Mittig';

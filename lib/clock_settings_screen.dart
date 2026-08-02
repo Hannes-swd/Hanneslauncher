@@ -106,6 +106,18 @@ class ClockSettingsScreen extends StatelessWidget {
                               );
                             },
                           ),
+                          _StyleOption(
+                            title: s.dotMatrix,
+                            selected: settings.style == ClockStyle.dotMatrix,
+                            preview: const _DotMatrixPreview(),
+                            onTap: () {
+                              ClockSettingsController.instance.update(
+                                settings.copyWith(
+                                  style: ClockStyle.dotMatrix,
+                                ),
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -144,6 +156,10 @@ class ClockSettingsScreen extends StatelessWidget {
                             s: s,
                           ),
                           ClockStyle.bars => _BarsAppearance(
+                            settings: settings,
+                            s: s,
+                          ),
+                          ClockStyle.dotMatrix => _DotMatrixAppearance(
                             settings: settings,
                             s: s,
                           ),
@@ -279,6 +295,33 @@ class _RomanAppearance extends StatelessWidget {
           onSelected: (i) {
             ClockSettingsController.instance.update(
               settings.copyWith(romanColorIndex: i),
+            );
+          },
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
+class _DotMatrixAppearance extends StatelessWidget {
+  const _DotMatrixAppearance({required this.settings, required this.s});
+
+  final ClockSettings settings;
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Label(s.textColor),
+        ColorSwatchPicker(
+          s: s,
+          selectedIndex: settings.dotColorIndex,
+          onSelected: (i) {
+            ClockSettingsController.instance.update(
+              settings.copyWith(dotColorIndex: i),
             );
           },
         ),
@@ -522,6 +565,18 @@ class _BarsPreview extends StatelessWidget {
     return const SizedBox(
       height: 60,
       child: Center(child: BarsClock(barHeight: 50, barWidth: 14)),
+    );
+  }
+}
+
+class _DotMatrixPreview extends StatelessWidget {
+  const _DotMatrixPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 60,
+      child: Center(child: DotMatrixClock(dotSize: 5)),
     );
   }
 }
