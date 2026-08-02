@@ -37,7 +37,7 @@ class AppListView extends StatefulWidget {
   State<AppListView> createState() => _AppListViewState();
 }
 
-class _AppListViewState extends State<AppListView> {
+class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
   static const double _headerHeight = 36;
 
   // How far left of the alphabet bar the finger needs to be dragged before
@@ -77,6 +77,7 @@ class _AppListViewState extends State<AppListView> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     LauncherEntriesController.instance.load();
     LauncherEntriesController.instance.addListener(_onEntriesChanged);
     AppListSettingsController.instance.load();
@@ -109,12 +110,23 @@ class _AppListViewState extends State<AppListView> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     AppListSettingsController.instance.removeListener(_onSettingsChanged);
     LauncherEntriesController.instance.removeListener(_onEntriesChanged);
     _bubblePosition.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  // The home screen typically stays alive in the background rather than
+  // restarting, so a freshly installed (or uninstalled) app would otherwise
+  // never show up until hanneslouncher itself is restarted.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      LauncherEntriesController.instance.load();
+    }
   }
 
   /// Buckets the entries (apps, web apps and folders) by the displayed -
