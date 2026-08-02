@@ -15,7 +15,14 @@ enum WidgetElementType {
   /// A plain rectangle. Put behind text on a busy picture, it makes the
   /// text readable again.
   box,
+
+  /// A button: tapping it fires an HTTP call (a smart home device's own
+  /// local API, typically) rather than showing anything fetched.
+  action,
 }
+
+/// The HTTP method an action element's tap sends.
+enum ActionMethod { get, post, put }
 
 /// A rule for the icon element: if the value matches, show [iconName].
 /// The first matching rule in the list wins, so ordering is the priority.
@@ -101,13 +108,18 @@ class WidgetElement {
     this.width = 200,
     this.opacity = 1,
     this.radius = 12,
+    this.actionUrl = '',
+    this.actionMethod = ActionMethod.get,
+    this.actionHeaders = const {},
+    this.actionBody = '',
   });
 
   final String id;
   final WidgetElementType type;
 
   /// Text: the line itself. Icon: the value that gets matched against the
-  /// rules. Image: the picture's URL. All three may hold placeholders.
+  /// rules. Image: the picture's URL. Action: which of [widgetIcons] it
+  /// shows. All may hold `{{...}}` placeholders except action's.
   final String template;
 
   final double fontSize;
@@ -136,6 +148,16 @@ class WidgetElement {
   final double opacity;
   final double radius;
 
+  /// Action only: what the tap sends. The URL and body may hold `{{...}}`
+  /// placeholders, resolved the same way a data source's own URL is - a
+  /// smart home hub's address can follow {{lat}}/{{lon}} same as anything
+  /// else. Plain http is allowed here (unlike a data source's fetch),
+  /// since most local smart home devices have no certificate at all.
+  final String actionUrl;
+  final ActionMethod actionMethod;
+  final Map<String, String> actionHeaders;
+  final String actionBody;
+
   WidgetElement copyWith({
     String? template,
     double? fontSize,
@@ -150,6 +172,10 @@ class WidgetElement {
     double? width,
     double? opacity,
     double? radius,
+    String? actionUrl,
+    ActionMethod? actionMethod,
+    Map<String, String>? actionHeaders,
+    String? actionBody,
   }) {
     return WidgetElement(
       id: id,
@@ -167,6 +193,10 @@ class WidgetElement {
       width: width ?? this.width,
       opacity: opacity ?? this.opacity,
       radius: radius ?? this.radius,
+      actionUrl: actionUrl ?? this.actionUrl,
+      actionMethod: actionMethod ?? this.actionMethod,
+      actionHeaders: actionHeaders ?? this.actionHeaders,
+      actionBody: actionBody ?? this.actionBody,
     );
   }
 
@@ -186,6 +216,10 @@ class WidgetElement {
     'width': width,
     'opacity': opacity,
     'radius': radius,
+    'actionUrl': actionUrl,
+    'actionMethod': actionMethod.name,
+    'actionHeaders': actionHeaders,
+    'actionBody': actionBody,
   };
 
   static WidgetElement fromJson(Map<String, dynamic> json) => WidgetElement(
@@ -212,7 +246,23 @@ class WidgetElement {
         ((json['widthFactor'] as num?)?.toDouble() ?? 1) * 320,
     opacity: (json['opacity'] as num?)?.toDouble() ?? 1,
     radius: (json['radius'] as num?)?.toDouble() ?? 12,
+    actionUrl: json['actionUrl'] as String? ?? '',
+    actionMethod: _actionMethodFromName(json['actionMethod']),
+    actionHeaders: {
+      for (final entry
+          in (json['actionHeaders'] as Map<String, dynamic>? ?? const {})
+              .entries)
+        entry.key: entry.value as String,
+    },
+    actionBody: json['actionBody'] as String? ?? '',
   );
+
+  static ActionMethod _actionMethodFromName(Object? name) {
+    for (final method in ActionMethod.values) {
+      if (method.name == name) return method;
+    }
+    return ActionMethod.get;
+  }
 
   /// Whether this was stored before elements had a position of their own.
   /// Such cards were drawn as rows, so their elements get spread down the
@@ -293,4 +343,10 @@ const Map<String, IconData> widgetIcons = {
   'ok': Icons.check_circle,
   'warning': Icons.warning_amber,
   'help': Icons.help_outline,
+  'power': Icons.power_settings_new,
+  'bulb': Icons.lightbulb,
+  'lock': Icons.lock_outline,
+  'unlock': Icons.lock_open,
+  'plug': Icons.electrical_services,
+  'fan': Icons.mode_fan_off,
 };

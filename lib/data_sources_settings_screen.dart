@@ -5,6 +5,7 @@ import 'app_strings.dart';
 import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
 import 'device_data_screen.dart';
+import 'header_text_format.dart';
 import 'locale_controller.dart';
 
 /// Open-Meteo needs no API key and reports a weather code that the icon
@@ -180,7 +181,7 @@ class _DataSourceEditScreenState extends State<DataSourceEditScreen> {
     text: _source?.url ?? '',
   );
   late final TextEditingController _headers = TextEditingController(
-    text: _headersToText(_source?.headers ?? const {}),
+    text: headersToText(_source?.headers ?? const {}),
   );
   late int _refreshMinutes = _source?.refreshMinutes ?? 30;
 
@@ -194,22 +195,6 @@ class _DataSourceEditScreenState extends State<DataSourceEditScreen> {
     _url.dispose();
     _headers.dispose();
     super.dispose();
-  }
-
-  static String _headersToText(Map<String, String> headers) =>
-      [for (final entry in headers.entries) '${entry.key}: ${entry.value}']
-          .join('\n');
-
-  static Map<String, String> _headersFromText(String text) {
-    final headers = <String, String>{};
-    for (final line in text.split('\n')) {
-      final separator = line.indexOf(':');
-      if (separator <= 0) continue;
-      headers[line.substring(0, separator).trim()] = line
-          .substring(separator + 1)
-          .trim();
-    }
-    return headers;
   }
 
   Future<void> _save(AppStrings s) async {
@@ -228,7 +213,7 @@ class _DataSourceEditScreenState extends State<DataSourceEditScreen> {
         key: key,
         name: _name.text.trim().isEmpty ? key : _name.text.trim(),
         url: url,
-        headers: _headersFromText(_headers.text),
+        headers: headersFromText(_headers.text),
         refreshMinutes: _refreshMinutes,
       ),
     );
@@ -247,7 +232,7 @@ class _DataSourceEditScreenState extends State<DataSourceEditScreen> {
     });
     final result = await DataSourcesController.instance.preview(
       _url.text.trim(),
-      _headersFromText(_headers.text),
+      headersFromText(_headers.text),
     );
     if (!mounted) return;
     setState(() {

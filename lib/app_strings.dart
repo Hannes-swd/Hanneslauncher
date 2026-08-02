@@ -165,6 +165,7 @@ class AppStrings {
   String get elementIcon => _en ? 'Icon by rule' : 'Symbol nach Regel';
   String get elementImage => _en ? 'Picture' : 'Bild';
   String get elementBox => _en ? 'Box' : 'Fläche';
+  String get elementAction => _en ? 'Action button' : 'Aktions-Button';
   String get colorLabel => _en ? 'Color' : 'Farbe';
   String currentValue(String value) =>
       _en ? 'Value right now: $value' : 'Wert gerade: $value';
@@ -356,4 +357,21 @@ class AppStrings {
   String get packageMostUsedApp =>
       _en ? 'Most used app today' : 'Meistgenutzte App heute';
   String get grantAccess => _en ? 'Grant access' : 'Zugriff erlauben';
+
+  // Action element (widget_editor_screen.dart / widget_card_view.dart) -
+  // a button that fires an HTTP call, typically at a smart home device's
+  // own local API, when tapped.
+  String get iconLabel => _en ? 'Icon' : 'Symbol';
+  String get actionUrlLabel => _en ? 'Address' : 'Adresse';
+  String get actionUrlHint => _en
+      ? 'http:// is fine here - most local smart home devices have no '
+            'certificate'
+      : 'http:// ist hier erlaubt - die meisten lokalen Smart-Home-Geräte '
+            'haben kein Zertifikat';
+  String get actionMethodLabel => _en ? 'Method' : 'Methode';
+  String get actionBodyLabel => _en ? 'Request body' : 'Anfrage-Inhalt';
+  String get testAction => _en ? 'Test' : 'Testen';
+  String get actionSucceeded => _en ? 'Done' : 'Erledigt';
+  String actionFailed(String detail) =>
+      _en ? 'Failed: $detail' : 'Fehlgeschlagen: $detail';
 }

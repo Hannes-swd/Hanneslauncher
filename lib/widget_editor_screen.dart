@@ -5,10 +5,12 @@ import 'app_strings.dart';
 import 'color_swatch_picker.dart';
 import 'data_sources_controller.dart';
 import 'data_sources_settings_screen.dart';
+import 'header_text_format.dart';
 import 'launcher_entries_controller.dart';
 import 'locale_controller.dart';
 import 'panel_blocks_controller.dart';
 import 'text_prompt_dialog.dart';
+import 'widget_action.dart';
 import 'widget_canvas_editor.dart';
 import 'widget_card_view.dart';
 import 'widget_element.dart';
@@ -191,6 +193,7 @@ class WidgetEditorScreen extends StatelessWidget {
     WidgetElementType.icon => Icons.emoji_symbols_outlined,
     WidgetElementType.image => Icons.image_outlined,
     WidgetElementType.box => Icons.rectangle_outlined,
+    WidgetElementType.action => Icons.touch_app_outlined,
   };
 
   static String _labelFor(WidgetElementType type, AppStrings s) =>
@@ -199,6 +202,7 @@ class WidgetEditorScreen extends StatelessWidget {
         WidgetElementType.icon => s.elementIcon,
         WidgetElementType.image => s.elementImage,
         WidgetElementType.box => s.elementBox,
+        WidgetElementType.action => s.elementAction,
       };
 
   Future<void> _rename(
@@ -287,6 +291,9 @@ class WidgetEditorScreen extends StatelessWidget {
         // glyph, so it starts with one catch-all rule to edit.
         rules = const [IconRule(iconName: 'sunny')];
       }
+    } else if (type == WidgetElementType.action) {
+      // Otherwise the button would start out on the generic fallback glyph.
+      template = 'power';
     }
 
     final element = WidgetElement(
@@ -483,9 +490,10 @@ class ElementEditorScreen extends StatelessWidget {
               body: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  // A box draws nothing but itself, so it has no value to
-                  // fill in and no field for one.
-                  if (element.type != WidgetElementType.box) ...[
+                  // A box draws nothing but itself, and an action has its
+                  // own icon picker below instead of a `{{...}}` value.
+                  if (element.type != WidgetElementType.box &&
+                      element.type != WidgetElementType.action) ...[
                     _sectionLabel(
                       element.type == WidgetElementType.image
                           ? s.sourceUrl
@@ -527,7 +535,8 @@ class ElementEditorScreen extends StatelessWidget {
                     ),
                   ],
 
-                  if (element.type == WidgetElementType.icon) ...[
+                  if (element.type == WidgetElementType.icon ||
+                      element.type == WidgetElementType.action) ...[
                     _sectionLabel('${s.iconSizeShort} '
                         '(${element.iconSize.round()})'),
                     Slider(
@@ -645,6 +654,34 @@ class ElementEditorScreen extends StatelessWidget {
                     ),
                   ],
 
+                  if (element.type == WidgetElementType.action) ...[
+                    _sectionLabel(s.iconLabel),
+                    _IconPicker(
+                      selected: element.template,
+                      onSelected: (iconName) => _update(
+                        block,
+                        element.copyWith(template: iconName),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _sectionLabel(s.colorLabel),
+                    ColorSwatchPicker(
+                      s: s,
+                      selectedIndex: element.colorIndex,
+                      onSelected: (i) => _update(
+                        block,
+                        element.copyWith(colorIndex: i),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _ActionSettings(
+                      key: ValueKey(element.id),
+                      element: element,
+                      s: s,
+                      onChanged: (updated) => _update(block, updated),
+                    ),
+                  ],
+
                   if (element.type == WidgetElementType.icon)
                     _RuleDiagnosis(
                       key: ValueKey(element.id),
@@ -665,6 +702,7 @@ class ElementEditorScreen extends StatelessWidget {
                       builder: (context, constraints) => WidgetElementView(
                         element: element,
                         cardWidth: constraints.maxWidth,
+                        interactive: false,
                       ),
                     ),
                   ),
@@ -1360,6 +1398,201 @@ class _RuleDialogState extends State<_RuleDialog> {
           onPressed: () => Navigator.of(context).pop(draft),
           child: Text(s.save),
         ),
+      ],
+    );
+  }
+}
+
+/// The icon grid an action element picks its glyph from - same look as the
+/// icon rule dialog's, just standalone since an action has no rules to sit
+/// inside.
+class _IconPicker extends StatelessWidget {
+  const _IconPicker({required this.selected, required this.onSelected});
+
+  final String selected;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final entry in widgetIcons.entries)
+          GestureDetector(
+            onTap: () => onSelected(entry.key),
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: entry.key == selected
+                      ? Colors.black
+                      : Colors.black26,
+                  width: entry.key == selected ? 2 : 1,
+                ),
+              ),
+              child: Icon(entry.value),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// What an action element's tap sends: address, method, headers and (for
+/// anything but GET) a body - plus a "Test" button that fires it once right
+/// away, the only way to know it actually reaches the device before relying
+/// on it from the home screen.
+class _ActionSettings extends StatefulWidget {
+  const _ActionSettings({
+    super.key,
+    required this.element,
+    required this.s,
+    required this.onChanged,
+  });
+
+  final WidgetElement element;
+  final AppStrings s;
+  final ValueChanged<WidgetElement> onChanged;
+
+  @override
+  State<_ActionSettings> createState() => _ActionSettingsState();
+}
+
+class _ActionSettingsState extends State<_ActionSettings> {
+  late final TextEditingController _url = TextEditingController(
+    text: widget.element.actionUrl,
+  );
+  late final TextEditingController _headers = TextEditingController(
+    text: headersToText(widget.element.actionHeaders),
+  );
+  late final TextEditingController _body = TextEditingController(
+    text: widget.element.actionBody,
+  );
+
+  bool _testing = false;
+  String? _testResult;
+
+  @override
+  void dispose() {
+    _url.dispose();
+    _headers.dispose();
+    _body.dispose();
+    super.dispose();
+  }
+
+  void _emit() {
+    widget.onChanged(
+      widget.element.copyWith(
+        actionUrl: _url.text,
+        actionHeaders: headersFromText(_headers.text),
+        actionBody: _body.text,
+      ),
+    );
+  }
+
+  Future<void> _test() async {
+    // Whatever is on screen right now, saved or not - waiting for a field's
+    // own onChanged to land first would test the value from before the
+    // latest keystroke.
+    final current = widget.element.copyWith(
+      actionUrl: _url.text,
+      actionHeaders: headersFromText(_headers.text),
+      actionBody: _body.text,
+    );
+    setState(() {
+      _testing = true;
+      _testResult = null;
+    });
+    final result = await runWidgetAction(current);
+    if (!mounted) return;
+    setState(() {
+      _testing = false;
+      _testResult = result.success
+          ? widget.s.actionSucceeded
+          : (result.detail ?? '');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.s;
+    final showBody = widget.element.actionMethod != ActionMethod.get;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _url,
+          keyboardType: TextInputType.url,
+          maxLines: null,
+          decoration: InputDecoration(
+            labelText: s.actionUrlLabel,
+            helperText: s.actionUrlHint,
+          ),
+          onChanged: (_) => _emit(),
+        ),
+        const SizedBox(height: 16),
+        ElementEditorScreen._sectionLabel(s.actionMethodLabel),
+        Wrap(
+          spacing: 8,
+          children: [
+            for (final method in ActionMethod.values)
+              ChoiceChip(
+                label: Text(method.name.toUpperCase()),
+                selected: widget.element.actionMethod == method,
+                onSelected: (_) => widget.onChanged(
+                  widget.element.copyWith(actionMethod: method),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _headers,
+          maxLines: null,
+          decoration: InputDecoration(labelText: s.sourceHeaders),
+          onChanged: (_) => _emit(),
+        ),
+        if (showBody) ...[
+          const SizedBox(height: 16),
+          TextField(
+            controller: _body,
+            maxLines: null,
+            decoration: InputDecoration(labelText: s.actionBodyLabel),
+            onChanged: (_) => _emit(),
+          ),
+        ],
+        const SizedBox(height: 16),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: FilledButton.tonalIcon(
+            onPressed: _testing ? null : _test,
+            icon: const Icon(Icons.play_arrow),
+            label: Text(s.testAction),
+          ),
+        ),
+        if (_testing)
+          const Padding(
+            padding: EdgeInsets.only(top: 16),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        if (_testResult != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _testResult!,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              ),
+            ),
+          ),
       ],
     );
   }

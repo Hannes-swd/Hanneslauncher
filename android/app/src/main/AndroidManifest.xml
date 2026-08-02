@@ -20,10 +20,16 @@
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions"/>
+    <!-- Cleartext HTTP is off by default since Android 9 - needed here so
+         an action element's http:// call actually reaches a local smart
+         home device (almost none of them have a certificate). Data sources
+         still enforce https on their own, in data_sources_controller.dart,
+         regardless of this. -->
     <application
         android:label="hanneslouncher"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

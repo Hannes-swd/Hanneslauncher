@@ -85,6 +85,10 @@ class _WidgetCanvasEditorState extends State<WidgetCanvasEditor> {
                     child: WidgetElementView(
                       element: element,
                       cardWidth: size.width,
+                      // Tapping here opens the element editor (this
+                      // GestureDetector's own onTap, just above); an action
+                      // element's HTTP call must wait for the real card.
+                      interactive: false,
                     ),
                   ),
                 ),
