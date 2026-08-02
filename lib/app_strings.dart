@@ -13,6 +13,18 @@ class AppStrings {
   String get homescreen => _en ? 'Home screen' : 'Homescreen';
   String get system => 'System';
 
+  // The settings screen is one flat list grouped under these headings, so
+  // everything is visible at once instead of hidden behind category pages
+  // you have to guess your way into.
+  String get searchSettings =>
+      _en ? 'Search settings' : 'Einstellungen durchsuchen';
+  String get sectionAppearance => _en ? 'Appearance' : 'Aussehen';
+  String get sectionApps => 'Apps';
+  String get sectionPanelData => _en ? 'Panel & data' : 'Panel & Daten';
+  String get sectionApp => 'App';
+  String get noSettingsFound =>
+      _en ? 'No setting found' : 'Keine Einstellung gefunden';
+
   String get wallpaper => _en ? 'Wallpaper' : 'Hintergrundbild';
   String get noImageSelected =>
       _en ? 'No image selected' : 'Kein Bild ausgewählt';
