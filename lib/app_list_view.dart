@@ -27,9 +27,9 @@ class AppListView extends StatefulWidget {
     this.onPanelDragEnd,
   });
 
-  /// Dragging anywhere on the clock also opens/closes the settings panel,
-  /// so the whole clock area works as a pull-down handle instead of just a
-  /// thin strip at the very top of the screen.
+  /// Dragging anywhere on the home screen (except the alphabet bar, which
+  /// has its own vertical drag) opens/closes the settings panel, instead of
+  /// just a thin strip at the very top of the screen.
   final GestureDragUpdateCallback? onPanelDragUpdate;
   final GestureDragEndCallback? onPanelDragEnd;
 
@@ -43,6 +43,10 @@ class _AppListViewState extends State<AppListView> {
   // How far left of the alphabet bar the finger needs to be dragged before
   // it counts as aiming at an app row instead of just picking a letter.
   static const double _listTargetThreshold = 60;
+
+  // Matches the alphabet bar's own width below, so the background
+  // drag-to-open-panel detector never overlaps its scrub gesture.
+  static const double _alphabetBarWidth = 28;
 
   final SplayTreeMap<String, List<LauncherEntry>> _grouped = SplayTreeMap();
   List<String> _letters = [];
@@ -197,6 +201,22 @@ class _AppListViewState extends State<AppListView> {
 
     return Stack(
       children: [
+        // Lets dragging down open/close the settings panel from anywhere on
+        // the home screen, not just on the clock - translucent so it never
+        // blocks taps on the icons/list items painted on top of it, and
+        // inset from the alphabet bar so its own vertical scrub gesture is
+        // never contested.
+        Positioned(
+          left: 0,
+          right: _alphabetBarWidth,
+          top: 0,
+          bottom: 0,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onVerticalDragUpdate: widget.onPanelDragUpdate,
+            onVerticalDragEnd: widget.onPanelDragEnd,
+          ),
+        ),
         // Kept as a permanent child (hidden via Offstage rather than being
         // added/removed) so the Stack's children never shift position. If
         // they did, Flutter would rebuild the alphabet bar below and cancel
@@ -252,21 +272,18 @@ class _AppListViewState extends State<AppListView> {
                         ),
                       );
                     },
-                    // deferToChild: only the clock's own painted area
-                    // reacts, so touches beside it fall through to what's
-                    // underneath.
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.deferToChild,
-                      onVerticalDragUpdate: widget.onPanelDragUpdate,
-                      onVerticalDragEnd: widget.onPanelDragEnd,
-                      child: ConstrainedBox(
-                        // Caps how much of the screen the clock may claim,
-                        // so the pinned apps always keep room below it.
-                        constraints: BoxConstraints(
-                          maxHeight: constraints.maxHeight * 0.7,
-                        ),
-                        child: const ClockDisplay(),
+                    // No drag handler here any more - the background
+                    // detector at the bottom of the Stack now covers this
+                    // whole area already, and stacking a second competing
+                    // vertical-drag recognizer on top of it would just
+                    // leave which one wins ambiguous.
+                    child: ConstrainedBox(
+                      // Caps how much of the screen the clock may claim, so
+                      // the pinned apps always keep room below it.
+                      constraints: BoxConstraints(
+                        maxHeight: constraints.maxHeight * 0.7,
                       ),
+                      child: const ClockDisplay(),
                     ),
                   ),
                   Expanded(
