@@ -10,6 +10,7 @@ import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
 import 'folders_controller.dart';
 import 'icon_theme_controller.dart';
+import 'launcher_entries_controller.dart';
 import 'locale_controller.dart';
 import 'panel_blocks_controller.dart';
 import 'pinned_apps_controller.dart';
@@ -272,8 +273,19 @@ class SettingsBackupService {
     // again by the time this resolves them.
     final pinnedAppsJson = decoded['pinnedApps'] as List<dynamic>?;
     if (pinnedAppsJson != null) {
+      // A backup made on another phone can name apps this one never had -
+      // keeping those would occupy pinned slots forever with something that
+      // can never be shown, blocking real apps from being pinned in their
+      // place. installedApps only gets read once on demand, so a restore
+      // straight after a fresh install (before the app drawer was ever
+      // opened) would otherwise see none of them and drop everything.
+      if (!LauncherEntriesController.instance.isLoaded) {
+        await LauncherEntriesController.instance.load();
+      }
       await PinnedAppsController.instance.restore([
-        for (final key in pinnedAppsJson) key as String,
+        for (final key in pinnedAppsJson)
+          if (LauncherEntriesController.instance.byKey(key as String) != null)
+            key,
       ]);
     }
 

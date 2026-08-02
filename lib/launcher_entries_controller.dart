@@ -47,6 +47,17 @@ class LauncherEntriesController extends ChangeNotifier {
       if (_byKey[key] != null) _byKey[key]!,
   ];
 
+  /// Swapped in by tests, which have no platform channel to answer
+  /// [InstalledApps.getInstalledApps] with - see
+  /// [DataSourcesController.debugClientOverride] for the same idea applied
+  /// to network calls.
+  @visibleForTesting
+  void debugSetInstalledApps(List<AppInfo> apps) {
+    _apps = apps;
+    _loaded = true;
+    _rebuild();
+  }
+
   /// Reads the installed apps. Safe to call again to pick up newly
   /// installed ones; the stored settings are loaded alongside on first use.
   Future<void> load() async {

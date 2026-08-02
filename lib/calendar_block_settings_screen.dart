@@ -168,8 +168,30 @@ class _CalendarBlockSettingsScreenState
                                         c.id,
                                     ]
                                   : List<String>.from(block.itemKeys);
-                              if (!current.remove(calendar.id)) {
+                              final wasChecked = current.remove(calendar.id);
+                              if (!wasChecked) {
                                 current.add(calendar.id);
+                              } else if (current.isEmpty) {
+                                // An empty list is also what "all calendars"
+                                // is stored as (see the checkbox above) -
+                                // unticking the last one would otherwise
+                                // silently flip every calendar back on
+                                // instead of leaving none selected.
+                                // clearSnackBars (not hideCurrentSnackBar)
+                                // removes any already showing instantly - if
+                                // this gets tapped again while the previous
+                                // one is still animating out, both would
+                                // share the same content and thus the same
+                                // implicit Hero tag SnackBar uses, which
+                                // crashes with "multiple heroes share tag".
+                                ScaffoldMessenger.of(context)
+                                  ..clearSnackBars()
+                                  ..showSnackBar(
+                                    SnackBar(
+                                      content: Text(s.atLeastOneCalendar),
+                                    ),
+                                  );
+                                return;
                               }
                               PanelBlocksController.instance.update(
                                 block.copyWith(itemKeys: current),

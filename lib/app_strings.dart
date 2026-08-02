@@ -143,6 +143,9 @@ class AppStrings {
   String get noCalendarsFound => _en
       ? 'No calendars found on this device'
       : 'Keine Kalender auf diesem Gerät gefunden';
+  String get atLeastOneCalendar => _en
+      ? 'At least one calendar has to stay selected'
+      : 'Mindestens ein Kalender muss ausgewählt bleiben';
   String get emptyPanel => _en
       ? 'Nothing here yet. Add widgets or a row of apps with + above.'
       : 'Noch nichts hier. Oben mit + Widgets oder eine App-Reihe '

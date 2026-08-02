@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart' show Color;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hanneslouncher/app_list_settings_controller.dart';
@@ -7,11 +9,15 @@ import 'package:hanneslouncher/custom_colors_controller.dart';
 import 'package:hanneslouncher/data_sources_controller.dart';
 import 'package:hanneslouncher/folders_controller.dart';
 import 'package:hanneslouncher/icon_theme_controller.dart';
+import 'package:hanneslouncher/launcher_entries_controller.dart';
 import 'package:hanneslouncher/locale_controller.dart';
 import 'package:hanneslouncher/panel_blocks_controller.dart';
 import 'package:hanneslouncher/pinned_apps_controller.dart';
 import 'package:hanneslouncher/settings_backup_service.dart';
 import 'package:hanneslouncher/web_apps_controller.dart';
+import 'package:installed_apps/app_category.dart';
+import 'package:installed_apps/app_info.dart';
+import 'package:installed_apps/platform_type.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -71,6 +77,25 @@ void main() {
     await CustomColorsController.instance.restore([
       const Color(0xFF123456),
     ]);
+    // Restoring pinned apps only keeps ones that resolve on this device (an
+    // uninstalled app's pin is dropped rather than occupying a slot
+    // forever) - there is no platform channel in a test to answer with the
+    // real installed apps, so this fakes "com.example.mail" being one of
+    // them.
+    LauncherEntriesController.instance.debugSetInstalledApps([
+      const AppInfo(
+        name: 'Mail',
+        icon: null,
+        packageName: 'com.example.mail',
+        versionName: '1.0.0',
+        versionCode: 1,
+        platformType: PlatformType.nativeOrOthers,
+        installedTimestamp: 0,
+        isSystemApp: false,
+        isLaunchableApp: true,
+        category: AppCategory.undefined,
+      ),
+    ]);
 
     final exported = SettingsBackupService.exportJson();
 
@@ -129,6 +154,38 @@ void main() {
       [const Color(0xFF123456)],
     );
   });
+
+  test(
+    'apply drops pinned apps that do not exist on this device',
+    () async {
+      // Only "com.example.mail" is "installed" here - a backup made on
+      // another phone naming a second app this one never had.
+      LauncherEntriesController.instance.debugSetInstalledApps([
+        const AppInfo(
+          name: 'Mail',
+          icon: null,
+          packageName: 'com.example.mail',
+          versionName: '1.0.0',
+          versionCode: 1,
+          platformType: PlatformType.nativeOrOthers,
+          installedTimestamp: 0,
+          isSystemApp: false,
+          isLaunchableApp: true,
+          category: AppCategory.undefined,
+        ),
+      ]);
+      await PinnedAppsController.instance.restore([]);
+
+      await SettingsBackupService.apply(
+        jsonEncode({
+          'formatVersion': 1,
+          'pinnedApps': ['com.example.mail', 'com.other.app'],
+        }),
+      );
+
+      expect(PinnedAppsController.instance.value, ['com.example.mail']);
+    },
+  );
 
   test('apply rejects anything that is not a backup file', () async {
     expect(
