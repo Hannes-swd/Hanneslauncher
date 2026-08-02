@@ -244,7 +244,23 @@ void main() {
     expect(controller.dataFor(source.id), isNull);
   });
 
-  test('http addresses are refused without a request', () async {
+  test('plain http is fetched too, for local smart home devices', () async {
+    startFresh();
+    final answer = mockClient('{"on": true}');
+    controller.debugClientOverride = answer.client;
+
+    final source = await controller.add(
+      key: 'schalter',
+      name: 'Schalter',
+      url: 'http://192.168.1.50/state',
+    );
+
+    expect(await controller.refresh(source), isNull);
+    expect(answer.calls, [Uri.parse('http://192.168.1.50/state')]);
+    expect(controller.dataFor(source.id), {'on': true});
+  });
+
+  test('only http/https addresses are accepted', () async {
     startFresh();
     final answer = mockClient('{"value": 1}');
     controller.debugClientOverride = answer.client;
@@ -252,14 +268,14 @@ void main() {
     final source = await controller.add(
       key: 'unsicher',
       name: 'Unsicher',
-      url: 'http://api.example.com/wetter',
+      url: 'ftp://example.com/wetter',
     );
 
     expect(await controller.refresh(source), isNotNull);
     expect(answer.calls, isEmpty);
     expect(controller.dataFor(source.id), isNull);
     expect(
-      (await controller.preview('http://example.com', const {})).error,
+      (await controller.preview('ftp://example.com', const {})).error,
       isNotNull,
     );
   });

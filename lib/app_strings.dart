@@ -222,6 +222,8 @@ class AppStrings {
   String get ruleTo => _en ? 'To' : 'Bis';
   String get ruleEquals => _en ? 'Exactly' : 'Genau';
   String get ruleAny => _en ? 'anything' : 'alles';
+  String get ruleTrue => _en ? 'True' : 'Wahr';
+  String get ruleFalse => _en ? 'False' : 'Falsch';
   String get preview => _en ? 'Preview' : 'Vorschau';
   String get openOnTap => _en ? 'Open on tap' : 'Beim Antippen öffnen';
   String get openOnTapNone => _en ? 'Nothing' : 'Nichts';
@@ -257,8 +259,11 @@ class AppStrings {
   String get tapValueToInsert => _en
       ? 'Tap a value to insert it'
       : 'Einen Wert antippen, um ihn einzufügen';
-  String get onlyHttps =>
-      _en ? 'Only https addresses are allowed' : 'Nur https-Adressen sind erlaubt';
+  String get onlyHttps => _en
+      ? 'http:// works too - for a local smart home device without a '
+            'certificate'
+      : 'http:// geht auch - für ein lokales Smart-Home-Gerät ohne '
+            'Zertifikat';
   String get keyAndUrlRequired => _en
       ? 'Short key and URL are required'
       : 'Kurzschlüssel und URL sind nötig';
@@ -362,16 +367,87 @@ class AppStrings {
   // a button that fires an HTTP call, typically at a smart home device's
   // own local API, when tapped.
   String get iconLabel => _en ? 'Icon' : 'Symbol';
+  String get actionHostFromSource => _en
+      ? 'Take the host from a data source (path still needs typing - it\'s '
+            'almost never the same one the source reads from)'
+      : 'Host von einer Datenquelle übernehmen (Pfad noch selbst ergänzen - '
+            'der ist fast nie derselbe, von dem die Quelle liest)';
   String get actionUrlLabel => _en ? 'Address' : 'Adresse';
   String get actionUrlHint => _en
-      ? 'http:// is fine here - most local smart home devices have no '
-            'certificate'
-      : 'http:// ist hier erlaubt - die meisten lokalen Smart-Home-Geräte '
-            'haben kein Zertifikat';
+      ? 'The one that actually changes something - not a status/read '
+            'address, those look similar but do nothing here. http:// is '
+            'fine, most local smart home devices have no certificate.'
+      : 'Die Adresse, die wirklich etwas ändert - nicht eine Status-/'
+            'Lese-Adresse, die sieht oft ähnlich aus, tut hier aber nichts. '
+            'http:// ist erlaubt, die meisten lokalen Smart-Home-Geräte '
+            'haben kein Zertifikat.';
+  String get actionUrlNotValid => _en
+      ? 'Doesn\'t look like a real address yet - it needs to start with '
+            'http:// or https://, e.g. http://192.168.1.50/toggle. '
+            'Placeholders add to that, they don\'t replace it.'
+      : 'Sieht noch nicht nach einer echten Adresse aus - sie muss mit '
+            'http:// oder https:// beginnen, z.B. http://192.168.1.50/'
+            'toggle. Platzhalter ergänzen das, ersetzen es nicht.';
   String get actionMethodLabel => _en ? 'Method' : 'Methode';
+  String get actionMethodGetHint => _en
+      ? 'GET - almost never changes anything, only fetches. Some simple '
+            'devices (Shelly) use it for commands anyway - check the '
+            'device\'s own docs if unsure.'
+      : 'GET - ändert fast nie etwas, ruft nur ab. Manche einfachen Geräte '
+            '(Shelly) nutzen es trotzdem für Befehle - im Zweifel in der '
+            'Anleitung des Geräts nachsehen.';
+  String get actionMethodPostHint => _en
+      ? 'POST - the usual choice for "do something" (most smart home hubs, '
+            'e.g. Home Assistant)'
+      : 'POST - die übliche Wahl für "tu etwas" (die meisten Smart-Home-'
+            'Zentralen, z.B. Home Assistant)';
+  String get actionMethodPutHint => _en
+      ? 'PUT - some APIs use this instead of POST for "set this value"'
+      : 'PUT - manche APIs nutzen das statt POST für "setze diesen Wert"';
   String get actionBodyLabel => _en ? 'Request body' : 'Anfrage-Inhalt';
   String get testAction => _en ? 'Test' : 'Testen';
   String get actionSucceeded => _en ? 'Done' : 'Erledigt';
   String actionFailed(String detail) =>
       _en ? 'Failed: $detail' : 'Fehlgeschlagen: $detail';
+  String get actionModeLabel => _en ? 'Value' : 'Wert';
+  String get actionModeFixed => _en ? 'Fixed value' : 'Fester Wert';
+  String get actionModeToggle => _en ? 'Toggle' : 'Umschalten';
+  String get actionModeFixedHint => _en
+      ? 'Always sends the same thing - use the Wahr/Falsch buttons below to '
+            'build an on-button and a separate off-button'
+      : 'Schickt immer dasselbe - mit den Wahr/Falsch-Kacheln unten baust '
+            'du einen An-Button und einen separaten Aus-Button';
+  String get actionModeToggleHint => _en
+      ? 'Reads the current value first, then sends the opposite - one '
+            'button that flips between on and off'
+      : 'Liest zuerst den aktuellen Wert, schickt dann das Gegenteil - ein '
+            'einziger Button, der zwischen An und Aus wechselt';
+  String get actionToggleSourceLabel =>
+      _en ? 'Current value (true/false)' : 'Aktueller Wert (wahr/falsch)';
+  String get actionToggleSourceHint => _en
+      ? 'Where to read it from right now - e.g. {{schalter.on}}. Must '
+            'resolve to exactly "true" or "false".'
+      : 'Woher der Wert gerade gelesen wird - z.B. {{schalter.on}}. Muss '
+            'genau "true" oder "false" ergeben.';
+  String get actionToggleSourceNoneYet => _en
+      ? 'No data source currently returns true/false - fetch or add one '
+            'that reports the device\'s current state, e.g. {{schalter.on}}.'
+      : 'Keine Datenquelle liefert gerade wahr/falsch - richte eine ein '
+            '(oder aktualisiere sie), die den aktuellen Gerätezustand '
+            'meldet, z.B. {{schalter.on}}.';
+  String get actionHostPathReminder => _en
+      ? 'Now add the path that changes something, e.g. toggle'
+      : 'Jetzt noch den Pfad ergänzen, der etwas ändert, z.B. toggle';
+  String get insertToggledValue =>
+      _en ? 'Insert toggled value' : 'Umgeschalteten Wert einfügen';
+  String get actionPreviewLabel =>
+      _en ? 'This is what a tap sends right now:' : 'Das wird beim Antippen gerade gesendet:';
+  String get actionPreviewEmpty =>
+      _en ? '(no address yet)' : '(noch keine Adresse)';
+  String get actionToggleUnreadable => _en
+      ? 'Current value isn\'t readable as true/false yet - check "Current '
+            'value" above'
+      : 'Aktueller Wert ist noch nicht als wahr/falsch lesbar - "Aktueller '
+            'Wert" oben prüfen';
+  String get advanced => _en ? 'Advanced' : 'Erweitert';
 }

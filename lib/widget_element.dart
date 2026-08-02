@@ -24,6 +24,11 @@ enum WidgetElementType {
 /// The HTTP method an action element's tap sends.
 enum ActionMethod { get, post, put }
 
+/// Whether an action always sends the same configured value, or reads the
+/// current one first and sends its opposite - the difference between "an"
+/// and "aus" being two separate buttons versus one that flips a light.
+enum ActionValueMode { fixed, toggle }
+
 /// A rule for the icon element: if the value matches, show [iconName].
 /// The first matching rule in the list wins, so ordering is the priority.
 class IconRule {
@@ -109,9 +114,11 @@ class WidgetElement {
     this.opacity = 1,
     this.radius = 12,
     this.actionUrl = '',
-    this.actionMethod = ActionMethod.get,
+    this.actionMethod = ActionMethod.post,
     this.actionHeaders = const {},
     this.actionBody = '',
+    this.actionValueMode = ActionValueMode.fixed,
+    this.actionToggleSource = '',
   });
 
   final String id;
@@ -158,6 +165,14 @@ class WidgetElement {
   final Map<String, String> actionHeaders;
   final String actionBody;
 
+  /// Action only: [ActionValueMode.fixed] sends [actionUrl]/[actionBody]
+  /// exactly as configured. [ActionValueMode.toggle] first resolves
+  /// [actionToggleSource] (a `{{...}}` placeholder, same as anywhere else)
+  /// to "true"/"false", then sends the opposite wherever `{{!wert}}`
+  /// appears in the URL or body.
+  final ActionValueMode actionValueMode;
+  final String actionToggleSource;
+
   WidgetElement copyWith({
     String? template,
     double? fontSize,
@@ -176,6 +191,8 @@ class WidgetElement {
     ActionMethod? actionMethod,
     Map<String, String>? actionHeaders,
     String? actionBody,
+    ActionValueMode? actionValueMode,
+    String? actionToggleSource,
   }) {
     return WidgetElement(
       id: id,
@@ -197,6 +214,8 @@ class WidgetElement {
       actionMethod: actionMethod ?? this.actionMethod,
       actionHeaders: actionHeaders ?? this.actionHeaders,
       actionBody: actionBody ?? this.actionBody,
+      actionValueMode: actionValueMode ?? this.actionValueMode,
+      actionToggleSource: actionToggleSource ?? this.actionToggleSource,
     );
   }
 
@@ -220,6 +239,8 @@ class WidgetElement {
     'actionMethod': actionMethod.name,
     'actionHeaders': actionHeaders,
     'actionBody': actionBody,
+    'actionValueMode': actionValueMode.name,
+    'actionToggleSource': actionToggleSource,
   };
 
   static WidgetElement fromJson(Map<String, dynamic> json) => WidgetElement(
@@ -255,6 +276,8 @@ class WidgetElement {
         entry.key: entry.value as String,
     },
     actionBody: json['actionBody'] as String? ?? '',
+    actionValueMode: _actionValueModeFromName(json['actionValueMode']),
+    actionToggleSource: json['actionToggleSource'] as String? ?? '',
   );
 
   static ActionMethod _actionMethodFromName(Object? name) {
@@ -262,6 +285,13 @@ class WidgetElement {
       if (method.name == name) return method;
     }
     return ActionMethod.get;
+  }
+
+  static ActionValueMode _actionValueModeFromName(Object? name) {
+    for (final mode in ActionValueMode.values) {
+      if (mode.name == name) return mode;
+    }
+    return ActionValueMode.fixed;
   }
 
   /// Whether this was stored before elements had a position of their own.
@@ -345,6 +375,7 @@ const Map<String, IconData> widgetIcons = {
   'help': Icons.help_outline,
   'power': Icons.power_settings_new,
   'bulb': Icons.lightbulb,
+  'bulb_off': Icons.lightbulb_outline,
   'lock': Icons.lock_outline,
   'unlock': Icons.lock_open,
   'plug': Icons.electrical_services,

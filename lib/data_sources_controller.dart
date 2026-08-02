@@ -573,11 +573,14 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
     }
     final url = resolve(rawUrl);
     final uri = Uri.tryParse(url.trim());
-    if (uri == null || uri.scheme != 'https') {
-      // The headers can carry an API key, so plain http is not an option.
+    // Plain http is allowed alongside https for the same reason an action
+    // element's request is: reading a local smart home device's own status
+    // endpoint is exactly as legitimate a use of a data source as a cloud
+    // weather API is, and those almost never have a certificate.
+    if (uri == null || (uri.scheme != 'https' && uri.scheme != 'http')) {
       return (
         data: null,
-        error: 'Only https addresses can be used',
+        error: 'Only http/https addresses can be used',
         body: null,
       );
     }

@@ -853,7 +853,11 @@ class _TemplateFieldState extends State<_TemplateField> {
                 ? 'https://…'
                 : '{{zeit}} · {{wetter.current.temperature_2m}} °C',
           ),
-          onChanged: widget.onChanged,
+          // Persisting synchronously from inside onChanged rebuilds this
+          // whole screen mid-keystroke, which on some keyboards drops the
+          // field's focus entirely. A microtask defers it to just after the
+          // keyboard is done handling this one keystroke.
+          onChanged: (value) => Future.microtask(() => widget.onChanged(value)),
         ),
         const SizedBox(height: 8),
         _ValueDropdown(s: widget.s, onPick: _insert),
@@ -866,10 +870,15 @@ class _TemplateFieldState extends State<_TemplateField> {
 /// whatever the sources last returned - each with the value it currently
 /// holds, filterable by typing. Tapping one inserts its placeholder.
 class _ValueDropdown extends StatelessWidget {
-  const _ValueDropdown({required this.s, required this.onPick});
+  const _ValueDropdown({required this.s, required this.onPick, this.onlyBoolean = false});
 
   final AppStrings s;
   final ValueChanged<String> onPick;
+
+  /// Restricts the list to values that resolve to exactly "true"/"false"
+  /// right now - used for the toggle action's "current value" field, where
+  /// anything else (a temperature, a clock) could never be a usable pick.
+  final bool onlyBoolean;
 
   // Not a placeholder, so it can never collide with a real entry.
   static const _addEntry = '+';
@@ -879,7 +888,17 @@ class _ValueDropdown extends StatelessWidget {
     return ListenableBuilder(
       listenable: DataSourcesController.instance,
       builder: (context, child) {
-        final options = DataSourcesController.instance.options();
+        final allOptions = DataSourcesController.instance.options();
+        final options = onlyBoolean
+            ? [
+                for (final option in allOptions)
+                  if (const {
+                    'true',
+                    'false',
+                  }.contains(option.preview.trim().toLowerCase()))
+                    option,
+              ]
+            : allOptions;
         return PopupMenuButton<String>(
           tooltip: s.availableValues,
           position: PopupMenuPosition.under,
@@ -907,6 +926,18 @@ class _ValueDropdown extends StatelessWidget {
               ),
             ),
             const PopupMenuDivider(),
+            if (onlyBoolean && options.isEmpty)
+              PopupMenuItem(
+                enabled: false,
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  title: Text(
+                    s.actionToggleSourceNoneYet,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ),
             for (final option in options)
               PopupMenuItem(
                 value: option.placeholder,
@@ -1240,6 +1271,10 @@ class _RuleRow extends StatelessWidget {
   }
 }
 
+/// What a rule's live test value looks like, so the dialog only shows the
+/// input that actually applies to it.
+enum _ValueKind { unknown, boolean, numeric, text }
+
 class _RuleDialog extends StatefulWidget {
   const _RuleDialog({
     required this.rule,
@@ -1295,6 +1330,23 @@ class _RuleDialogState extends State<_RuleDialog> {
     );
   }
 
+  static final _numberPattern = RegExp(r'-?\d+([.,]\d+)?');
+
+  /// What kind of value is actually being matched, going only off the live
+  /// test value - a numeric range makes no sense for "true"/"false" or for
+  /// arbitrary text like a connection type, so those get a simpler field
+  /// instead of every input shown regardless of whether it applies.
+  /// Unknown (nothing to test against yet) keeps every field, since there's
+  /// no way to tell which one is wanted.
+  _ValueKind get _valueKind {
+    final value = widget.testValue.trim();
+    if (value.isEmpty) return _ValueKind.unknown;
+    final lower = value.toLowerCase();
+    if (lower == 'true' || lower == 'false') return _ValueKind.boolean;
+    if (_numberPattern.hasMatch(value)) return _ValueKind.numeric;
+    return _ValueKind.text;
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = widget.s;
@@ -1303,6 +1355,10 @@ class _RuleDialogState extends State<_RuleDialog> {
         draft.min != null && draft.max != null && draft.min! > draft.max!;
     final hasTestValue = widget.testValue.trim().isNotEmpty;
     final matches = hasTestValue && draft.matches(widget.testValue);
+    final kind = _valueKind;
+    final showRange =
+        kind == _ValueKind.unknown || kind == _ValueKind.numeric;
+    final showBooleanChoice = kind == _ValueKind.boolean;
 
     return AlertDialog(
       title: Text(s.addRule),
@@ -1331,37 +1387,57 @@ class _RuleDialogState extends State<_RuleDialog> {
                   ],
                 ),
               ),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _min,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(labelText: s.ruleFrom),
+            if (showRange) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _min,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: s.ruleFrom),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _max,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(labelText: s.ruleTo),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _max,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: s.ruleTo),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            if (inverted)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  s.rangeInverted,
-                  style: const TextStyle(color: Colors.red, fontSize: 12),
-                ),
+                ],
               ),
-            TextField(
-              controller: _equals,
-              decoration: InputDecoration(labelText: s.ruleEquals),
-            ),
+              if (inverted)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    s.rangeInverted,
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                  ),
+                ),
+              const SizedBox(height: 8),
+            ],
+            if (showBooleanChoice)
+              Wrap(
+                spacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: Text(s.ruleTrue),
+                    selected: _equals.text.trim().toLowerCase() == 'true',
+                    onSelected: (_) => setState(() => _equals.text = 'true'),
+                  ),
+                  ChoiceChip(
+                    label: Text(s.ruleFalse),
+                    selected: _equals.text.trim().toLowerCase() == 'false',
+                    onSelected: (_) => setState(() => _equals.text = 'false'),
+                  ),
+                ],
+              )
+            else
+              TextField(
+                controller: _equals,
+                decoration: InputDecoration(labelText: s.ruleEquals),
+              ),
             const SizedBox(height: 16),
             Wrap(
               spacing: 8,
@@ -1470,26 +1546,66 @@ class _ActionSettingsState extends State<_ActionSettings> {
   late final TextEditingController _body = TextEditingController(
     text: widget.element.actionBody,
   );
+  late final TextEditingController _toggleSource = TextEditingController(
+    text: widget.element.actionToggleSource,
+  );
 
   bool _testing = false;
   String? _testResult;
+
+  @override
+  void initState() {
+    super.initState();
+    // A source that has never been fetched contributes no values, so the
+    // dropdowns below would be missing exactly the one just set up.
+    DataSourcesController.instance.refreshStale();
+    // So the "not a real address" warning below updates live while typing,
+    // not just after the next full-screen rebuild - same for the live
+    // "this is what would actually be sent" preview below, which depends
+    // on all three.
+    for (final field in [_url, _body, _toggleSource]) {
+      field.addListener(() => setState(() {}));
+    }
+  }
 
   @override
   void dispose() {
     _url.dispose();
     _headers.dispose();
     _body.dispose();
+    _toggleSource.dispose();
     super.dispose();
   }
 
-  void _emit() {
-    widget.onChanged(
-      widget.element.copyWith(
-        actionUrl: _url.text,
-        actionHeaders: headersFromText(_headers.text),
-        actionBody: _body.text,
-      ),
+  /// Inserts at the cursor rather than at the end, so a placeholder can be
+  /// dropped into the middle of an existing address or body.
+  void _insertInto(TextEditingController controller, String placeholder) {
+    final selection = controller.selection;
+    final text = controller.text;
+    final at = selection.isValid ? selection.start : text.length;
+    controller.text = text.replaceRange(
+      at,
+      selection.end.clamp(at, text.length),
+      placeholder,
     );
+    controller.selection = TextSelection.collapsed(
+      offset: at + placeholder.length,
+    );
+    _emit();
+  }
+
+  // Persisting synchronously from inside a TextField's onChanged rebuilds
+  // this whole (fairly heavy) settings block mid-keystroke, which on some
+  // keyboards drops the field's focus entirely. A microtask defers it to
+  // just after the keyboard is done handling this one keystroke.
+  void _emit() {
+    final updated = widget.element.copyWith(
+      actionUrl: _url.text,
+      actionHeaders: headersFromText(_headers.text),
+      actionBody: _body.text,
+      actionToggleSource: _toggleSource.text,
+    );
+    Future.microtask(() => widget.onChanged(updated));
   }
 
   Future<void> _test() async {
@@ -1500,6 +1616,7 @@ class _ActionSettingsState extends State<_ActionSettings> {
       actionUrl: _url.text,
       actionHeaders: headersFromText(_headers.text),
       actionBody: _body.text,
+      actionToggleSource: _toggleSource.text,
     );
     setState(() {
       _testing = true;
@@ -1515,25 +1632,196 @@ class _ActionSettingsState extends State<_ActionSettings> {
     });
   }
 
+  /// One chip per configured data source - tapping one sets the address to
+  /// that device's own host (scheme + host + port, plus a trailing "/" ready
+  /// for the path to be typed after it), so only the bit that's actually
+  /// specific to this action needs typing. Can't go further than the host
+  /// automatically: the path that changes something (e.g. /toggle) is almost
+  /// never the same as the one a data source reads its status from (e.g.
+  /// /state), so there's nothing to copy for that part.
+  ///
+  /// Exactly one chip shows as selected - whichever source's host the
+  /// address currently starts with - so it never looks like more than one
+  /// could apply at once; picking a different one just re-fills the address.
+  /// Uri.origin throws (rather than returning null) on anything without an
+  /// http(s) scheme - which an in-progress or empty address field always is
+  /// at first, so calling it unguarded here would crash every rebuild.
+  static String? _originOf(String raw) {
+    final uri = Uri.tryParse(raw.trim());
+    if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
+      return null;
+    }
+    return uri.origin;
+  }
+
+  Widget _sourceHostChips(AppStrings s) {
+    return ValueListenableBuilder<List<DataSource>>(
+      valueListenable: DataSourcesController.instance,
+      builder: (context, sources, child) {
+        if (sources.isEmpty) return const SizedBox.shrink();
+        final currentOrigin = _originOf(_url.text);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                s.actionHostFromSource,
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final source in sources)
+                    ChoiceChip(
+                      avatar: const Icon(Icons.dns_outlined, size: 16),
+                      label: Text(source.name),
+                      selected:
+                          currentOrigin != null &&
+                          currentOrigin == _originOf(source.url),
+                      onSelected: (_) {
+                        final origin = _originOf(source.url);
+                        if (origin == null) return;
+                        setState(() {
+                          _url.text = '$origin/';
+                          _url.selection = TextSelection.collapsed(
+                            offset: _url.text.length,
+                          );
+                        });
+                        _emit();
+                      },
+                    ),
+                ],
+              ),
+              if (currentOrigin != null &&
+                  _url.text.trim() == '$currentOrigin/')
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    s.actionHostPathReminder,
+                    style: const TextStyle(fontSize: 12, color: Colors.orange),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// A one-tap way to drop in "true"/"false" (fixed mode - this is how two
+  /// buttons become an on-switch and an off-switch) or the computed toggled
+  /// value (toggle mode), instead of typing either by hand.
+  Widget _quickInsertRow(
+    ActionValueMode mode,
+    AppStrings s,
+    ValueChanged<String> onInsert,
+  ) {
+    if (mode == ActionValueMode.toggle) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: ActionChip(
+          avatar: const Icon(Icons.sync, size: 16),
+          label: Text(s.insertToggledValue),
+          onPressed: () => onInsert(toggleValueToken),
+        ),
+      );
+    }
+    return Wrap(
+      spacing: 8,
+      children: [
+        ActionChip(
+          label: Text(s.ruleTrue),
+          onPressed: () => onInsert('true'),
+        ),
+        ActionChip(
+          label: Text(s.ruleFalse),
+          onPressed: () => onInsert('false'),
+        ),
+      ],
+    );
+  }
+
+  /// What a tap would actually send, right now - computed with the exact
+  /// same logic a real send uses (see resolveAction/runWidgetAction), so a
+  /// mistake like a placeholder landing right after the host with no `/`
+  /// shows up here as broken before "Testen" is ever pressed, not after.
+  Widget _resolvedPreview(AppStrings s) {
+    final draft = widget.element.copyWith(
+      actionUrl: _url.text,
+      actionBody: _body.text,
+      actionToggleSource: _toggleSource.text,
+    );
+    final resolved = resolveAction(draft);
+
+    if (resolved.error != null) {
+      return _previewBox(
+        s.actionPreviewLabel,
+        s.actionToggleUnreadable,
+        isError: true,
+      );
+    }
+
+    final uri = Uri.tryParse(resolved.url);
+    final valid = uri != null && (uri.scheme == 'http' || uri.scheme == 'https');
+    final lines = [
+      resolved.url.isEmpty ? s.actionPreviewEmpty : resolved.url,
+      if (resolved.body != null && resolved.body!.isNotEmpty) resolved.body!,
+    ];
+    return _previewBox(
+      s.actionPreviewLabel,
+      lines.join('\n'),
+      isError: !valid,
+    );
+  }
+
+  Widget _previewBox(String label, String value, {required bool isError}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: (isError ? Colors.red : Colors.black).withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: isError ? Colors.red : Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 12,
+              color: isError ? Colors.red : Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = widget.s;
+    final mode = widget.element.actionValueMode;
     final showBody = widget.element.actionMethod != ActionMethod.get;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
-          controller: _url,
-          keyboardType: TextInputType.url,
-          maxLines: null,
-          decoration: InputDecoration(
-            labelText: s.actionUrlLabel,
-            helperText: s.actionUrlHint,
-          ),
-          onChanged: (_) => _emit(),
-        ),
-        const SizedBox(height: 16),
+        // Method and value mode come first: both change what the address
+        // field below actually needs (which quick-insert row it shows, and
+        // whether a body makes sense), so picking them after would mean
+        // scrolling back up to react to them.
         ElementEditorScreen._sectionLabel(s.actionMethodLabel),
         Wrap(
           spacing: 8,
@@ -1548,23 +1836,138 @@ class _ActionSettingsState extends State<_ActionSettings> {
               ),
           ],
         ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _headers,
-          maxLines: null,
-          decoration: InputDecoration(labelText: s.sourceHeaders),
-          onChanged: (_) => _emit(),
+        const SizedBox(height: 6),
+        Text(_methodHint(s, widget.element.actionMethod),
+            style: const TextStyle(fontSize: 12, color: Colors.black54)),
+        const SizedBox(height: 20),
+
+        ElementEditorScreen._sectionLabel(s.actionModeLabel),
+        Wrap(
+          spacing: 8,
+          children: [
+            ChoiceChip(
+              label: Text(s.actionModeFixed),
+              selected: mode == ActionValueMode.fixed,
+              onSelected: (_) => widget.onChanged(
+                widget.element.copyWith(actionValueMode: ActionValueMode.fixed),
+              ),
+            ),
+            ChoiceChip(
+              label: Text(s.actionModeToggle),
+              selected: mode == ActionValueMode.toggle,
+              onSelected: (_) => widget.onChanged(
+                widget.element.copyWith(
+                  actionValueMode: ActionValueMode.toggle,
+                ),
+              ),
+            ),
+          ],
         ),
-        if (showBody) ...[
+        const SizedBox(height: 6),
+        Text(
+          mode == ActionValueMode.toggle
+              ? s.actionModeToggleHint
+              : s.actionModeFixedHint,
+          style: const TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+
+        if (mode == ActionValueMode.toggle) ...[
           const SizedBox(height: 16),
           TextField(
-            controller: _body,
+            controller: _toggleSource,
             maxLines: null,
-            decoration: InputDecoration(labelText: s.actionBodyLabel),
+            decoration: InputDecoration(
+              labelText: s.actionToggleSourceLabel,
+              helperText: s.actionToggleSourceHint,
+            ),
             onChanged: (_) => _emit(),
           ),
+          const SizedBox(height: 8),
+          _ValueDropdown(
+            s: s,
+            onlyBoolean: true,
+            onPick: (p) => _insertInto(_toggleSource, p),
+          ),
         ],
+        const SizedBox(height: 20),
+
+        _sourceHostChips(s),
+        // The address that actually changes something - on a device with a
+        // separate status page (like the test server's /state), this is
+        // NOT that one; it's whatever path makes the change (e.g. /toggle).
+        TextField(
+          controller: _url,
+          keyboardType: TextInputType.url,
+          maxLines: null,
+          decoration: InputDecoration(
+            labelText: s.actionUrlLabel,
+            helperText: s.actionUrlHint,
+            hintText: 'http://192.168.1.50/toggle',
+          ),
+          onChanged: (_) => _emit(),
+        ),
+        // The placeholder pickers below add to this address, they don't
+        // replace typing one in the first place - a field made entirely of
+        // inserted placeholders (e.g. "{{schalter.on}}{{!wert}}", no
+        // http://host at all) looks plausible but isn't a real address.
+        if (_url.text.trim().isNotEmpty &&
+            !_url.text.trim().startsWith('http://') &&
+            !_url.text.trim().startsWith('https://'))
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              s.actionUrlNotValid,
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          ),
+        const SizedBox(height: 8),
+        _ValueDropdown(s: s, onPick: (p) => _insertInto(_url, p)),
+        const SizedBox(height: 8),
+        _quickInsertRow(mode, s, (v) => _insertInto(_url, v)),
         const SizedBox(height: 16),
+        _resolvedPreview(s),
+        const SizedBox(height: 8),
+
+        Theme(
+          // The default ExpansionTile divider looks out of place floating
+          // inside this already-boxed settings section.
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: const EdgeInsets.only(bottom: 8),
+            title: Text(
+              s.advanced,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.black54,
+              ),
+            ),
+            children: [
+              TextField(
+                controller: _headers,
+                maxLines: null,
+                decoration: InputDecoration(labelText: s.sourceHeaders),
+                onChanged: (_) => _emit(),
+              ),
+              if (showBody) ...[
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _body,
+                  maxLines: null,
+                  decoration: InputDecoration(labelText: s.actionBodyLabel),
+                  onChanged: (_) => _emit(),
+                ),
+                const SizedBox(height: 8),
+                _ValueDropdown(s: s, onPick: (p) => _insertInto(_body, p)),
+                const SizedBox(height: 8),
+                _quickInsertRow(mode, s, (v) => _insertInto(_body, v)),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+
         Align(
           alignment: Alignment.centerLeft,
           child: FilledButton.tonalIcon(
@@ -1596,4 +1999,10 @@ class _ActionSettingsState extends State<_ActionSettings> {
       ],
     );
   }
+
+  static String _methodHint(AppStrings s, ActionMethod method) => switch (method) {
+    ActionMethod.get => s.actionMethodGetHint,
+    ActionMethod.post => s.actionMethodPostHint,
+    ActionMethod.put => s.actionMethodPutHint,
+  };
 }
