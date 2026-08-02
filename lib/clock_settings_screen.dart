@@ -118,6 +118,38 @@ class ClockSettingsScreen extends StatelessWidget {
                               );
                             },
                           ),
+                          _StyleOption(
+                            title: s.splitFlap,
+                            selected: settings.style == ClockStyle.splitFlap,
+                            preview: const _SplitFlapPreview(),
+                            onTap: () {
+                              ClockSettingsController.instance.update(
+                                settings.copyWith(
+                                  style: ClockStyle.splitFlap,
+                                ),
+                              );
+                            },
+                          ),
+                          _StyleOption(
+                            title: s.orbit,
+                            selected: settings.style == ClockStyle.orbit,
+                            preview: const _OrbitPreview(),
+                            onTap: () {
+                              ClockSettingsController.instance.update(
+                                settings.copyWith(style: ClockStyle.orbit),
+                              );
+                            },
+                          ),
+                          _StyleOption(
+                            title: s.vertical,
+                            selected: settings.style == ClockStyle.vertical,
+                            preview: const _VerticalPreview(),
+                            onTap: () {
+                              ClockSettingsController.instance.update(
+                                settings.copyWith(style: ClockStyle.vertical),
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -160,6 +192,18 @@ class ClockSettingsScreen extends StatelessWidget {
                             s: s,
                           ),
                           ClockStyle.dotMatrix => _DotMatrixAppearance(
+                            settings: settings,
+                            s: s,
+                          ),
+                          ClockStyle.splitFlap => _SplitFlapAppearance(
+                            settings: settings,
+                            s: s,
+                          ),
+                          ClockStyle.orbit => _OrbitAppearance(
+                            settings: settings,
+                            s: s,
+                          ),
+                          ClockStyle.vertical => _VerticalAppearance(
                             settings: settings,
                             s: s,
                           ),
@@ -322,6 +366,113 @@ class _DotMatrixAppearance extends StatelessWidget {
           onSelected: (i) {
             ClockSettingsController.instance.update(
               settings.copyWith(dotColorIndex: i),
+            );
+          },
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
+class _SplitFlapAppearance extends StatelessWidget {
+  const _SplitFlapAppearance({required this.settings, required this.s});
+
+  final ClockSettings settings;
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Label(s.backgroundColor),
+        ColorSwatchPicker(
+          s: s,
+          selectedIndex: settings.splitFlapBgColorIndex,
+          onSelected: (i) {
+            ClockSettingsController.instance.update(
+              settings.copyWith(splitFlapBgColorIndex: i),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        _Label(
+          s.backgroundStrength((settings.splitFlapBgOpacity * 100).round()),
+        ),
+        Slider(
+          value: settings.splitFlapBgOpacity,
+          min: 0,
+          max: 1,
+          divisions: 20,
+          onChanged: (value) {
+            ClockSettingsController.instance.update(
+              settings.copyWith(splitFlapBgOpacity: value),
+            );
+          },
+        ),
+        const SizedBox(height: 8),
+        _Label(s.textColor),
+        ColorSwatchPicker(
+          s: s,
+          selectedIndex: settings.splitFlapTextColorIndex,
+          onSelected: (i) {
+            ClockSettingsController.instance.update(
+              settings.copyWith(splitFlapTextColorIndex: i),
+            );
+          },
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
+class _OrbitAppearance extends StatelessWidget {
+  const _OrbitAppearance({required this.settings, required this.s});
+
+  final ClockSettings settings;
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Label(s.textColor),
+        ColorSwatchPicker(
+          s: s,
+          selectedIndex: settings.orbitColorIndex,
+          onSelected: (i) {
+            ClockSettingsController.instance.update(
+              settings.copyWith(orbitColorIndex: i),
+            );
+          },
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
+class _VerticalAppearance extends StatelessWidget {
+  const _VerticalAppearance({required this.settings, required this.s});
+
+  final ClockSettings settings;
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Label(s.textColor),
+        ColorSwatchPicker(
+          s: s,
+          selectedIndex: settings.verticalColorIndex,
+          onSelected: (i) {
+            ClockSettingsController.instance.update(
+              settings.copyWith(verticalColorIndex: i),
             );
           },
         ),
@@ -577,6 +728,44 @@ class _DotMatrixPreview extends StatelessWidget {
     return const SizedBox(
       height: 60,
       child: Center(child: DotMatrixClock(dotSize: 5)),
+    );
+  }
+}
+
+class _SplitFlapPreview extends StatelessWidget {
+  const _SplitFlapPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 60,
+      child: Center(
+        child: SplitFlapClock(digitWidth: 24, digitHeight: 34, fontSize: 20),
+      ),
+    );
+  }
+}
+
+class _OrbitPreview extends StatelessWidget {
+  const _OrbitPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 60,
+      child: Center(child: OrbitClock(size: 58)),
+    );
+  }
+}
+
+class _VerticalPreview extends StatelessWidget {
+  const _VerticalPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 60,
+      child: Center(child: VerticalClock(fontSize: 18)),
     );
   }
 }

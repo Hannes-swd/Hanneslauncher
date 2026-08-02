@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 
@@ -33,6 +34,9 @@ class ClockDisplay extends StatelessWidget {
               ClockStyle.roman => const RomanClock(),
               ClockStyle.bars => const BarsClock(),
               ClockStyle.dotMatrix => const DotMatrixClock(),
+              ClockStyle.splitFlap => const SplitFlapClock(),
+              ClockStyle.orbit => const OrbitClock(),
+              ClockStyle.vertical => const VerticalClock(),
             },
           ),
         );
@@ -513,6 +517,487 @@ class _MatrixDot extends StatelessWidget {
         shape: BoxShape.circle,
         color: color.withValues(alpha: lit ? 1 : 0.12),
       ),
+    );
+  }
+}
+
+/// A mechanical split-flap ("Solari board") clock: each digit is a card
+/// that flips over whenever its value changes. One accent color throughout
+/// - card background and digit/seam-line color, no hue shifts.
+class SplitFlapClock extends StatefulWidget {
+  const SplitFlapClock({
+    super.key,
+    this.digitWidth = 44,
+    this.digitHeight = 64,
+    this.fontSize = 40,
+  });
+
+  final double digitWidth;
+  final double digitHeight;
+  final double fontSize;
+
+  @override
+  State<SplitFlapClock> createState() => _SplitFlapClockState();
+}
+
+class _SplitFlapClockState extends State<SplitFlapClock> {
+  late DateTime _now = DateTime.now();
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      Future.microtask(() {
+        if (!mounted) return;
+        setState(() => _now = DateTime.now());
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hh = _now.hour.toString().padLeft(2, '0');
+    final mm = _now.minute.toString().padLeft(2, '0');
+    return ValueListenableBuilder<ClockSettings>(
+      valueListenable: ClockSettingsController.instance,
+      builder: (context, settings, child) {
+        final bgColor = settings.splitFlapBgColor;
+        final textColor = settings.splitFlapTextColor;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _FlipDigit(
+                  digit: int.parse(hh[0]),
+                  bgColor: bgColor,
+                  textColor: textColor,
+                  width: widget.digitWidth,
+                  height: widget.digitHeight,
+                  fontSize: widget.fontSize,
+                ),
+                const SizedBox(width: 4),
+                _FlipDigit(
+                  digit: int.parse(hh[1]),
+                  bgColor: bgColor,
+                  textColor: textColor,
+                  width: widget.digitWidth,
+                  height: widget.digitHeight,
+                  fontSize: widget.fontSize,
+                ),
+                SizedBox(
+                  width: widget.digitWidth * 0.45,
+                  child: Text(
+                    ':',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: widget.fontSize,
+                      fontWeight: FontWeight.w300,
+                      color: textColor,
+                    ),
+                  ),
+                ),
+                _FlipDigit(
+                  digit: int.parse(mm[0]),
+                  bgColor: bgColor,
+                  textColor: textColor,
+                  width: widget.digitWidth,
+                  height: widget.digitHeight,
+                  fontSize: widget.fontSize,
+                ),
+                const SizedBox(width: 4),
+                _FlipDigit(
+                  digit: int.parse(mm[1]),
+                  bgColor: bgColor,
+                  textColor: textColor,
+                  width: widget.digitWidth,
+                  height: widget.digitHeight,
+                  fontSize: widget.fontSize,
+                ),
+              ],
+            ),
+            SizedBox(height: widget.fontSize * 0.3),
+            Text(
+              '${_now.day.toString().padLeft(2, '0')}.'
+              '${_now.month.toString().padLeft(2, '0')}.'
+              '${_now.year}',
+              style: TextStyle(
+                fontSize: widget.fontSize * 0.28,
+                color: textColor.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// One flap card. Whenever [digit] changes from its previous build, it
+/// plays a single 3D flip from the old value to the new one - the old
+/// face rotates down to the edge, then the new face continues the turn
+/// down to flat, so the text is never seen mirrored mid-flip.
+class _FlipDigit extends StatefulWidget {
+  const _FlipDigit({
+    required this.digit,
+    required this.bgColor,
+    required this.textColor,
+    required this.width,
+    required this.height,
+    required this.fontSize,
+  });
+
+  final int digit;
+  final Color bgColor;
+  final Color textColor;
+  final double width;
+  final double height;
+  final double fontSize;
+
+  @override
+  State<_FlipDigit> createState() => _FlipDigitState();
+}
+
+class _FlipDigitState extends State<_FlipDigit>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 380),
+  );
+  late int _previousDigit = widget.digit;
+
+  @override
+  void didUpdateWidget(covariant _FlipDigit oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.digit != widget.digit) {
+      _previousDigit = oldWidget.digit;
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value;
+        final firstHalf = t < 0.5;
+        final angle = firstHalf ? t * pi : (t - 0.5) * pi - pi / 2;
+        return Transform(
+          alignment: Alignment.center,
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.0016)
+            ..rotateX(angle),
+          child: _FlapCard(
+            digit: firstHalf ? _previousDigit : widget.digit,
+            bgColor: widget.bgColor,
+            textColor: widget.textColor,
+            width: widget.width,
+            height: widget.height,
+            fontSize: widget.fontSize,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _FlapCard extends StatelessWidget {
+  const _FlapCard({
+    required this.digit,
+    required this.bgColor,
+    required this.textColor,
+    required this.width,
+    required this.height,
+    required this.fontSize,
+  });
+
+  final int digit;
+  final Color bgColor;
+  final Color textColor;
+  final double width;
+  final double height;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Text(
+            '$digit',
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+              height: 1,
+            ),
+          ),
+          // The seam of the flap board - a hairline across the middle.
+          Positioned(
+            left: 0,
+            right: 0,
+            top: height / 2 - 0.5,
+            child: Container(
+              height: 1,
+              color: textColor.withValues(alpha: 0.15),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// No hands, no numerals around a dial - a single dot orbits a thin ring
+/// once per hour, its position marking the minute, with the hour as a
+/// number resting in the center. A small "HH:MM" readout underneath keeps
+/// the exact time legible even though the ring itself is abstract. One
+/// accent color throughout.
+class OrbitClock extends StatefulWidget {
+  const OrbitClock({super.key, this.size = 140});
+
+  final double size;
+
+  @override
+  State<OrbitClock> createState() => _OrbitClockState();
+}
+
+class _OrbitClockState extends State<OrbitClock> {
+  late DateTime _now = DateTime.now();
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      Future.microtask(() {
+        if (!mounted) return;
+        setState(() => _now = DateTime.now());
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var hour = _now.hour % 12;
+    if (hour == 0) hour = 12;
+    // Includes seconds so the dot glides smoothly around the ring instead
+    // of jumping once a minute.
+    final minuteFraction = (_now.minute + _now.second / 60) / 60;
+    final hh = _now.hour.toString().padLeft(2, '0');
+    final mm = _now.minute.toString().padLeft(2, '0');
+    return ValueListenableBuilder<ClockSettings>(
+      valueListenable: ClockSettingsController.instance,
+      builder: (context, settings, child) {
+        final color = settings.orbitColor;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: widget.size,
+              height: widget.size,
+              child: CustomPaint(
+                painter: _OrbitPainter(fraction: minuteFraction, color: color),
+                child: Center(
+                  child: Text(
+                    '$hour',
+                    style: TextStyle(
+                      fontSize: widget.size * 0.32,
+                      fontWeight: FontWeight.w300,
+                      color: color,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: widget.size * 0.06),
+            Text(
+              '$hh:$mm',
+              style: TextStyle(
+                fontSize: widget.size * 0.15,
+                color: color.withValues(alpha: 0.7),
+              ),
+            ),
+            SizedBox(height: widget.size * 0.02),
+            Text(
+              '${_now.day.toString().padLeft(2, '0')}.'
+              '${_now.month.toString().padLeft(2, '0')}.'
+              '${_now.year}',
+              style: TextStyle(
+                fontSize: widget.size * 0.1,
+                color: color.withValues(alpha: 0.45),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Draws the ring, four reference ticks at 12/3/6/9, and the orbiting dot.
+/// [fraction] is how far through the hour we are (0 = top, clockwise).
+class _OrbitPainter extends CustomPainter {
+  _OrbitPainter({required this.fraction, required this.color});
+
+  final double fraction;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 6;
+
+    final ringPaint = Paint()
+      ..color = color.withValues(alpha: 0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    canvas.drawCircle(center, radius, ringPaint);
+
+    final tickPaint = Paint()
+      ..color = color.withValues(alpha: 0.45)
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+    for (var i = 0; i < 4; i++) {
+      final angle = i * pi / 2 - pi / 2;
+      final direction = Offset(cos(angle), sin(angle));
+      canvas.drawLine(
+        center + direction * radius,
+        center + direction * (radius - 6),
+        tickPaint,
+      );
+    }
+
+    final dotAngle = fraction * 2 * pi - pi / 2;
+    final dotCenter =
+        center + Offset(cos(dotAngle), sin(dotAngle)) * radius;
+    canvas.drawCircle(dotCenter, 5, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(covariant _OrbitPainter oldDelegate) {
+    return oldDelegate.fraction != fraction || oldDelegate.color != color;
+  }
+}
+
+/// Hour and minute written top-to-bottom in a single column - every digit
+/// stacked under the previous one, like traditional vertical (tategaki)
+/// text, with a small dot between hour and minute instead of a colon. One
+/// accent color throughout.
+class VerticalClock extends StatefulWidget {
+  const VerticalClock({super.key, this.fontSize = 38});
+
+  final double fontSize;
+
+  @override
+  State<VerticalClock> createState() => _VerticalClockState();
+}
+
+class _VerticalClockState extends State<VerticalClock> {
+  late DateTime _now = DateTime.now();
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      Future.microtask(() {
+        if (!mounted) return;
+        setState(() => _now = DateTime.now());
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hh = _now.hour.toString().padLeft(2, '0');
+    final mm = _now.minute.toString().padLeft(2, '0');
+    return ValueListenableBuilder<ClockSettings>(
+      valueListenable: ClockSettingsController.instance,
+      builder: (context, settings, child) {
+        final color = settings.verticalColor;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final char in hh.split(''))
+              Text(
+                char,
+                style: TextStyle(
+                  fontSize: widget.fontSize,
+                  fontWeight: FontWeight.w300,
+                  color: color,
+                  height: 1.05,
+                ),
+              ),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: widget.fontSize * 0.18),
+              child: Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+            for (final char in mm.split(''))
+              Text(
+                char,
+                style: TextStyle(
+                  fontSize: widget.fontSize,
+                  fontWeight: FontWeight.w300,
+                  color: color,
+                  height: 1.05,
+                ),
+              ),
+            SizedBox(height: widget.fontSize * 0.3),
+            Text(
+              '${_now.day.toString().padLeft(2, '0')}.'
+              '${_now.month.toString().padLeft(2, '0')}.'
+              '${_now.year}',
+              style: TextStyle(
+                fontSize: widget.fontSize * 0.28,
+                color: color.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

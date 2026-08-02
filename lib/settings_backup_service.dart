@@ -46,6 +46,12 @@ class SettingsBackupService {
         'wordInactiveColorIndex': clock.wordInactiveColorIndex,
         'digitalColorIndex': clock.digitalColorIndex,
         'romanColorIndex': clock.romanColorIndex,
+        'dotColorIndex': clock.dotColorIndex,
+        'splitFlapBgColorIndex': clock.splitFlapBgColorIndex,
+        'splitFlapBgOpacity': clock.splitFlapBgOpacity,
+        'splitFlapTextColorIndex': clock.splitFlapTextColorIndex,
+        'orbitColorIndex': clock.orbitColorIndex,
+        'verticalColorIndex': clock.verticalColorIndex,
         'barsFilledColorIndex': clock.barsFilledColorIndex,
         'barsUnfilledColorIndex': clock.barsUnfilledColorIndex,
         'barsUnfilledOpacity': clock.barsUnfilledOpacity,
@@ -152,6 +158,15 @@ class SettingsBackupService {
               clockJson['wordInactiveColorIndex'] as int? ?? 0,
           digitalColorIndex: clockJson['digitalColorIndex'] as int? ?? 0,
           romanColorIndex: clockJson['romanColorIndex'] as int? ?? 0,
+          dotColorIndex: clockJson['dotColorIndex'] as int? ?? 0,
+          splitFlapBgColorIndex:
+              clockJson['splitFlapBgColorIndex'] as int? ?? 0,
+          splitFlapBgOpacity:
+              (clockJson['splitFlapBgOpacity'] as num?)?.toDouble() ?? 0.85,
+          splitFlapTextColorIndex:
+              clockJson['splitFlapTextColorIndex'] as int? ?? 1,
+          orbitColorIndex: clockJson['orbitColorIndex'] as int? ?? 0,
+          verticalColorIndex: clockJson['verticalColorIndex'] as int? ?? 0,
           barsFilledColorIndex:
               clockJson['barsFilledColorIndex'] as int? ?? 0,
           barsUnfilledColorIndex:

@@ -52,6 +52,9 @@ class AppStrings {
   String get roman => _en ? 'Roman numerals' : 'Römische Zahlen';
   String get bars => _en ? 'Bars' : 'Balken';
   String get dotMatrix => _en ? 'Dot matrix' : 'Punktraster';
+  String get splitFlap => _en ? 'Split-flap' : 'Klapptafel';
+  String get orbit => 'Orbit';
+  String get vertical => _en ? 'Vertical' : 'Vertikal';
   String get position => _en ? 'Position' : 'Position';
   String get alignLeft => _en ? 'Left' : 'Links';
   String get alignCenter => _en ? 'Center' : 'Mittig';

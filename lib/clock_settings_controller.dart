@@ -3,7 +3,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_list_settings_controller.dart' show appListColorPalette;
 
-enum ClockStyle { digital, word, roman, bars, dotMatrix }
+enum ClockStyle {
+  digital,
+  word,
+  roman,
+  bars,
+  dotMatrix,
+  splitFlap,
+  orbit,
+  vertical,
+}
 
 /// Horizontal position on the home screen. Always anchored to the top -
 /// there's no bottom option, only how far down from the top it sits.
@@ -20,6 +29,11 @@ class ClockSettings {
     this.digitalColorIndex = 0,
     this.romanColorIndex = 0,
     this.dotColorIndex = 0,
+    this.splitFlapBgColorIndex = 0,
+    this.splitFlapBgOpacity = 0.85,
+    this.splitFlapTextColorIndex = 1,
+    this.orbitColorIndex = 0,
+    this.verticalColorIndex = 0,
     this.barsFilledColorIndex = 0,
     this.barsUnfilledColorIndex = 0,
     this.barsUnfilledOpacity = 0.12,
@@ -53,6 +67,20 @@ class ClockSettings {
   final int romanColorIndex;
   final int dotColorIndex;
 
+  // Split-flap clock: card background (with its own opacity, like the word
+  // clock's) and the digit/seam-line color.
+  final int splitFlapBgColorIndex;
+  final double splitFlapBgOpacity;
+  final int splitFlapTextColorIndex;
+
+  // Orbit clock: the one color for ring, tick marks, dot, hour number and
+  // the small digital readout beneath.
+  final int orbitColorIndex;
+
+  // Vertical (tategaki-style) clock: the one color for both digit columns,
+  // separator dot and date.
+  final int verticalColorIndex;
+
   // Bars clock: filled part, empty track (plus its own opacity, since a
   // fully solid track would hide the bars sitting on the wallpaper) and the
   // h/m/s numbers underneath.
@@ -68,6 +96,16 @@ class ClockSettings {
   Color get digitalColor => appListColorPalette[digitalColorIndex];
   Color get romanColor => appListColorPalette[romanColorIndex];
   Color get dotColor => appListColorPalette[dotColorIndex];
+
+  Color get splitFlapBgColor =>
+      appListColorPalette[splitFlapBgColorIndex].withValues(
+        alpha: splitFlapBgOpacity,
+      );
+  Color get splitFlapTextColor =>
+      appListColorPalette[splitFlapTextColorIndex];
+
+  Color get orbitColor => appListColorPalette[orbitColorIndex];
+  Color get verticalColor => appListColorPalette[verticalColorIndex];
 
   Color get barsFilledColor => appListColorPalette[barsFilledColorIndex];
   Color get barsUnfilledColor =>
@@ -86,6 +124,11 @@ class ClockSettings {
     int? digitalColorIndex,
     int? romanColorIndex,
     int? dotColorIndex,
+    int? splitFlapBgColorIndex,
+    double? splitFlapBgOpacity,
+    int? splitFlapTextColorIndex,
+    int? orbitColorIndex,
+    int? verticalColorIndex,
     int? barsFilledColorIndex,
     int? barsUnfilledColorIndex,
     double? barsUnfilledOpacity,
@@ -105,6 +148,13 @@ class ClockSettings {
       digitalColorIndex: digitalColorIndex ?? this.digitalColorIndex,
       romanColorIndex: romanColorIndex ?? this.romanColorIndex,
       dotColorIndex: dotColorIndex ?? this.dotColorIndex,
+      splitFlapBgColorIndex:
+          splitFlapBgColorIndex ?? this.splitFlapBgColorIndex,
+      splitFlapBgOpacity: splitFlapBgOpacity ?? this.splitFlapBgOpacity,
+      splitFlapTextColorIndex:
+          splitFlapTextColorIndex ?? this.splitFlapTextColorIndex,
+      orbitColorIndex: orbitColorIndex ?? this.orbitColorIndex,
+      verticalColorIndex: verticalColorIndex ?? this.verticalColorIndex,
       barsFilledColorIndex:
           barsFilledColorIndex ?? this.barsFilledColorIndex,
       barsUnfilledColorIndex:
@@ -134,6 +184,11 @@ class ClockSettingsController extends ValueNotifier<ClockSettings> {
   static const _digitalColorKey = 'clock_digital_color';
   static const _romanColorKey = 'clock_roman_color';
   static const _dotColorKey = 'clock_dot_color';
+  static const _splitFlapBgColorKey = 'clock_split_flap_bg_color';
+  static const _splitFlapBgOpacityKey = 'clock_split_flap_bg_opacity';
+  static const _splitFlapTextColorKey = 'clock_split_flap_text_color';
+  static const _orbitColorKey = 'clock_orbit_color';
+  static const _verticalColorKey = 'clock_vertical_color';
   static const _barsFilledColorKey = 'clock_bars_filled_color';
   static const _barsUnfilledColorKey = 'clock_bars_unfilled_color';
   static const _barsUnfilledOpacityKey = 'clock_bars_unfilled_opacity';
@@ -154,6 +209,11 @@ class ClockSettingsController extends ValueNotifier<ClockSettings> {
       digitalColorIndex: prefs.getInt(_digitalColorKey) ?? 0,
       romanColorIndex: prefs.getInt(_romanColorKey) ?? 0,
       dotColorIndex: prefs.getInt(_dotColorKey) ?? 0,
+      splitFlapBgColorIndex: prefs.getInt(_splitFlapBgColorKey) ?? 0,
+      splitFlapBgOpacity: prefs.getDouble(_splitFlapBgOpacityKey) ?? 0.85,
+      splitFlapTextColorIndex: prefs.getInt(_splitFlapTextColorKey) ?? 1,
+      orbitColorIndex: prefs.getInt(_orbitColorKey) ?? 0,
+      verticalColorIndex: prefs.getInt(_verticalColorKey) ?? 0,
       barsFilledColorIndex: prefs.getInt(_barsFilledColorKey) ?? 0,
       barsUnfilledColorIndex: prefs.getInt(_barsUnfilledColorKey) ?? 0,
       barsUnfilledOpacity: prefs.getDouble(_barsUnfilledOpacityKey) ?? 0.12,
@@ -179,6 +239,20 @@ class ClockSettingsController extends ValueNotifier<ClockSettings> {
     await prefs.setInt(_digitalColorKey, newValue.digitalColorIndex);
     await prefs.setInt(_romanColorKey, newValue.romanColorIndex);
     await prefs.setInt(_dotColorKey, newValue.dotColorIndex);
+    await prefs.setInt(
+      _splitFlapBgColorKey,
+      newValue.splitFlapBgColorIndex,
+    );
+    await prefs.setDouble(
+      _splitFlapBgOpacityKey,
+      newValue.splitFlapBgOpacity,
+    );
+    await prefs.setInt(
+      _splitFlapTextColorKey,
+      newValue.splitFlapTextColorIndex,
+    );
+    await prefs.setInt(_orbitColorKey, newValue.orbitColorIndex);
+    await prefs.setInt(_verticalColorKey, newValue.verticalColorIndex);
     await prefs.setInt(_barsFilledColorKey, newValue.barsFilledColorIndex);
     await prefs.setInt(
       _barsUnfilledColorKey,
