@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'app_list_settings_controller.dart' show appListColorPalette;
 import 'app_strings.dart';
 import 'data_sources_controller.dart';
+import 'device_stats_controller.dart';
 import 'folder_sheet.dart';
 import 'launcher_entries_controller.dart';
 import 'location_controller.dart';
@@ -29,6 +30,7 @@ class WidgetCardView extends StatelessWidget {
       listenable: Listenable.merge([
         DataSourcesController.instance,
         LocationController.instance,
+        DeviceStatsController.instance,
       ]),
       builder: (context, child) {
         Widget card;
@@ -122,6 +124,7 @@ class WidgetElementView extends StatelessWidget {
       listenable: Listenable.merge([
         DataSourcesController.instance,
         LocationController.instance,
+        DeviceStatsController.instance,
       ]),
       builder: (context, child) => _build(context),
     );

@@ -6,6 +6,7 @@ import 'app_list_settings_controller.dart';
 import 'app_overrides_controller.dart';
 import 'clock_settings_controller.dart';
 import 'custom_colors_controller.dart';
+import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
 import 'folders_controller.dart';
 import 'icon_theme_controller.dart';
@@ -93,6 +94,7 @@ class SettingsBackupService {
         for (final color in CustomColorsController.instance.value)
           color.toARGB32(),
       ],
+      'deviceDataEnabled': DeviceDataController.instance.value,
     };
   }
 
@@ -259,6 +261,11 @@ class SettingsBackupService {
         }
       }
       await DataSourcesController.instance.replaceAll(sources);
+    }
+
+    final deviceDataEnabled = decoded['deviceDataEnabled'] as bool?;
+    if (deviceDataEnabled != null) {
+      await DeviceDataController.instance.setEnabled(deviceDataEnabled);
     }
 
     // Pinned apps last: web apps/folders it points at must already exist

@@ -25,6 +25,7 @@ class AppStrings {
       _en ? 'Color, font, size, spacing' : 'Farbe, Schriftart, Größe, Abstand';
   String get exampleApp => _en ? 'Example app' : 'Beispiel App';
   String get searchApps => _en ? 'Search apps' : 'App suchen';
+  String get searchDataSources => _en ? 'Search sources' : 'Quelle suchen';
   String get noSearchResults =>
       _en ? 'No app found' : 'Keine App gefunden';
   String get sortBy => _en ? 'Sort' : 'Sortieren';
@@ -310,11 +311,13 @@ class AppStrings {
       : 'Alle Einstellungen als Datei exportieren oder importieren';
   String get backupHint => _en
       ? 'Exports the clock, widgets, panel, pinned apps, folders, web apps, '
-            'data sources, app renames and language into one file. Custom '
-            'pictures (wallpaper, replaced icons) aren\'t included - their '
+            'data sources, device data packages, custom colors, app '
+            'renames and language into one file. Custom pictures '
+            '(wallpaper, replaced icons) aren\'t included - their '
             'files stay behind on this install.'
       : 'Exportiert Uhr, Widgets, Panel, angepinnte Apps, Ordner, Web-Apps, '
-            'Datenquellen, App-Umbenennungen und Sprache in eine Datei. '
+            'Datenquellen, Gerätedaten-Pakete, eigene Farben, '
+            'App-Umbenennungen und Sprache in eine Datei. '
             'Eigene Bilder (Hintergrund, ersetzte Icons) sind nicht '
             'enthalten - deren Dateien bleiben auf diesem Gerät.';
   String get backupExport => _en ? 'Export' : 'Exportieren';
@@ -334,4 +337,23 @@ class AppStrings {
       : 'Keine lesbare Sicherungsdatei';
 
   String get addColor => _en ? 'Add color' : 'Farbe hinzufügen';
+
+  // The single device-data package, added from the "+" picker on the data
+  // sources screen exactly like a source (see
+  // data_sources_settings_screen.dart / device_data_screen.dart).
+  String get devicePackages => _en ? 'Device data' : 'Gerätedaten';
+  String get devicePackagesHint => _en
+      ? 'Battery, storage, connection, sunrise/sunset, moon phase, steps, '
+            'most used app - as placeholders, all in one go'
+      : 'Akku, Speicher, Verbindung, Sonnenauf-/-untergang, Mondphase, '
+            'Schritte, meistgenutzte App - als Platzhalter, alle auf einmal';
+  String get packageBattery => _en ? 'Battery' : 'Akku';
+  String get packageStorage => _en ? 'Storage' : 'Speicherplatz';
+  String get packageConnection => _en ? 'Connection' : 'Verbindung';
+  String get packageSunTimes => _en ? 'Sunrise/sunset' : 'Sonnenauf-/-untergang';
+  String get packageMoonPhase => _en ? 'Moon phase' : 'Mondphase';
+  String get packageSteps => _en ? 'Steps' : 'Schritte';
+  String get packageMostUsedApp =>
+      _en ? 'Most used app today' : 'Meistgenutzte App heute';
+  String get grantAccess => _en ? 'Grant access' : 'Zugriff erlauben';
 }

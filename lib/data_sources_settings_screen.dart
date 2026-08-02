@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'add_data_source_screen.dart';
 import 'app_strings.dart';
+import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
+import 'device_data_screen.dart';
 import 'locale_controller.dart';
 
 /// Open-Meteo needs no API key and reports a weather code that the icon
@@ -24,42 +27,21 @@ const _weatherHereUrl =
 /// so a source can be added from wherever one turns out to be missing,
 /// instead of only from the settings.
 Future<void> addDataSource(BuildContext context, AppStrings s) async {
-  final preset = await showDialog<String>(
-    context: context,
-    builder: (context) {
-      return SimpleDialog(
-        title: Text(s.presets),
-        children: [
-          SimpleDialogOption(
-            onPressed: () => Navigator.of(context).pop('weatherHere'),
-            child: ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.my_location),
-              title: Text(s.presetWeatherHere),
-              subtitle: Text(s.presetWeatherHereHint),
-            ),
-          ),
-          SimpleDialogOption(
-            onPressed: () => Navigator.of(context).pop('weather'),
-            child: ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.wb_sunny_outlined),
-              title: Text(s.presetWeather),
-            ),
-          ),
-          SimpleDialogOption(
-            onPressed: () => Navigator.of(context).pop('custom'),
-            child: ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.link),
-              title: Text(s.presetCustom),
-            ),
-          ),
-        ],
-      );
-    },
+  final preset = await Navigator.of(context).push<String>(
+    MaterialPageRoute(builder: (context) => const AddDataSourceScreen()),
   );
   if (preset == null || !context.mounted) return;
+
+  if (preset == 'deviceData') {
+    // One flag, nothing to fill in - added the same way the others are, but
+    // straight to on instead of an empty form.
+    await DeviceDataController.instance.setEnabled(true);
+    if (!context.mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const DeviceDataScreen()),
+    );
+    return;
+  }
 
   final source = switch (preset) {
     'weatherHere' => await DataSourcesController.instance.add(
@@ -88,7 +70,9 @@ Future<void> addDataSource(BuildContext context, AppStrings s) async {
   );
 }
 
-/// The APIs the widgets read from.
+/// The APIs the widgets read from, and the device-data package - both are
+/// just sources of placeholders to the widgets using them, so they live in
+/// one list instead of a page each.
 class DataSourcesSettingsScreen extends StatelessWidget {
   const DataSourcesSettingsScreen({super.key});
 
@@ -101,53 +85,73 @@ class DataSourcesSettingsScreen extends StatelessWidget {
         return ValueListenableBuilder<List<DataSource>>(
           valueListenable: DataSourcesController.instance,
           builder: (context, sources, child) {
-            return Scaffold(
-              appBar: AppBar(title: Text(s.dataSources)),
-              floatingActionButton: FloatingActionButton.extended(
-                onPressed: () => addDataSource(context, s),
-                icon: const Icon(Icons.add),
-                label: Text(s.addDataSource),
-              ),
-              body: sources.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        s.dataSourcesSubtitle(0),
-                        style: const TextStyle(color: Colors.black54),
-                      ),
-                    )
-                  : ListView(
-                      padding: const EdgeInsets.only(bottom: 88),
-                      children: [
-                        for (final source in sources)
-                          ListTile(
-                            leading: const Icon(Icons.cloud_outlined),
-                            title: Text(source.name),
-                            subtitle: Text(
-                              '{{${source.key}}} · ${source.url}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      DataSourceEditScreen(
-                                        sourceId: source.id,
-                                      ),
-                                ),
-                              );
-                            },
+            return ValueListenableBuilder<bool>(
+              valueListenable: DeviceDataController.instance,
+              builder: (context, deviceDataEnabled, child) {
+                return Scaffold(
+                  appBar: AppBar(title: Text(s.dataSources)),
+                  floatingActionButton: FloatingActionButton.extended(
+                    onPressed: () => addDataSource(context, s),
+                    icon: const Icon(Icons.add),
+                    label: Text(s.addDataSource),
+                  ),
+                  body: sources.isEmpty && !deviceDataEnabled
+                      ? Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            s.dataSourcesSubtitle(0),
+                            style: const TextStyle(color: Colors.black54),
                           ),
-                      ],
-                    ),
+                        )
+                      : ListView(
+                          padding: const EdgeInsets.only(bottom: 88),
+                          children: [
+                            for (final source in sources)
+                              ListTile(
+                                leading: const Icon(Icons.cloud_outlined),
+                                title: Text(source.name),
+                                subtitle: Text(
+                                  '{{${source.key}}} · ${source.url}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          DataSourceEditScreen(
+                                            sourceId: source.id,
+                                          ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            if (deviceDataEnabled)
+                              ListTile(
+                                leading: const Icon(
+                                  Icons.smartphone_outlined,
+                                ),
+                                title: Text(s.devicePackages),
+                                subtitle: Text(s.devicePackagesHint),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const DeviceDataScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                          ],
+                        ),
+                );
+              },
             );
           },
         );
       },
     );
   }
-
 }
 
 /// One source's settings, with a test button that shows what actually comes

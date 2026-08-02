@@ -5,8 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'data_packages_controller.dart';
+import 'device_stats_controller.dart';
 import 'locale_controller.dart';
 import 'location_controller.dart';
+import 'moon_phase.dart';
+import 'sun_times.dart';
 
 /// One value a card can reference, ready to be offered for picking.
 class PlaceholderOption {
@@ -326,17 +330,35 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
 
   /// Values every card can use without setting up a source at all. Kept here
   /// so they go through the same `{{...}}` mechanism as fetched values.
-  static const builtInKeys = [
-    'zeit',
-    'zeit24',
-    'zeit12',
-    'ampm',
-    'datum',
-    'wochentag',
-    'ort',
-    'lat',
-    'lon',
-  ];
+  /// The device-stat ones only appear once the "Gerätedaten" package is
+  /// added on the data sources screen - otherwise the picker would carry a
+  /// dozen entries nobody asked for.
+  static List<String> get builtInKeys {
+    final deviceData = DeviceDataController.instance.value;
+    return [
+      'zeit',
+      'zeit24',
+      'zeit12',
+      'ampm',
+      'datum',
+      'wochentag',
+      'ort',
+      'lat',
+      'lon',
+      if (deviceData) ...[
+        'akku',
+        'akku_laedt',
+        'speicher_frei',
+        'speicher_gesamt',
+        'verbindung',
+        'sonnenauf',
+        'sonnenunter',
+        'mondphase',
+        'schritte',
+        'meistgenutzt',
+      ],
+    ];
+  }
 
   /// Whether `{{zeit}}` is written 24-hour. Mirrors the phone's own clock
   /// setting, so the card and the status bar never disagree; set from the
@@ -403,9 +425,51 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
             ? english
             : german;
         return names[now.weekday - 1];
+      case 'akku':
+        final percent = DeviceStatsController.instance.batteryPercent;
+        return percent == null ? '-' : '$percent%';
+      case 'akku_laedt':
+        final en = LocaleController.instance.value == AppLanguage.en;
+        return DeviceStatsController.instance.batteryCharging
+            ? (en ? 'Charging' : 'Lädt')
+            : (en ? 'Not charging' : 'Lädt nicht');
+      case 'speicher_frei':
+        return _formatGb(DeviceStatsController.instance.storageFreeGb);
+      case 'speicher_gesamt':
+        return _formatGb(DeviceStatsController.instance.storageTotalGb);
+      case 'verbindung':
+        return _connectionLabel(DeviceStatsController.instance.connectionType);
+      case 'sonnenauf':
+      case 'sonnenunter':
+        final position = LocationController.instance.value;
+        if (position == null) return '-';
+        final times = sunTimesFor(now, position.lat, position.lon);
+        final time = key == 'sonnenauf' ? times.sunrise : times.sunset;
+        if (time == null) return '-';
+        return use24HourFormat ? _time24(time) : _time12(time);
+      case 'mondphase':
+        return moonPhaseEmoji(now);
+      case 'schritte':
+        final steps = DeviceStatsController.instance.stepsToday;
+        return steps == null ? '-' : '$steps';
+      case 'meistgenutzt':
+        return DeviceStatsController.instance.mostUsedApp ?? '-';
       default:
         return null;
     }
+  }
+
+  static String _formatGb(double? gb) => gb == null ? '-' : '${gb.toStringAsFixed(1)} GB';
+
+  static String _connectionLabel(String type) {
+    final en = LocaleController.instance.value == AppLanguage.en;
+    return switch (type) {
+      'wifi' => 'WLAN',
+      'mobile' => en ? 'Mobile' : 'Mobil',
+      'ethernet' => 'Ethernet',
+      'other' => en ? 'Other' : 'Andere',
+      _ => en ? 'Offline' : 'Kein Netz',
+    };
   }
 
   /// Everything a card can put in a text field right now: the built-in

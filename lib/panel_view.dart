@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'app_row_settings_screen.dart';
 import 'app_strings.dart';
 import 'calendar_block_settings_screen.dart';
+import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
+import 'device_stats_controller.dart';
 import 'locale_controller.dart';
 import 'location_controller.dart';
 import 'panel_block_card.dart';
@@ -71,6 +73,7 @@ class _PanelViewState extends State<PanelView> {
     // something to work with before any permission dialog appears.
     await LocationController.instance.load();
     await DataSourcesController.instance.load();
+    await DeviceDataController.instance.load();
     // A card may name the place without any source asking for coordinates,
     // and then nothing else would ever fetch a position.
     if (_usesLocation()) await LocationController.instance.ensureFresh();
@@ -78,6 +81,10 @@ class _PanelViewState extends State<PanelView> {
     // once here rather than on a timer, so a panel nobody opens costs
     // nothing.
     await DataSourcesController.instance.refreshStale();
+    await DeviceStatsController.instance.ensureFresh(
+      wantsSteps: DeviceDataController.instance.value,
+      wantsMostUsedApp: DeviceDataController.instance.value,
+    );
   }
 
   bool _usesLocation() {

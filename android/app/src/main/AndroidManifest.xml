@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Required so the panel widgets can fetch their data sources. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Only the coarse variant: a weather widget needs the town, not the
@@ -7,6 +8,18 @@
     <!-- Reads events from the calendars already synced on the device (a
          Google account added in Android's own settings included). -->
     <uses-permission android:name="android.permission.READ_CALENDAR"/>
+    <!-- Just to read the current connection type (WiFi/mobile/none) for the
+         {{verbindung}} placeholder - not the network's own traffic. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <!-- Reads the step counter sensor for the {{schritte}} placeholder. -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
+    <!-- Lets {{meistgenutzt}} read today's per-app usage time. Not grantable
+         through a normal runtime prompt - the user turns it on for this app
+         in the system's own "Usage access" settings screen, which
+         requestUsageAccess() in MainActivity.kt opens directly. -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions"/>
     <application
         android:label="hanneslouncher"
         android:name="${applicationName}"

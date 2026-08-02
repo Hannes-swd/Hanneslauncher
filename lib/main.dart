@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'app_list_view.dart';
 import 'calendar_controller.dart';
+import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
+import 'device_stats_controller.dart';
 import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
 import 'panel_view.dart';
@@ -80,6 +82,10 @@ class _LauncherRootState extends State<LauncherRoot>
     if (open) {
       DataSourcesController.instance.refreshStale();
       CalendarController.instance.refresh();
+      DeviceStatsController.instance.ensureFresh(
+        wantsSteps: DeviceDataController.instance.value,
+        wantsMostUsedApp: DeviceDataController.instance.value,
+      );
     }
   }
 

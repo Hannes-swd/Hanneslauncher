@@ -2,13 +2,28 @@ package com.example.hanneslouncher
 
 import android.Manifest
 import android.app.Activity
+import android.app.AppOpsManager
+import android.app.usage.UsageStatsManager
 import android.content.ContentUris
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.graphics.Rect
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.BatteryManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.os.Process
 import android.provider.CalendarContract
+import android.provider.Settings
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -16,14 +31,17 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
+import java.util.Calendar
 
 class MainActivity : FlutterActivity() {
     private val gestureChannelName = "hanneslouncher/system_gestures"
     private val calendarChannelName = "hanneslouncher/calendar"
     private val systemAppsChannelName = "hanneslouncher/system_apps"
     private val backupChannelName = "hanneslouncher/backup"
+    private val deviceStatsChannelName = "hanneslouncher/device_stats"
     private val calendarPermissionRequestCode = 4201
     private val importFileRequestCode = 4202
+    private val stepsPermissionRequestCode = 4203
 
     // A plugin (device_calendar) returning every field as null on some
     // Android versions is what this replaces - reading Android's own
@@ -31,6 +49,7 @@ class MainActivity : FlutterActivity() {
     // with the platform about column types.
     private var pendingPermissionResult: MethodChannel.Result? = null
     private var pendingImportResult: MethodChannel.Result? = null
+    private var pendingStepsPermissionResult: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -141,6 +160,169 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        // Device-local numbers for the widget placeholders in
+        // data_packages_controller.dart - each queried fresh on every call
+        // rather than kept updating in the background, since a panel
+        // opened once in a while has no use for a live stream of them.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, deviceStatsChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "battery" -> result.success(batteryInfo())
+                    "storage" -> result.success(storageInfo())
+                    "connectionType" -> result.success(connectionType())
+                    "hasStepsPermission" -> result.success(hasStepsPermission())
+                    "requestStepsPermission" -> {
+                        if (hasStepsPermission()) {
+                            result.success(true)
+                        } else {
+                            pendingStepsPermissionResult?.success(false)
+                            pendingStepsPermissionResult = result
+                            ActivityCompat.requestPermissions(
+                                this,
+                                arrayOf(Manifest.permission.ACTIVITY_RECOGNITION),
+                                stepsPermissionRequestCode,
+                            )
+                        }
+                    }
+                    "stepCounterRaw" -> readStepCounter(result)
+                    "hasUsageAccess" -> result.success(hasUsageAccess())
+                    "requestUsageAccess" -> {
+                        // Not grantable through a runtime prompt - this is
+                        // the one and only way an app can be turned on in
+                        // the system's "Usage access" list.
+                        startActivity(
+                            Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                        result.success(null)
+                    }
+                    "mostUsedApp" -> result.success(mostUsedAppToday())
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    private fun batteryInfo(): Map<String, Any?> {
+        // A sticky broadcast - registering for it with a null receiver hands
+        // back the last one immediately, so this reads as a plain
+        // synchronous query instead of an actual broadcast subscription.
+        val intent = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val level = intent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale = intent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+        val percent = if (level >= 0 && scale > 0) level * 100 / scale else -1
+        val status = intent?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+        val charging =
+            status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                status == BatteryManager.BATTERY_STATUS_FULL
+        return mapOf("percent" to percent, "charging" to charging)
+    }
+
+    private fun storageInfo(): Map<String, Any?> {
+        // filesDir sits on the internal storage partition, so its free/total
+        // space is the device's own, not some per-app quota.
+        return mapOf(
+            "freeBytes" to filesDir.freeSpace,
+            "totalBytes" to filesDir.totalSpace,
+        )
+    }
+
+    private fun connectionType(): String {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = cm.activeNetwork ?: return "none"
+        val caps = cm.getNetworkCapabilities(network) ?: return "none"
+        return when {
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "wifi"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "mobile"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ethernet"
+            else -> "other"
+        }
+    }
+
+    private fun hasStepsPermission(): Boolean =
+        ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACTIVITY_RECOGNITION,
+        ) == PackageManager.PERMISSION_GRANTED
+
+    /// The step counter sensor only reports on change, not on demand - this
+    /// registers a listener just long enough to catch the next (usually
+    /// near-immediate) reading, then drops it again. A timeout answers with
+    /// null instead of hanging forever if the device never fires one (no
+    /// sensor, or one that's stuck).
+    private fun readStepCounter(result: MethodChannel.Result) {
+        if (!hasStepsPermission()) {
+            result.success(null)
+            return
+        }
+        val sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val sensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
+        if (sensor == null) {
+            result.success(null)
+            return
+        }
+        var answered = false
+        val listener = object : SensorEventListener {
+            override fun onSensorChanged(event: SensorEvent) {
+                if (answered) return
+                answered = true
+                sensorManager.unregisterListener(this)
+                result.success(event.values[0].toInt())
+            }
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+        }
+        sensorManager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (!answered) {
+                answered = true
+                sensorManager.unregisterListener(listener)
+                result.success(null)
+            }
+        }, 3000)
+    }
+
+    private fun hasUsageAccess(): Boolean {
+        val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        val mode =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                appOps.unsafeCheckOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    Process.myUid(),
+                    packageName,
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                appOps.checkOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    Process.myUid(),
+                    packageName,
+                )
+            }
+        return mode == AppOpsManager.MODE_ALLOWED
+    }
+
+    private fun mostUsedAppToday(): String? {
+        if (!hasUsageAccess()) return null
+        val usm = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val end = System.currentTimeMillis()
+        val midnight =
+            Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+        val top =
+            usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, midnight.timeInMillis, end)
+                ?.filter { it.totalTimeInForeground > 0 && it.packageName != packageName }
+                ?.maxByOrNull { it.totalTimeInForeground }
+                ?: return null
+        return try {
+            val appInfo = packageManager.getApplicationInfo(top.packageName, 0)
+            packageManager.getApplicationLabel(appInfo).toString()
+        } catch (e: Exception) {
+            top.packageName
+        }
     }
 
     private fun exportAndShare(json: String): Boolean {
@@ -197,11 +379,14 @@ class MainActivity : FlutterActivity() {
         grantResults: IntArray,
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        val granted =
+            grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
         if (requestCode == calendarPermissionRequestCode) {
-            val granted =
-                grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
             pendingPermissionResult?.success(granted)
             pendingPermissionResult = null
+        } else if (requestCode == stepsPermissionRequestCode) {
+            pendingStepsPermissionResult?.success(granted)
+            pendingStepsPermissionResult = null
         }
     }
 
