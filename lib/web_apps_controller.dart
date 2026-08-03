@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'browser_apps.dart';
 import 'picked_image_store.dart';
 import 'pinned_apps_controller.dart';
 
@@ -20,6 +21,7 @@ class WebApp {
     required this.name,
     required this.url,
     this.iconPath,
+    this.browserPackage,
   });
 
   /// Stable id, also used as the pin key (prefixed, see [webAppIdPrefix]).
@@ -27,6 +29,10 @@ class WebApp {
   final String name;
   final String url;
   final String? iconPath;
+
+  /// The browser this one web app opens in, or null to leave it to Android's
+  /// default like every other link.
+  final String? browserPackage;
 
   /// The picked icon as a file, or null if none was set (or it went missing).
   File? get iconFile {
@@ -41,6 +47,7 @@ class WebApp {
     'name': name,
     'url': url,
     if (iconPath != null) 'iconPath': iconPath,
+    if (browserPackage != null) 'browserPackage': browserPackage,
   };
 
   static WebApp fromJson(Map<String, dynamic> json) => WebApp(
@@ -48,6 +55,7 @@ class WebApp {
     name: json['name'] as String,
     url: json['url'] as String,
     iconPath: json['iconPath'] as String?,
+    browserPackage: json['browserPackage'] as String?,
   );
 }
 
@@ -123,6 +131,7 @@ class WebAppsController extends ValueNotifier<List<WebApp>> {
       name: name.trim(),
       url: app.url,
       iconPath: app.iconPath,
+      browserPackage: app.browserPackage,
     ));
   }
 
@@ -132,6 +141,19 @@ class WebAppsController extends ValueNotifier<List<WebApp>> {
       name: app.name,
       url: normalizeUrl(url),
       iconPath: app.iconPath,
+      browserPackage: app.browserPackage,
+    ));
+  }
+
+  /// Points a web app at one browser, or back at the system default when
+  /// [browserPackage] is null.
+  Future<void> setBrowser(String id, String? browserPackage) async {
+    await _replace(id, (app) => WebApp(
+      id: app.id,
+      name: app.name,
+      url: app.url,
+      iconPath: app.iconPath,
+      browserPackage: browserPackage,
     ));
   }
 
@@ -146,6 +168,7 @@ class WebAppsController extends ValueNotifier<List<WebApp>> {
       name: app.name,
       url: app.url,
       iconPath: savedFile.path,
+      browserPackage: app.browserPackage,
     ));
     return true;
   }
@@ -161,10 +184,17 @@ class WebAppsController extends ValueNotifier<List<WebApp>> {
     ]);
   }
 
-  /// Opens the web app in whatever browser handles the link.
+  /// Opens the web app in the browser picked for it, or in whatever handles
+  /// the link otherwise.
+  ///
+  /// The picked browser can have been uninstalled or disabled since - it
+  /// then reports back instead of throwing, and the link still opens in the
+  /// default one rather than the tap doing nothing.
   static Future<void> launch(WebApp app) async {
     final uri = Uri.tryParse(app.url);
     if (uri == null) return;
+    final browser = app.browserPackage;
+    if (browser != null && await BrowserApps.open(app.url, browser)) return;
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 

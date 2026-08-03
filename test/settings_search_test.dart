@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hanneslouncher/app_strings.dart';
+import 'package:hanneslouncher/default_launcher_controller.dart';
 import 'package:hanneslouncher/icon_theme_controller.dart';
 import 'package:hanneslouncher/locale_controller.dart';
 import 'package:hanneslouncher/settings_catalog.dart';
@@ -24,6 +25,7 @@ List<SettingsEntry> catalog({
     deviceDataEnabled: deviceDataEnabled,
     language: language,
     update: update,
+    defaultLauncher: const DefaultLauncherState(),
   );
 }
 

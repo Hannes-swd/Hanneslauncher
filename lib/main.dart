@@ -4,6 +4,8 @@ import 'app_list_view.dart';
 import 'calendar_controller.dart';
 import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
+import 'default_launcher_controller.dart';
+import 'default_launcher_screen.dart';
 import 'device_stats_controller.dart';
 import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
@@ -53,6 +55,15 @@ class _LauncherRootState extends State<LauncherRoot>
     // the settings button already carries the update mark on the first
     // frame. The check itself waits for the panel to be opened.
     UpdateController.instance.load();
+    _maybeAskAboutDefaultLauncher();
+  }
+
+  /// A launcher that was installed but never made the home app never opens
+  /// on its own, so nothing in it can point that out - except once, here.
+  Future<void> _maybeAskAboutDefaultLauncher() async {
+    if (!await DefaultLauncherController.instance.takeFirstRunPrompt()) return;
+    if (!mounted) return;
+    await showDefaultLauncherPrompt(context);
   }
 
   @override

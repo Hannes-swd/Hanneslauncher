@@ -87,7 +87,13 @@ class SettingsBackupService {
       ],
       'webApps': [
         for (final app in WebAppsController.instance.value)
-          {'id': app.id, 'name': app.name, 'url': app.url},
+          {
+            'id': app.id,
+            'name': app.name,
+            'url': app.url,
+            if (app.browserPackage != null)
+              'browserPackage': app.browserPackage,
+          },
       ],
       'appOverrides': {
         for (final entry in AppOverridesController.instance.value.entries)
@@ -255,6 +261,10 @@ class SettingsBackupService {
               id: map['id'] as String,
               name: map['name'] as String,
               url: map['url'] as String,
+              // Kept even though the browser may not be installed on the
+              // phone this is restored onto: launching falls back to the
+              // default there, and carrying it back is then still correct.
+              browserPackage: map['browserPackage'] as String?,
             ),
           );
         } catch (_) {

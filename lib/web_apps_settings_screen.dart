@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'app_icon.dart';
 import 'app_strings.dart';
+import 'browser_apps.dart';
+import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
 import 'text_prompt_dialog.dart';
@@ -89,6 +91,13 @@ class WebAppsSettingsScreen extends StatelessWidget {
             _option(context, Icons.image_outlined, s.changeIcon, 'icon'),
             _option(context, Icons.edit_outlined, s.changeName, 'name'),
             _option(context, Icons.link, s.changeUrl, 'url'),
+            _option(
+              context,
+              Icons.open_in_browser,
+              s.webAppBrowser,
+              'browser',
+              subtitle: _browserName(webApp.browserPackage, s),
+            ),
             _option(context, Icons.delete_outline, s.remove, 'remove'),
           ],
         );
@@ -122,23 +131,109 @@ class WebAppsSettingsScreen extends StatelessWidget {
         if (url != null && url.trim().isNotEmpty) {
           await controller.setUrl(webApp.id, url);
         }
+      case 'browser':
+        await _pickBrowser(context, s, webApp);
       case 'remove':
         await controller.remove(webApp.id);
     }
+  }
+
+  /// Lets the user aim this one web app at a specific browser, or hand it
+  /// back to the system default.
+  Future<void> _pickBrowser(
+    BuildContext context,
+    AppStrings s,
+    WebApp webApp,
+  ) async {
+    final browsers = await BrowserApps.installed();
+    if (!context.mounted) return;
+    if (browsers.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(s.noBrowsersFound)));
+      return;
+    }
+
+    // A record rather than the package name on its own: the system default
+    // is a package name of null, which a dismissed dialog also returns.
+    final choice = await showDialog<({String? package})>(
+      context: context,
+      builder: (context) {
+        return SimpleDialog(
+          title: Text(s.chooseBrowser),
+          children: [
+            _browserOption(
+              context,
+              icon: const Icon(Icons.public),
+              label: s.systemDefaultBrowser,
+              package: null,
+              current: webApp.browserPackage,
+            ),
+            for (final browser in browsers)
+              _browserOption(
+                context,
+                icon: _browserIcon(browser.package),
+                label: browser.name,
+                package: browser.package,
+                current: webApp.browserPackage,
+              ),
+          ],
+        );
+      },
+    );
+
+    if (choice == null) return;
+    await WebAppsController.instance.setBrowser(webApp.id, choice.package);
+  }
+
+  /// The browser's own icon, taken from the already-loaded app list - a
+  /// browser is a launchable app, so it's in there.
+  Widget _browserIcon(String package) {
+    final icon = LauncherEntriesController.instance.byKey(package)?.systemIcon;
+    if (icon == null) return const Icon(Icons.public);
+    return Image.memory(icon, width: 24, height: 24);
+  }
+
+  /// What to show under "Browser" for the current choice.
+  String _browserName(String? package, AppStrings s) {
+    if (package == null) return s.systemDefaultBrowser;
+    // The package name is the fallback for a browser that's no longer
+    // installed - saying which one it was beats showing nothing.
+    return LauncherEntriesController.instance.byKey(package)?.name ?? package;
+  }
+
+  Widget _browserOption(
+    BuildContext context, {
+    required Widget icon,
+    required String label,
+    required String? package,
+    required String? current,
+  }) {
+    return SimpleDialogOption(
+      onPressed: () => Navigator.of(context).pop((package: package)),
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: SizedBox(width: 24, height: 24, child: Center(child: icon)),
+        title: Text(label),
+        trailing: package == current ? const Icon(Icons.check) : null,
+      ),
+    );
   }
 
   Widget _option(
     BuildContext context,
     IconData icon,
     String label,
-    String value,
-  ) {
+    String value, {
+    String? subtitle,
+  }) {
     return SimpleDialogOption(
       onPressed: () => Navigator.of(context).pop(value),
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: Icon(icon),
         title: Text(label),
+        subtitle: subtitle == null ? null : Text(subtitle),
       ),
     );
   }

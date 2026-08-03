@@ -58,7 +58,12 @@ void main() {
       const LauncherFolder(id: 'f1', name: 'Spiele', colorIndex: 2),
     ]);
     await WebAppsController.instance.replaceAll([
-      const WebApp(id: 'w1', name: 'Example', url: 'https://example.com'),
+      const WebApp(
+        id: 'w1',
+        name: 'Example',
+        url: 'https://example.com',
+        browserPackage: 'org.mozilla.firefox',
+      ),
     ]);
     await AppOverridesController.instance.restoreNames({
       'com.example.mail': 'Post',
@@ -142,6 +147,10 @@ void main() {
 
     expect(FoldersController.instance.value.single.name, 'Spiele');
     expect(WebAppsController.instance.value.single.url, 'https://example.com');
+    expect(
+      WebAppsController.instance.value.single.browserPackage,
+      'org.mozilla.firefox',
+    );
     expect(
       AppOverridesController.instance.value['com.example.mail']?.name,
       'Post',

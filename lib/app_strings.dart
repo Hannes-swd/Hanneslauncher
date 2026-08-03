@@ -135,6 +135,12 @@ class AppStrings {
             'der App-Liste und kann auf den Homescreen gepinnt werden.';
   String get nameAndUrlRequired =>
       _en ? 'Name and address are required' : 'Name und Adresse sind nötig';
+  String get webAppBrowser => 'Browser';
+  String get chooseBrowser => _en ? 'Choose browser' : 'Browser auswählen';
+  String get systemDefaultBrowser =>
+      _en ? 'System default' : 'Systemstandard';
+  String get noBrowsersFound =>
+      _en ? 'No browsers found' : 'Keine Browser gefunden';
 
   String get addBlock => _en ? 'Add' : 'Hinzufügen';
   String get blockWidget => 'Widget';
@@ -334,6 +340,56 @@ class AppStrings {
   String languageSystemSubtitle(String language) => _en
       ? 'System language · $language'
       : 'Sprache des Systems · $language';
+
+  // Making this the home app happens outside the app, in a system dialog or
+  // a settings screen whose path differs by manufacturer - so besides the
+  // button there is written help for when neither opens.
+  String get defaultLauncher =>
+      _en ? 'Default home app' : 'Standard-Start-App';
+  String get defaultLauncherIsDefault => _en
+      ? 'This launcher opens with the home button'
+      : 'Dieser Launcher öffnet sich mit der Home-Taste';
+  String defaultLauncherCurrently(String name) =>
+      _en ? 'Currently: $name' : 'Zurzeit: $name';
+  String get defaultLauncherNone =>
+      _en ? 'No home app set' : 'Keine Start-App festgelegt';
+  String get defaultLauncherCardTitle => _en
+      ? 'Not the home app yet'
+      : 'Noch nicht die Standard-Start-App';
+  String get defaultLauncherCardText => _en
+      ? 'Until it is, the home button keeps opening the old launcher.'
+      : 'Bis dahin öffnet die Home-Taste weiter den alten Launcher.';
+  String get setAsDefaultLauncher =>
+      _en ? 'Set as default' : 'Als Standard festlegen';
+  String get defaultLauncherHowTo => _en ? 'How it works' : 'Wie das geht';
+  String get defaultLauncherSteps => _en
+      ? '1. Tap "Set as default".\n\n'
+            '2. If a dialog asks which app to use as the home app, pick '
+            'hanneslouncher and confirm.\n\n'
+            '3. If a settings screen opens instead, tap hanneslouncher in '
+            'the list there.'
+      : '1. Auf „Als Standard festlegen" tippen.\n\n'
+            '2. Fragt ein Dialog, welche App die Start-App sein soll, dort '
+            'hanneslouncher auswählen und bestätigen.\n\n'
+            '3. Öffnet sich stattdessen ein Einstellungsbildschirm, dort '
+            'hanneslouncher in der Liste antippen.';
+  String get defaultLauncherManual => _en
+      ? 'If nothing opens, it works by hand as well: Settings → Apps → '
+            'Default apps → Home app. Depending on the phone that entry is '
+            'called "Launcher", "Home screen" or "Home app".'
+      : 'Öffnet sich nichts, geht es auch von Hand: Einstellungen → Apps → '
+            'Standard-Apps → Start-App. Je nach Handy heißt der Eintrag '
+            '„Launcher", „Startbildschirm" oder „Home-App".';
+  String get later => _en ? 'Later' : 'Später';
+  String get defaultLauncherFindAgain => _en
+      ? 'You can do this later at any time under Settings → App → Default '
+            'home app.'
+      : 'Das geht später jederzeit unter Einstellungen → App → '
+            'Standard-Start-App.';
+  String get defaultLauncherOpenFailed => _en
+      ? 'Android did not offer a screen for this - see the steps below'
+      : 'Android hat dafür keinen Bildschirm angeboten - siehe die Schritte '
+            'darunter';
 
   String get backup => _en ? 'Backup' : 'Sicherung';
   String get backupSubtitle => _en

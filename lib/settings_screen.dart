@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'app_strings.dart';
 import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
+import 'default_launcher_controller.dart';
+import 'default_launcher_screen.dart';
 import 'folders_controller.dart';
 import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
@@ -29,6 +31,7 @@ List<SettingsEntry> _catalog(AppStrings s) {
     deviceDataEnabled: DeviceDataController.instance.value,
     language: LocaleController.instance.value,
     update: UpdateController.instance.value,
+    defaultLauncher: DefaultLauncherController.instance.value,
   );
 }
 
@@ -44,6 +47,7 @@ Listenable _settingsSources() => Listenable.merge([
   DataSourcesController.instance,
   DeviceDataController.instance,
   UpdateController.instance,
+  DefaultLauncherController.instance,
 ]);
 
 /// The settings overview: the four groups as sub-pages, with a search field
@@ -58,13 +62,32 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen>
+    with WidgetsBindingObserver {
   final TextEditingController _search = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    DefaultLauncherController.instance.refresh();
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _search.dispose();
     super.dispose();
+  }
+
+  /// Which app the home button opens is changed outside this app, so the
+  /// card's answer can only go stale while the app is away - coming back is
+  /// when to ask again.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      DefaultLauncherController.instance.refresh();
+    }
   }
 
   @override
@@ -128,6 +151,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [
+        // Above the groups rather than inside "App": a launcher that isn't
+        // the home app is the one thing worth saying before anything can be
+        // configured about it. Hides itself once it no longer applies.
+        DefaultLauncherCard(s: s),
         for (final section in SettingsSection.values)
           ListTile(
             leading: Icon(section.icon),

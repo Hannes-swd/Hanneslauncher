@@ -3,6 +3,7 @@ package com.example.hanneslouncher
 import android.Manifest
 import android.app.Activity
 import android.app.AppOpsManager
+import android.app.role.RoleManager
 import android.app.usage.UsageStatsManager
 import android.content.ContentUris
 import android.content.Context
@@ -41,9 +42,11 @@ class MainActivity : FlutterActivity() {
     private val backupChannelName = "hanneslouncher/backup"
     private val deviceStatsChannelName = "hanneslouncher/device_stats"
     private val appInfoChannelName = "hanneslouncher/app_info"
+    private val browsersChannelName = "hanneslouncher/browsers"
     private val calendarPermissionRequestCode = 4201
     private val importFileRequestCode = 4202
     private val stepsPermissionRequestCode = 4203
+    private val homeRoleRequestCode = 4204
 
     // A plugin (device_calendar) returning every field as null on some
     // Android versions is what this replaces - reading Android's own
@@ -135,6 +138,9 @@ class MainActivity : FlutterActivity() {
                                 .addCategory(Intent.CATEGORY_APP_CALENDAR),
                         ),
                     )
+                    "defaultLauncher" -> result.success(defaultLauncher())
+                    "chooseDefaultLauncher" ->
+                        result.success(chooseDefaultLauncher())
                     else -> result.notImplemented()
                 }
             }
@@ -222,6 +228,143 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        // Lets a web app be opened in one browser in particular instead of
+        // whatever Android's default is. url_launcher can only ask for "a
+        // browser", so both listing them and aiming at one happen here.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, browsersChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "list" -> result.success(installedBrowsers())
+                    "open" -> {
+                        val url = call.argument<String>("url")
+                        val browserPackage = call.argument<String>("package")
+                        result.success(
+                            if (url == null || browserPackage == null) {
+                                false
+                            } else {
+                                openInBrowser(url, browserPackage)
+                            },
+                        )
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    // Which app the home button currently opens, so the settings can say
+    // whether this launcher is it. With no default set at all Android answers
+    // with its own chooser (package "android"), which is a "no" with no name
+    // to show.
+    private fun defaultLauncher(): Map<String, Any?> {
+        val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        val resolved =
+            packageManager.resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY)
+        val resolvedPackage = resolved?.activityInfo?.packageName
+        if (resolvedPackage == null || resolvedPackage == "android") {
+            return mapOf("isThisApp" to false, "package" to null, "name" to null)
+        }
+        return mapOf(
+            "isThisApp" to (resolvedPackage == packageName),
+            "package" to resolvedPackage,
+            "name" to resolved.loadLabel(packageManager).toString(),
+        )
+    }
+
+    // Three ways in, best first, because no single one works everywhere:
+    //
+    // From Android 10 the system can ask "make this your home app?" right
+    // here, which is one tap and needs no hunting through settings.
+    //
+    // Where that isn't offered (older Android, or a ROM that dropped the
+    // role) the system's own "Default home app" screen is opened instead,
+    // then the wider default-apps list. Started without resolveActivity()
+    // on purpose - a settings screen isn't always visible to a package
+    // visibility query, and a null answer there would leave no way in at
+    // all. Returns false only if none of them opened, which is what the
+    // written instructions on the screen are there for.
+    private fun chooseDefaultLauncher(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = getSystemService(RoleManager::class.java)
+            if (roleManager != null &&
+                roleManager.isRoleAvailable(RoleManager.ROLE_HOME) &&
+                !roleManager.isRoleHeld(RoleManager.ROLE_HOME)
+            ) {
+                try {
+                    // For a result, not because the answer is read (the
+                    // screen re-checks when it comes back anyway) but
+                    // because that is how the role dialog is documented to
+                    // be started - launched as a plain activity it can close
+                    // again without ever showing.
+                    startActivityForResult(
+                        roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME),
+                        homeRoleRequestCode,
+                    )
+                    return true
+                } catch (e: Exception) {
+                    // Falls through to the settings screens below.
+                }
+            }
+        }
+        if (startOrFalse(Intent(Settings.ACTION_HOME_SETTINGS))) return true
+        return startOrFalse(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+    }
+
+    private fun startOrFalse(intent: Intent): Boolean {
+        return try {
+            startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    // The apps that can show any web page - the same set Android's own
+    // "default browser" screen offers, and queried the same way it does.
+    //
+    // Two details decide whether this returns all of them or just one:
+    //
+    // MATCH_ALL, because without it the query honours the user's default
+    // browser and answers with that single app - every other installed
+    // browser silently disappears from the list.
+    //
+    // A host under the reserved ".invalid" domain, because an app that only
+    // claims links of its own (YouTube, a bank app, ...) filters on its own
+    // host and won't answer for one that cannot exist, while a real browser
+    // takes any host. Leaving the host off entirely would instead drop the
+    // browsers whose filter is written as host="*".
+    private fun installedBrowsers(): List<Map<String, Any?>> {
+        val probe =
+            Intent(Intent.ACTION_VIEW, Uri.parse("https://browser.invalid"))
+                .addCategory(Intent.CATEGORY_BROWSABLE)
+        return packageManager.queryIntentActivities(probe, PackageManager.MATCH_ALL)
+            .map {
+                mapOf<String, Any?>(
+                    "package" to it.activityInfo.packageName,
+                    "name" to it.loadLabel(packageManager).toString(),
+                )
+            }
+            // A browser registering several activities would otherwise be
+            // listed once per activity.
+            .distinctBy { it["package"] }
+            .sortedBy { (it["name"] as String).lowercase() }
+    }
+
+    // False rather than an exception when the chosen browser was uninstalled
+    // or disabled since it was picked - the Dart side then falls back to the
+    // default browser, so the page still opens.
+    private fun openInBrowser(url: String, browserPackage: String): Boolean {
+        return try {
+            startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    .addCategory(Intent.CATEGORY_BROWSABLE)
+                    .setPackage(browserPackage)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 
     // Not a runtime prompt: "install unknown apps" is a per-app switch in

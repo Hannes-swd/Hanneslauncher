@@ -96,7 +96,10 @@
             <category android:name="android.intent.category.LAUNCHER"/>
         </intent>
         <!-- Required to open web apps (saved links) in a browser on
-             Android 11+. -->
+             Android 11+. The same entry is what makes the installed browsers
+             visible to installedBrowsers() in MainActivity.kt at all, so a
+             web app can be pointed at one of them - a package this app can't
+             see would silently be missing from that list. -->
         <intent>
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="https"/>
@@ -112,6 +115,14 @@
         <intent>
             <action android:name="android.intent.action.MAIN"/>
             <category android:name="android.intent.category.APP_CALENDAR"/>
+        </intent>
+        <!-- So defaultLauncher() in MainActivity.kt can name the launcher the
+             home button currently opens. Without it another launcher stays
+             invisible and the settings could only say "not this one" without
+             saying which. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="android.intent.category.HOME"/>
         </intent>
     </queries>
 </manifest>

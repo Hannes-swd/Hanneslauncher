@@ -64,94 +64,7 @@ class ClockSettingsScreen extends StatelessWidget {
                     opacity: settings.enabled ? 1 : 0.4,
                     child: IgnorePointer(
                       ignoring: !settings.enabled,
-                      child: Column(
-                        children: [
-                          _StyleOption(
-                            title: s.digital,
-                            selected: settings.style == ClockStyle.digital,
-                            preview: const _DigitalPreview(),
-                            onTap: () {
-                              ClockSettingsController.instance.update(
-                                settings.copyWith(style: ClockStyle.digital),
-                              );
-                            },
-                          ),
-                          _StyleOption(
-                            title: s.custom,
-                            selected: settings.style == ClockStyle.word,
-                            preview: const _WordPreview(),
-                            onTap: () {
-                              ClockSettingsController.instance.update(
-                                settings.copyWith(style: ClockStyle.word),
-                              );
-                            },
-                          ),
-                          _StyleOption(
-                            title: s.roman,
-                            selected: settings.style == ClockStyle.roman,
-                            preview: const _RomanPreview(),
-                            onTap: () {
-                              ClockSettingsController.instance.update(
-                                settings.copyWith(style: ClockStyle.roman),
-                              );
-                            },
-                          ),
-                          _StyleOption(
-                            title: s.bars,
-                            selected: settings.style == ClockStyle.bars,
-                            preview: const _BarsPreview(),
-                            onTap: () {
-                              ClockSettingsController.instance.update(
-                                settings.copyWith(style: ClockStyle.bars),
-                              );
-                            },
-                          ),
-                          _StyleOption(
-                            title: s.dotMatrix,
-                            selected: settings.style == ClockStyle.dotMatrix,
-                            preview: const _DotMatrixPreview(),
-                            onTap: () {
-                              ClockSettingsController.instance.update(
-                                settings.copyWith(
-                                  style: ClockStyle.dotMatrix,
-                                ),
-                              );
-                            },
-                          ),
-                          _StyleOption(
-                            title: s.splitFlap,
-                            selected: settings.style == ClockStyle.splitFlap,
-                            preview: const _SplitFlapPreview(),
-                            onTap: () {
-                              ClockSettingsController.instance.update(
-                                settings.copyWith(
-                                  style: ClockStyle.splitFlap,
-                                ),
-                              );
-                            },
-                          ),
-                          _StyleOption(
-                            title: s.orbit,
-                            selected: settings.style == ClockStyle.orbit,
-                            preview: const _OrbitPreview(),
-                            onTap: () {
-                              ClockSettingsController.instance.update(
-                                settings.copyWith(style: ClockStyle.orbit),
-                              );
-                            },
-                          ),
-                          _StyleOption(
-                            title: s.vertical,
-                            selected: settings.style == ClockStyle.vertical,
-                            preview: const _VerticalPreview(),
-                            onTap: () {
-                              ClockSettingsController.instance.update(
-                                settings.copyWith(style: ClockStyle.vertical),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+                      child: _StyleGrid(settings: settings, s: s),
                     ),
                   ),
                   Padding(
@@ -217,6 +130,74 @@ class ClockSettingsScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// The clock styles as a two-column grid of previews.
+///
+/// One per row would be eight full-width rows to scroll past before the last
+/// style is even seen - which is no way to compare things you pick by how
+/// they look. Two columns cut that in half and put every style on one
+/// screen; the previews stay big enough to tell apart because they scale
+/// into the tile instead of being cropped by it.
+class _StyleGrid extends StatelessWidget {
+  const _StyleGrid({required this.settings, required this.s});
+
+  final ClockSettings settings;
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    final styles = <({ClockStyle style, String title, Widget preview})>[
+      (style: ClockStyle.digital, title: s.digital, preview: const _DigitalPreview()),
+      (style: ClockStyle.word, title: s.custom, preview: const _WordPreview()),
+      (style: ClockStyle.roman, title: s.roman, preview: const _RomanPreview()),
+      (style: ClockStyle.bars, title: s.bars, preview: const _BarsPreview()),
+      (
+        style: ClockStyle.dotMatrix,
+        title: s.dotMatrix,
+        preview: const _DotMatrixPreview(),
+      ),
+      (
+        style: ClockStyle.splitFlap,
+        title: s.splitFlap,
+        preview: const _SplitFlapPreview(),
+      ),
+      (style: ClockStyle.orbit, title: s.orbit, preview: const _OrbitPreview()),
+      (
+        style: ClockStyle.vertical,
+        title: s.vertical,
+        preview: const _VerticalPreview(),
+      ),
+    ];
+
+    return GridView(
+      // Inside the settings list, so it neither scrolls on its own nor
+      // guesses a height - the page it sits in does the scrolling.
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        // A set height rather than an aspect ratio: tied to the width, the
+        // tiles would grow taller on a bigger screen and undo the very
+        // saving the grid is here for.
+        mainAxisExtent: 128,
+      ),
+      children: [
+        for (final entry in styles)
+          _StyleOption(
+            title: entry.title,
+            selected: settings.style == entry.style,
+            preview: entry.preview,
+            onTap: () => ClockSettingsController.instance.update(
+              settings.copyWith(style: entry.style),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -645,9 +626,9 @@ class _StyleOption extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
@@ -655,16 +636,38 @@ class _StyleOption extends StatelessWidget {
             width: selected ? 2 : 1,
           ),
         ),
-        child: Row(
+        child: Column(
           children: [
-            Icon(
-              selected ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: selected ? Colors.black : Colors.black45,
+            // Scaled down to whatever the tile leaves rather than cropped:
+            // the previews are real clocks of quite different sizes (a whole
+            // letter grid next to four digits), and half a word clock says
+            // nothing about what it looks like.
+            Expanded(
+              child: Center(
+                child: FittedBox(fit: BoxFit.scaleDown, child: preview),
+              ),
             ),
-            const SizedBox(width: 12),
-            Expanded(child: preview),
-            const SizedBox(width: 8),
-            Text(title),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (selected) ...[
+                  const Icon(Icons.check_circle, size: 14),
+                  const SizedBox(width: 4),
+                ],
+                Flexible(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),

@@ -7,6 +7,8 @@ import 'app_list_settings_screen.dart';
 import 'app_strings.dart';
 import 'clock_settings_screen.dart';
 import 'data_sources_settings_screen.dart';
+import 'default_launcher_controller.dart';
+import 'default_launcher_screen.dart';
 import 'device_data_screen.dart';
 import 'folders_settings_screen.dart';
 import 'icon_theme_controller.dart';
@@ -107,6 +109,7 @@ List<SettingsEntry> buildSettingsCatalog({
   required bool deviceDataEnabled,
   required AppLanguage language,
   required UpdateState update,
+  required DefaultLauncherState defaultLauncher,
 }) {
   return [
     SettingsEntry(
@@ -213,6 +216,7 @@ List<SettingsEntry> buildSettingsCatalog({
       keywords: const [
         'web', 'webapp', 'web-app', 'pwa', 'webseite', 'website', 'seite',
         'link', 'links', 'lesezeichen', 'bookmark', 'url', 'adresse',
+        'browser', 'chrome', 'firefox',
       ],
       onTap: (context) => _push(context, const WebAppsSettingsScreen()),
     ),
@@ -259,6 +263,22 @@ List<SettingsEntry> buildSettingsCatalog({
         ],
         onTap: (context) => _push(context, const DeviceDataScreen()),
       ),
+    SettingsEntry(
+      icon: Icons.home_outlined,
+      title: s.defaultLauncher,
+      section: SettingsSection.app,
+      subtitle: defaultLauncher.isDefault
+          ? s.defaultLauncherIsDefault
+          : (defaultLauncher.otherName == null
+                ? s.defaultLauncherNone
+                : s.defaultLauncherCurrently(defaultLauncher.otherName!)),
+      keywords: const [
+        'standard', 'default', 'launcher', 'start-app', 'startapp', 'home',
+        'home-taste', 'homescreen', 'startbildschirm', 'home screen',
+        'festlegen', 'set', 'einrichten', 'setup',
+      ],
+      onTap: (context) => _push(context, const DefaultLauncherScreen()),
+    ),
     SettingsEntry(
       icon: Icons.language,
       title: s.languageLabel,
