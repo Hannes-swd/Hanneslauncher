@@ -361,6 +361,63 @@ class AppStrings {
       ? 'Not a readable backup file'
       : 'Keine lesbare Sicherungsdatei';
 
+  // The update check (update_screen.dart) - this app doesn't come from a
+  // store, so new versions arrive as an APK attached to a GitHub release
+  // and the check is what notices one is there.
+  String get update => _en ? 'Update' : 'Update';
+  String get updateSubtitleUpToDate => _en ? 'Up to date' : 'Aktuell';
+  String updateSubtitleInstalled(String version) =>
+      _en ? 'Version $version · up to date' : 'Version $version · aktuell';
+  String updateSubtitleAvailable(String version) => _en
+      ? 'Version $version available'
+      : 'Version $version verfügbar';
+  String get updateSubtitleUnknown =>
+      _en ? 'Check for a new version' : 'Auf neue Version prüfen';
+  String updateInstalledVersion(String version) =>
+      _en ? 'Installed: $version' : 'Installiert: $version';
+  String get updateVersionUnknown => _en
+      ? 'Installed version unknown'
+      : 'Installierte Version unbekannt';
+  String updateLatestVersion(String version) =>
+      _en ? 'Latest release: $version' : 'Neuestes Release: $version';
+  String get updateNoReleaseYet =>
+      _en ? 'No release found yet' : 'Noch kein Release gefunden';
+  String get updateAvailableTitle =>
+      _en ? 'Update available' : 'Update verfügbar';
+  String get updateUpToDate => _en
+      ? 'You have the latest version.'
+      : 'Du hast die neueste Version.';
+  String get updateDownload => _en ? 'Download APK' : 'APK herunterladen';
+  String get updateNoApkInRelease => _en
+      ? 'This release has no APK attached - open it on GitHub to see what\'s '
+            'in it.'
+      : 'An dieses Release ist keine APK angehängt - auf GitHub öffnen, um '
+            'zu sehen, was drin ist.';
+  String get updateInstallHint => _en
+      ? 'The browser downloads the file; tapping the finished download starts '
+            'Android\'s installer. It installs over the current version, so '
+            'all settings stay - the app is never uninstalled in between.'
+      : 'Der Browser lädt die Datei; ein Tipp auf den fertigen Download '
+            'startet Androids Installer. Er installiert über die aktuelle '
+            'Version, alle Einstellungen bleiben also erhalten - die App '
+            'wird zwischendurch nie deinstalliert.';
+  String get updateCheckNow => _en ? 'Check now' : 'Jetzt prüfen';
+  String get updateChecking => _en ? 'Checking…' : 'Wird geprüft…';
+  String get updateNeverChecked =>
+      _en ? 'Never checked yet' : 'Noch nie geprüft';
+  String updateLastChecked(String when) =>
+      _en ? 'Last checked: $when' : 'Zuletzt geprüft: $when';
+  String get updateCheckFailed => _en
+      ? 'Check failed - no connection, or GitHub didn\'t answer.'
+      : 'Prüfung fehlgeschlagen - keine Verbindung, oder GitHub hat nicht '
+            'geantwortet.';
+  String get updateWhatsNew => _en ? 'What\'s new' : 'Was ist neu';
+  String get updateOpenRelease =>
+      _en ? 'Open release on GitHub' : 'Release auf GitHub öffnen';
+  String get updateOpenFailed => _en
+      ? 'Couldn\'t open the link'
+      : 'Link konnte nicht geöffnet werden';
+
   String get addColor => _en ? 'Add color' : 'Farbe hinzufügen';
 
   // The single device-data package, added from the "+" picker on the data

@@ -39,6 +39,7 @@ class MainActivity : FlutterActivity() {
     private val systemAppsChannelName = "hanneslouncher/system_apps"
     private val backupChannelName = "hanneslouncher/backup"
     private val deviceStatsChannelName = "hanneslouncher/device_stats"
+    private val appInfoChannelName = "hanneslouncher/app_info"
     private val calendarPermissionRequestCode = 4201
     private val importFileRequestCode = 4202
     private val stepsPermissionRequestCode = 4203
@@ -201,6 +202,34 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        // The version this APK was actually built as, read from the installed
+        // package itself rather than from a constant in the Dart code - a
+        // constant is one more thing to remember to bump on a release, and
+        // forgetting it would mean the update check compares against the
+        // wrong number and either never or always reports an update.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, appInfoChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "version" -> result.success(installedVersion())
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    private fun installedVersion(): Map<String, Any?> {
+        val info = packageManager.getPackageInfo(packageName, 0)
+        val code =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                info.longVersionCode
+            } else {
+                @Suppress("DEPRECATION")
+                info.versionCode.toLong()
+            }
+        return mapOf(
+            "versionName" to (info.versionName ?: ""),
+            "versionCode" to code,
+        )
     }
 
     private fun batteryInfo(): Map<String, Any?> {

@@ -13,6 +13,7 @@ import 'location_controller.dart';
 import 'panel_block_card.dart';
 import 'panel_blocks_controller.dart';
 import 'settings_screen.dart';
+import 'update_screen.dart';
 import 'widget_editor_screen.dart';
 
 /// Contents of the panel that pulls down from the top: a fixed header with
@@ -206,16 +207,21 @@ class _PanelViewState extends State<PanelView> {
             tooltip: s.addBlock,
             onPressed: () => _add(s),
           ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: s.settings,
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
-                ),
-              );
-            },
+          // Badged rather than plain: this button is the only way into the
+          // settings, so it's also the only place an available update can be
+          // announced without the panel growing a row of its own.
+          UpdateDotBadge(
+            child: IconButton(
+              icon: const Icon(Icons.settings),
+              tooltip: s.settings,
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),

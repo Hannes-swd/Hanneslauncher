@@ -3,12 +3,14 @@ import 'package:hanneslouncher/app_strings.dart';
 import 'package:hanneslouncher/icon_theme_controller.dart';
 import 'package:hanneslouncher/locale_controller.dart';
 import 'package:hanneslouncher/settings_catalog.dart';
+import 'package:hanneslouncher/update_controller.dart';
 
 /// The catalog as it looks with nothing configured yet - enough for the
 /// search, which only ever reads titles, subtitles and keywords.
 List<SettingsEntry> catalog({
   AppLanguage language = AppLanguage.de,
   bool deviceDataEnabled = false,
+  UpdateState update = const UpdateState(),
 }) {
   return buildSettingsCatalog(
     s: AppStrings(language),
@@ -21,6 +23,7 @@ List<SettingsEntry> catalog({
     dataSourceCount: 0,
     deviceDataEnabled: deviceDataEnabled,
     language: language,
+    update: update,
   );
 }
 
@@ -66,6 +69,38 @@ void main() {
     expect(search('wallpaper'), contains('Hintergrundbild'));
     expect(search('font'), contains('App-Liste'));
     expect(search('backup'), contains('Sicherung'));
+  });
+
+  test('the update row is findable by what people call it', () {
+    for (final query in ['update', 'version', 'apk', 'aktualisieren']) {
+      expect(search(query), contains('Update'), reason: query);
+    }
+  });
+
+  test('the update row only carries the mark when there is one', () {
+    SettingsEntry updateEntry(UpdateState state) => catalog(
+      update: state,
+    ).firstWhere((entry) => entry.title == 'Update');
+
+    expect(
+      updateEntry(const UpdateState(installedVersion: '1.0.0')).trailing,
+      isNull,
+    );
+    expect(
+      updateEntry(
+        const UpdateState(
+          installedVersion: '1.0.0',
+          latest: UpdateRelease(
+            version: '1.1.0',
+            apkUrl: '',
+            pageUrl: '',
+            notes: '',
+            publishedAt: null,
+          ),
+        ),
+      ).trailing,
+      isNotNull,
+    );
   });
 
   test('umlaut spelled out finds the same entry', () {

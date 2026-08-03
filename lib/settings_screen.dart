@@ -8,6 +8,8 @@ import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
 import 'pinned_apps_controller.dart';
 import 'settings_catalog.dart';
+import 'update_controller.dart';
+import 'update_screen.dart';
 import 'wallpaper_controller.dart';
 import 'web_apps_controller.dart';
 
@@ -26,6 +28,7 @@ List<SettingsEntry> _catalog(AppStrings s) {
     dataSourceCount: DataSourcesController.instance.value.length,
     deviceDataEnabled: DeviceDataController.instance.value,
     language: LocaleController.instance.value,
+    update: UpdateController.instance.value,
   );
 }
 
@@ -40,6 +43,7 @@ Listenable _settingsSources() => Listenable.merge([
   PinnedAppsController.instance,
   DataSourcesController.instance,
   DeviceDataController.instance,
+  UpdateController.instance,
 ]);
 
 /// The settings overview: the four groups as sub-pages, with a search field
@@ -114,6 +118,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _sectionList(AppStrings s, List<SettingsEntry> entries) {
+    // A group page hides whatever is behind it, so the mark has to travel up
+    // to the group as well - otherwise an available update sits in "App"
+    // where nobody has a reason to look.
+    final markedSection = UpdateController.instance.value.available
+        ? SettingsSection.app
+        : null;
+
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [
@@ -126,7 +137,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (section == markedSection) ...[
+                  const UpdateDot(),
+                  const SizedBox(width: 8),
+                ],
+                const Icon(Icons.chevron_right),
+              ],
+            ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => SettingsSectionScreen(section: section),

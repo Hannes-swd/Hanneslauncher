@@ -14,6 +14,8 @@ import 'icon_theme_settings_screen.dart';
 import 'locale_controller.dart';
 import 'pinned_apps_settings_screen.dart';
 import 'settings_backup_screen.dart';
+import 'update_controller.dart';
+import 'update_screen.dart';
 import 'wallpaper_controller.dart';
 import 'web_apps_settings_screen.dart';
 
@@ -104,6 +106,7 @@ List<SettingsEntry> buildSettingsCatalog({
   required int dataSourceCount,
   required bool deviceDataEnabled,
   required AppLanguage language,
+  required UpdateState update,
 }) {
   return [
     SettingsEntry(
@@ -278,6 +281,23 @@ List<SettingsEntry> buildSettingsCatalog({
         'kopie', 'json',
       ],
       onTap: (context) => _push(context, const SettingsBackupScreen()),
+    ),
+    SettingsEntry(
+      icon: Icons.system_update_outlined,
+      title: s.update,
+      section: SettingsSection.app,
+      subtitle: update.available
+          ? s.updateSubtitleAvailable(update.latest!.version)
+          : (update.installedVersion.isEmpty
+                ? s.updateSubtitleUnknown
+                : s.updateSubtitleInstalled(update.installedVersion)),
+      keywords: const [
+        'update', 'aktualisierung', 'aktualisieren', 'version', 'neue version',
+        'new version', 'github', 'apk', 'release', 'download',
+        'herunterladen', 'installieren', 'install', 'upgrade',
+      ],
+      trailing: update.available ? const UpdateDot() : null,
+      onTap: (context) => _push(context, const UpdateScreen()),
     ),
   ];
 }

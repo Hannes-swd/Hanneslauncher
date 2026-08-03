@@ -9,6 +9,7 @@ import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
 import 'panel_view.dart';
 import 'system_gesture_exclusion.dart';
+import 'update_controller.dart';
 import 'wallpaper_controller.dart';
 
 void main() {
@@ -48,6 +49,10 @@ class _LauncherRootState extends State<LauncherRoot>
     WallpaperController.instance.load();
     LocaleController.instance.load();
     IconThemeController.instance.load();
+    // Reads the installed version and the last check's result from disk, so
+    // the settings button already carries the update mark on the first
+    // frame. The check itself waits for the panel to be opened.
+    UpdateController.instance.load();
   }
 
   @override
@@ -82,6 +87,9 @@ class _LauncherRootState extends State<LauncherRoot>
     if (open) {
       DataSourcesController.instance.refreshStale();
       CalendarController.instance.refresh();
+      // Same reasoning, and the settings button that carries the mark is
+      // right there in the panel's header.
+      UpdateController.instance.refreshStale();
       DeviceStatsController.instance.ensureFresh(
         wantsSteps: DeviceDataController.instance.value,
         wantsMostUsedApp: DeviceDataController.instance.value,
