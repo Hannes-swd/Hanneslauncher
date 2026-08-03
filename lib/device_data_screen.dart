@@ -51,6 +51,13 @@ class _DeviceDataScreenState extends State<DeviceDataScreen>
   String _resolve(String placeholder) =>
       DataSourcesController.instance.resolve(placeholder);
 
+  /// `{{akku}}` on a German app, `{{battery}}` on an English one - the name
+  /// the user would type, next to what it currently reads.
+  String _line(String key) {
+    final name = DataSourcesController.displayKey(key);
+    return '{{$name}} → ${_resolve('{{$name}}')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<AppLanguage>(
@@ -85,42 +92,32 @@ class _DeviceDataScreenState extends State<DeviceDataScreen>
                   _valueTile(
                     icon: Icons.battery_full,
                     title: s.packageBattery,
-                    lines: [
-                      '{{akku}} → ${_resolve('{{akku}}')}',
-                      '{{akku_laedt}} → ${_resolve('{{akku_laedt}}')}',
-                    ],
+                    lines: [_line('akku'), _line('akku_laedt')],
                   ),
                   _valueTile(
                     icon: Icons.storage_outlined,
                     title: s.packageStorage,
-                    lines: [
-                      '{{speicher_frei}} → ${_resolve('{{speicher_frei}}')}',
-                      '{{speicher_gesamt}} → '
-                          '${_resolve('{{speicher_gesamt}}')}',
-                    ],
+                    lines: [_line('speicher_frei'), _line('speicher_gesamt')],
                   ),
                   _valueTile(
                     icon: Icons.wifi,
                     title: s.packageConnection,
-                    lines: ['{{verbindung}} → ${_resolve('{{verbindung}}')}'],
+                    lines: [_line('verbindung')],
                   ),
                   _valueTile(
                     icon: Icons.wb_twilight_outlined,
                     title: s.packageSunTimes,
-                    lines: [
-                      '{{sonnenauf}} → ${_resolve('{{sonnenauf}}')}',
-                      '{{sonnenunter}} → ${_resolve('{{sonnenunter}}')}',
-                    ],
+                    lines: [_line('sonnenauf'), _line('sonnenunter')],
                   ),
                   _valueTile(
                     icon: Icons.nightlight_outlined,
                     title: s.packageMoonPhase,
-                    lines: ['{{mondphase}} → ${_resolve('{{mondphase}}')}'],
+                    lines: [_line('mondphase')],
                   ),
                   _valueTile(
                     icon: Icons.directions_walk,
                     title: s.packageSteps,
-                    lines: ['{{schritte}} → ${_resolve('{{schritte}}')}'],
+                    lines: [_line('schritte')],
                     permissionGranted:
                         DeviceStatsController.instance.stepsPermissionGranted,
                     onRequestPermission: () async {
@@ -132,9 +129,7 @@ class _DeviceDataScreenState extends State<DeviceDataScreen>
                   _valueTile(
                     icon: Icons.bar_chart,
                     title: s.packageMostUsedApp,
-                    lines: [
-                      '{{meistgenutzt}} → ${_resolve('{{meistgenutzt}}')}',
-                    ],
+                    lines: [_line('meistgenutzt')],
                     permissionGranted:
                         DeviceStatsController.instance.usageAccessGranted,
                     onRequestPermission: () =>

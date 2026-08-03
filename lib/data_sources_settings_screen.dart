@@ -44,21 +44,25 @@ Future<void> addDataSource(BuildContext context, AppStrings s) async {
     return;
   }
 
+  // The key is what gets typed into cards as {{key.path}}, so a new source
+  // is named in the language the app is in. Sources that already exist keep
+  // whatever key they were given.
+  final en = LocaleController.instance.value == AppLanguage.en;
   final source = switch (preset) {
     'weatherHere' => await DataSourcesController.instance.add(
-      key: 'wetter',
+      key: en ? 'weather' : 'wetter',
       name: s.presetWeatherHere,
       url: _weatherHereUrl,
       refreshMinutes: 30,
     ),
     'weather' => await DataSourcesController.instance.add(
-      key: 'wetter',
+      key: en ? 'weather' : 'wetter',
       name: s.presetWeather,
       url: _weatherUrl,
       refreshMinutes: 30,
     ),
     _ => await DataSourcesController.instance.add(
-      key: 'quelle',
+      key: en ? 'source' : 'quelle',
       name: s.presetCustom,
       url: '',
     ),

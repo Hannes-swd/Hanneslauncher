@@ -3,6 +3,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'app_strings.dart';
 import 'locale_controller.dart';
 
 /// The device's current position, for data sources whose URL follows where
@@ -75,6 +76,9 @@ class LocationController extends ValueNotifier<({double lat, double lon})?> {
       return;
     }
 
+    // Read once per attempt: [error] ends up next to a data source, so it is
+    // written in the language the app is in when it happens.
+    final s = AppStrings(LocaleController.instance.value);
     try {
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -82,12 +86,12 @@ class LocationController extends ValueNotifier<({double lat, double lon})?> {
       }
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        error = 'location permission denied';
+        error = s.errorLocationDenied;
         debugPrint('hanneslouncher: $error');
         return;
       }
       if (!await Geolocator.isLocationServiceEnabled()) {
-        error = 'location is switched off';
+        error = s.errorLocationOff;
         debugPrint('hanneslouncher: $error');
         return;
       }
@@ -107,7 +111,7 @@ class LocationController extends ValueNotifier<({double lat, double lon})?> {
         position = await Geolocator.getLastKnownPosition();
       }
       if (position == null) {
-        error = 'no position available';
+        error = s.errorNoPosition;
         debugPrint('hanneslouncher: $error');
         return;
       }

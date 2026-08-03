@@ -36,7 +36,11 @@ class SettingsBackupService {
     return {
       'formatVersion': _formatVersion,
       'exportedAt': DateTime.now().toIso8601String(),
-      'locale': LocaleController.instance.value.name,
+      // 'system' rather than the language it currently resolves to, so a
+      // backup carried to a phone in another language keeps following it.
+      'locale': LocaleController.instance.followsSystem
+          ? 'system'
+          : LocaleController.instance.value.name,
       'clock': {
         'enabled': clock.enabled,
         'style': clock.style.name,
@@ -133,10 +137,12 @@ class SettingsBackupService {
     }
 
     final localeName = decoded['locale'] as String?;
-    if (localeName != null) {
+    if (localeName == 'de' || localeName == 'en') {
       await LocaleController.instance.update(
         localeName == 'en' ? AppLanguage.en : AppLanguage.de,
       );
+    } else if (localeName != null) {
+      await LocaleController.instance.useSystem();
     }
 
     final clockJson = decoded['clock'] as Map<String, dynamic>?;

@@ -1,6 +1,8 @@
 import 'package:http/http.dart' as http;
 
+import 'app_strings.dart';
 import 'data_sources_controller.dart';
+import 'locale_controller.dart';
 import 'widget_element.dart';
 
 class WidgetActionResult {
@@ -33,6 +35,15 @@ class ResolvedAction {
 /// Public so the editor's "insert" button can use the exact same string.
 const String toggleValueToken = '{{!wert}}';
 
+/// The same token in English. Both are always filled in, whatever the app is
+/// set to - only the one the editor inserts follows the language, so an
+/// action built on a German app keeps working on an English one.
+const String toggleValueTokenEn = '{{!value}}';
+
+/// The spelling the editor offers for [language].
+String toggleTokenFor(AppLanguage language) =>
+    language == AppLanguage.en ? toggleValueTokenEn : toggleValueToken;
+
 /// Resolves an action element's address and body without sending anything -
 /// shared by [runWidgetAction] and the editor's live preview, so the
 /// preview can never show something different from what a tap would
@@ -51,9 +62,9 @@ ResolvedAction resolveAction(WidgetElement element) {
     } else if (current == 'false') {
       toggled = 'true';
     } else {
-      return const ResolvedAction(
+      return ResolvedAction(
         url: '',
-        error: 'Current value not readable',
+        error: AppStrings(LocaleController.instance.value).errorValueNotReadable,
       );
     }
   }
@@ -62,8 +73,11 @@ ResolvedAction resolveAction(WidgetElement element) {
   // {{...}} resolution below - otherwise that pass would see an unknown
   // placeholder ("!wert" isn't a data source) and blank it out to "-"
   // before the real value ever gets a chance to land there.
-  String fillToggle(String text) =>
-      toggled == null ? text : text.replaceAll(toggleValueToken, toggled);
+  String fillToggle(String text) => toggled == null
+      ? text
+      : text
+            .replaceAll(toggleValueToken, toggled)
+            .replaceAll(toggleValueTokenEn, toggled);
 
   return ResolvedAction(
     url: sources.resolve(fillToggle(element.actionUrl)).trim(),
@@ -86,9 +100,9 @@ Future<WidgetActionResult> runWidgetAction(WidgetElement element) async {
 
   final uri = Uri.tryParse(resolved.url);
   if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
-    return const WidgetActionResult(
+    return WidgetActionResult(
       success: false,
-      detail: 'Not a valid address',
+      detail: AppStrings(LocaleController.instance.value).errorInvalidAddress,
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'app_strings.dart';
 import 'data_packages_controller.dart';
 import 'device_stats_controller.dart';
 import 'locale_controller.dart';
@@ -333,6 +334,37 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
   /// The device-stat ones only appear once the "Gerätedaten" package is
   /// added on the data sources screen - otherwise the picker would carry a
   /// dozen entries nobody asked for.
+  /// The English name of every built-in key. Both spellings always resolve,
+  /// whatever the app is set to - only which one gets offered follows the
+  /// language, so a card written on a German app keeps working on an English
+  /// one and the other way round.
+  static const Map<String, String> englishKeys = {
+    'zeit': 'time',
+    'zeit24': 'time24',
+    'zeit12': 'time12',
+    'datum': 'date',
+    'wochentag': 'weekday',
+    'ort': 'city',
+    'akku': 'battery',
+    'akku_laedt': 'battery_charging',
+    'speicher_frei': 'storage_free',
+    'speicher_gesamt': 'storage_total',
+    'verbindung': 'connection',
+    'sonnenauf': 'sunrise',
+    'sonnenunter': 'sunset',
+    'mondphase': 'moon_phase',
+    'schritte': 'steps',
+    'meistgenutzt': 'most_used_app',
+  };
+
+  /// How [key] is written in the app's current language. Keys without an
+  /// English name of their own ('ampm', 'lat', 'lon') read the same either
+  /// way and come back unchanged.
+  static String displayKey(String key) =>
+      LocaleController.instance.value == AppLanguage.en
+      ? (englishKeys[key] ?? key)
+      : key;
+
   static List<String> get builtInKeys {
     final deviceData = DeviceDataController.instance.value;
     return [
@@ -399,8 +431,13 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
       case 'ort' || 'city':
         return LocationController.instance.city;
       case 'datum' || 'date':
-        return '${now.day.toString().padLeft(2, '0')}.'
-            '${now.month.toString().padLeft(2, '0')}.${now.year}';
+        final day = now.day.toString().padLeft(2, '0');
+        final month = now.month.toString().padLeft(2, '0');
+        // Written the way the app's language writes a date - the same split
+        // the update screen makes for its "last checked" line.
+        return LocaleController.instance.value == AppLanguage.en
+            ? '${now.year}-$month-$day'
+            : '$day.$month.${now.year}';
       case 'wochentag' || 'weekday':
         // DateTime.weekday is 1..7 starting on Monday.
         const german = [
@@ -425,34 +462,36 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
             ? english
             : german;
         return names[now.weekday - 1];
-      case 'akku':
+      case 'akku' || 'battery':
         final percent = DeviceStatsController.instance.batteryPercent;
         return percent == null ? '-' : '$percent%';
-      case 'akku_laedt':
+      case 'akku_laedt' || 'battery_charging':
         final en = LocaleController.instance.value == AppLanguage.en;
         return DeviceStatsController.instance.batteryCharging
             ? (en ? 'Charging' : 'Lädt')
             : (en ? 'Not charging' : 'Lädt nicht');
-      case 'speicher_frei':
+      case 'speicher_frei' || 'storage_free':
         return _formatGb(DeviceStatsController.instance.storageFreeGb);
-      case 'speicher_gesamt':
+      case 'speicher_gesamt' || 'storage_total':
         return _formatGb(DeviceStatsController.instance.storageTotalGb);
-      case 'verbindung':
+      case 'verbindung' || 'connection':
         return _connectionLabel(DeviceStatsController.instance.connectionType);
-      case 'sonnenauf':
-      case 'sonnenunter':
+      case 'sonnenauf' || 'sunrise':
+      case 'sonnenunter' || 'sunset':
         final position = LocationController.instance.value;
         if (position == null) return '-';
         final times = sunTimesFor(now, position.lat, position.lon);
-        final time = key == 'sonnenauf' ? times.sunrise : times.sunset;
+        final time = key == 'sonnenauf' || key == 'sunrise'
+            ? times.sunrise
+            : times.sunset;
         if (time == null) return '-';
         return use24HourFormat ? _time24(time) : _time12(time);
-      case 'mondphase':
+      case 'mondphase' || 'moon_phase':
         return moonPhaseEmoji(now);
-      case 'schritte':
+      case 'schritte' || 'steps':
         final steps = DeviceStatsController.instance.stepsToday;
         return steps == null ? '-' : '$steps';
-      case 'meistgenutzt':
+      case 'meistgenutzt' || 'most_used_app':
         return DeviceStatsController.instance.mostUsedApp ?? '-';
       default:
         return null;
@@ -464,7 +503,7 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
   static String _connectionLabel(String type) {
     final en = LocaleController.instance.value == AppLanguage.en;
     return switch (type) {
-      'wifi' => 'WLAN',
+      'wifi' => en ? 'Wi-Fi' : 'WLAN',
       'mobile' => en ? 'Mobile' : 'Mobil',
       'ethernet' => 'Ethernet',
       'other' => en ? 'Other' : 'Andere',
@@ -479,8 +518,8 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
     final options = [
       for (final key in builtInKeys)
         PlaceholderOption(
-          label: key,
-          placeholder: '{{$key}}',
+          label: displayKey(key),
+          placeholder: '{{${displayKey(key)}}}',
           preview: _format(_builtIn(key)),
           sourceName: null,
         ),
@@ -556,17 +595,16 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
     String rawUrl,
     Map<String, String> headers,
   ) async {
+    final s = AppStrings(LocaleController.instance.value);
     // The URL goes through the same placeholders as the cards, so a source
     // can follow the current position with `latitude={{lat}}`.
     if (rawUrl.contains('{{lat}}') || rawUrl.contains('{{lon}}')) {
       await LocationController.instance.ensureFresh();
       if (LocationController.instance.value == null) {
+        final why = LocationController.instance.error;
         return (
           data: null,
-          error:
-              'No location yet'
-              '${LocationController.instance.error == null ? '' : ' - '
-                  '${LocationController.instance.error}'}',
+          error: why == null ? s.errorNoLocation : '${s.errorNoLocation} - $why',
           body: null,
         );
       }
@@ -580,7 +618,7 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
     if (uri == null || (uri.scheme != 'https' && uri.scheme != 'http')) {
       return (
         data: null,
-        error: 'Only http/https addresses can be used',
+        error: s.errorOnlyHttp,
         body: null,
       );
     }
@@ -593,7 +631,7 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
       if (response.statusCode != 200) {
         return (
           data: null,
-          error: 'Server answered with ${response.statusCode}',
+          error: s.errorServerAnswered(response.statusCode),
           body: null,
         );
       }
@@ -603,7 +641,7 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
         body: response.body,
       );
     } on FormatException {
-      return (data: null, error: 'Answer is not valid JSON', body: null);
+      return (data: null, error: s.errorNotJson, body: null);
     } catch (error) {
       // No connection, timeout, bad certificate: all of it is something the
       // panel shows next to the card, never something that reaches the UI as

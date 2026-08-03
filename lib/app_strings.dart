@@ -56,11 +56,11 @@ class AppStrings {
 
   String get clock => _en ? 'Clock' : 'Uhr';
   String get clockSubtitle =>
-      _en ? 'On/off, digital or custom' : 'An/Aus, Digital oder Custom';
+      _en ? 'On/off, digital or custom' : 'An/Aus, Digital oder Eigene';
   String get showClock => _en ? 'Show clock' : 'Uhr anzeigen';
   String get style => _en ? 'Style' : 'Stil';
   String get digital => 'Digital';
-  String get custom => 'Custom';
+  String get custom => _en ? 'Custom' : 'Eigene';
   String get roman => _en ? 'Roman numerals' : 'Römische Zahlen';
   String get bars => _en ? 'Bars' : 'Balken';
   String get dotMatrix => _en ? 'Dot matrix' : 'Punktraster';
@@ -329,6 +329,11 @@ class AppStrings {
   String get languageSubtitle => _en ? 'App language' : 'App-Sprache';
   String get german => 'Deutsch';
   String get english => 'English';
+  String get languageSystem =>
+      _en ? 'System language' : 'Sprache des Systems';
+  String languageSystemSubtitle(String language) => _en
+      ? 'System language · $language'
+      : 'Sprache des Systems · $language';
 
   String get backup => _en ? 'Backup' : 'Sicherung';
   String get backupSubtitle => _en
@@ -526,4 +531,27 @@ class AppStrings {
       : 'Aktueller Wert ist noch nicht als wahr/falsch lesbar - "Aktueller '
             'Wert" oben prüfen';
   String get advanced => _en ? 'Advanced' : 'Erweitert';
+
+  // What went wrong while fetching a source or firing an action
+  // (data_sources_controller.dart, location_controller.dart,
+  // widget_action.dart). These end up next to a data source or on a card, so
+  // they follow the app's language like every other text.
+  String get errorNoLocation => _en ? 'No location yet' : 'Noch kein Standort';
+  String get errorOnlyHttp => _en
+      ? 'Only http/https addresses can be used'
+      : 'Nur http/https-Adressen sind möglich';
+  String errorServerAnswered(int status) =>
+      _en ? 'Server answered with $status' : 'Server antwortete mit $status';
+  String get errorNotJson =>
+      _en ? 'Answer is not valid JSON' : 'Antwort ist kein gültiges JSON';
+  String get errorInvalidAddress =>
+      _en ? 'Not a valid address' : 'Keine gültige Adresse';
+  String get errorValueNotReadable =>
+      _en ? 'Current value not readable' : 'Aktueller Wert nicht lesbar';
+  String get errorLocationDenied =>
+      _en ? 'Location permission denied' : 'Standort-Berechtigung verweigert';
+  String get errorLocationOff =>
+      _en ? 'Location is switched off' : 'Standort ist ausgeschaltet';
+  String get errorNoPosition =>
+      _en ? 'No position available' : 'Keine Position verfügbar';
 }

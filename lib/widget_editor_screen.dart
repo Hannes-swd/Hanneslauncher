@@ -851,7 +851,10 @@ class _TemplateFieldState extends State<_TemplateField> {
             border: const OutlineInputBorder(),
             hintText: widget.element.type == WidgetElementType.image
                 ? 'https://…'
-                : '{{zeit}} · {{wetter.current.temperature_2m}} °C',
+                : '{{${DataSourcesController.displayKey('zeit')}}} · '
+                      '{{${LocaleController.instance.value == AppLanguage.en
+                          ? 'weather'
+                          : 'wetter'}.current.temperature_2m}} °C',
           ),
           // Persisting synchronously from inside onChanged rebuilds this
           // whole screen mid-keystroke, which on some keyboards drops the
@@ -1724,7 +1727,8 @@ class _ActionSettingsState extends State<_ActionSettings> {
         child: ActionChip(
           avatar: const Icon(Icons.sync, size: 16),
           label: Text(s.insertToggledValue),
-          onPressed: () => onInsert(toggleValueToken),
+          onPressed: () =>
+              onInsert(toggleTokenFor(LocaleController.instance.value)),
         ),
       );
     }

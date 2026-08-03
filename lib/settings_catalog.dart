@@ -263,10 +263,14 @@ List<SettingsEntry> buildSettingsCatalog({
       icon: Icons.language,
       title: s.languageLabel,
       section: SettingsSection.app,
-      subtitle: language == AppLanguage.de ? s.german : s.english,
+      subtitle: LocaleController.instance.followsSystem
+          ? s.languageSystemSubtitle(
+              language == AppLanguage.de ? s.german : s.english,
+            )
+          : (language == AppLanguage.de ? s.german : s.english),
       keywords: const [
         'sprache', 'language', 'deutsch', 'german', 'englisch', 'english',
-        'übersetzung', 'uebersetzung',
+        'übersetzung', 'uebersetzung', 'system', 'systemsprache',
       ],
       onTap: (context) => _pickLanguage(context, s),
     ),
@@ -306,16 +310,25 @@ void _push(BuildContext context, Widget screen) {
   Navigator.of(context).push(MaterialPageRoute(builder: (context) => screen));
 }
 
-/// Two options aren't worth a screen of their own, so the language is picked
-/// straight from the list row.
+/// Three options aren't worth a screen of their own, so the language is
+/// picked straight from the list row. `null` in the map is "follow the
+/// phone", which is what a fresh install does.
 Future<void> _pickLanguage(BuildContext context, AppStrings s) async {
-  final current = LocaleController.instance.value;
-  final choice = await showDialog<AppLanguage>(
+  final controller = LocaleController.instance;
+  final current = controller.followsSystem ? null : controller.value;
+  final options = <AppLanguage?, String>{
+    null: s.languageSystem,
+    AppLanguage.de: s.german,
+    AppLanguage.en: s.english,
+  };
+  // Wrapped so "cancelled" can be told apart from "picked the system
+  // entry", which pops a null of its own.
+  final choice = await showDialog<List<AppLanguage?>>(
     context: context,
     builder: (context) => SimpleDialog(
       title: Text(s.languageLabel),
       children: [
-        for (final entry in {AppLanguage.de: s.german, AppLanguage.en: s.english}.entries)
+        for (final entry in options.entries)
           ListTile(
             leading: Icon(
               entry.key == current
@@ -323,10 +336,16 @@ Future<void> _pickLanguage(BuildContext context, AppStrings s) async {
                   : Icons.radio_button_off,
             ),
             title: Text(entry.value),
-            onTap: () => Navigator.of(context).pop(entry.key),
+            onTap: () => Navigator.of(context).pop([entry.key]),
           ),
       ],
     ),
   );
-  if (choice != null) await LocaleController.instance.update(choice);
+  if (choice == null) return;
+  final picked = choice.single;
+  if (picked == null) {
+    await controller.useSystem();
+  } else {
+    await controller.update(picked);
+  }
 }
