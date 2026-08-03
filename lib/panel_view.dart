@@ -22,7 +22,6 @@ import 'widget_editor_screen.dart';
 class PanelView extends StatefulWidget {
   const PanelView({
     super.key,
-    required this.onHandleDragStart,
     required this.onHandleDragUpdate,
     required this.onHandleDragEnd,
     required this.onCloseRequested,
@@ -31,11 +30,10 @@ class PanelView extends StatefulWidget {
   /// Dragging the header closes/opens the panel. Only the header does this,
   /// so dragging inside the block list scrolls it instead of fighting the
   /// panel for the same gesture.
-  final GestureDragStartCallback onHandleDragStart;
   final GestureDragUpdateCallback onHandleDragUpdate;
   final GestureDragEndCallback onHandleDragEnd;
 
-  /// Pulling the list down while it's already at the top closes the panel,
+  /// Pulling the list up while it's already at its end closes the panel,
   /// which is what the gesture would do anywhere else on the header.
   final VoidCallback onCloseRequested;
 
@@ -199,7 +197,6 @@ class _PanelViewState extends State<PanelView> {
   Widget _header(AppStrings s) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onVerticalDragStart: widget.onHandleDragStart,
       onVerticalDragUpdate: widget.onHandleDragUpdate,
       onVerticalDragEnd: widget.onHandleDragEnd,
       child: Row(
@@ -240,7 +237,6 @@ class _PanelViewState extends State<PanelView> {
             // Nothing to scroll yet, so the empty area keeps working as a
             // drag handle for the panel.
             behavior: HitTestBehavior.opaque,
-            onVerticalDragStart: widget.onHandleDragStart,
             onVerticalDragUpdate: widget.onHandleDragUpdate,
             onVerticalDragEnd: widget.onHandleDragEnd,
             child: Center(
@@ -258,9 +254,9 @@ class _PanelViewState extends State<PanelView> {
 
         return NotificationListener<OverscrollNotification>(
           onNotification: (notification) {
-            // Pulled further down while already at the top: treat it as the
-            // close gesture rather than a dead end.
-            if (notification.overscroll < -12) widget.onCloseRequested();
+            // Pushed further up while the list has nothing left to scroll:
+            // treat it as the close gesture rather than a dead end.
+            if (notification.overscroll > 12) widget.onCloseRequested();
             return false;
           },
           child: ReorderableListView.builder(

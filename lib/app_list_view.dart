@@ -23,7 +23,6 @@ import 'pinned_quick_actions.dart';
 class AppListView extends StatefulWidget {
   const AppListView({
     super.key,
-    this.onPanelDragStart,
     this.onPanelDragUpdate,
     this.onPanelDragEnd,
   });
@@ -31,7 +30,6 @@ class AppListView extends StatefulWidget {
   /// Dragging anywhere on the home screen (except the alphabet bar, which
   /// has its own vertical drag) opens/closes the settings panel, instead of
   /// just a thin strip at the very top of the screen.
-  final GestureDragStartCallback? onPanelDragStart;
   final GestureDragUpdateCallback? onPanelDragUpdate;
   final GestureDragEndCallback? onPanelDragEnd;
 
@@ -227,7 +225,6 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
           bottom: 0,
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onVerticalDragStart: widget.onPanelDragStart,
             onVerticalDragUpdate: widget.onPanelDragUpdate,
             onVerticalDragEnd: widget.onPanelDragEnd,
           ),
