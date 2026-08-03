@@ -22,6 +22,7 @@ import 'widget_editor_screen.dart';
 class PanelView extends StatefulWidget {
   const PanelView({
     super.key,
+    required this.onHandleDragStart,
     required this.onHandleDragUpdate,
     required this.onHandleDragEnd,
     required this.onCloseRequested,
@@ -30,6 +31,7 @@ class PanelView extends StatefulWidget {
   /// Dragging the header closes/opens the panel. Only the header does this,
   /// so dragging inside the block list scrolls it instead of fighting the
   /// panel for the same gesture.
+  final GestureDragStartCallback onHandleDragStart;
   final GestureDragUpdateCallback onHandleDragUpdate;
   final GestureDragEndCallback onHandleDragEnd;
 
@@ -197,6 +199,7 @@ class _PanelViewState extends State<PanelView> {
   Widget _header(AppStrings s) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
+      onVerticalDragStart: widget.onHandleDragStart,
       onVerticalDragUpdate: widget.onHandleDragUpdate,
       onVerticalDragEnd: widget.onHandleDragEnd,
       child: Row(
@@ -237,6 +240,7 @@ class _PanelViewState extends State<PanelView> {
             // Nothing to scroll yet, so the empty area keeps working as a
             // drag handle for the panel.
             behavior: HitTestBehavior.opaque,
+            onVerticalDragStart: widget.onHandleDragStart,
             onVerticalDragUpdate: widget.onHandleDragUpdate,
             onVerticalDragEnd: widget.onHandleDragEnd,
             child: Center(

@@ -61,8 +61,19 @@ class _LauncherRootState extends State<LauncherRoot>
     super.dispose();
   }
 
+  // Which way the finger moves the panel, decided when the drag starts and
+  // kept for the rest of it: closed, a downwards drag pulls the panel in;
+  // open, the same downwards drag pushes it back out again. So the panel is
+  // always dismissed by repeating the gesture that opened it, never by
+  // swiping back up.
+  double _dragSign = 1;
+
+  void _onDragStart(DragStartDetails details) {
+    _dragSign = _controller.value > 0.5 ? -1 : 1;
+  }
+
   void _onDragUpdate(DragUpdateDetails details, double height) {
-    _controller.value += details.delta.dy / height;
+    _controller.value += _dragSign * details.delta.dy / height;
   }
 
   void _closePanel() {
@@ -71,7 +82,9 @@ class _LauncherRootState extends State<LauncherRoot>
   }
 
   void _onDragEnd(DragEndDetails details) {
-    final velocity = details.primaryVelocity ?? 0;
+    // Read in the direction this drag runs, so a flick means "keep going"
+    // either way round.
+    final velocity = (details.primaryVelocity ?? 0) * _dragSign;
     final bool open;
     if (velocity.abs() > 300) {
       // Fast flick: go with the direction of the flick.
@@ -162,6 +175,7 @@ class _LauncherRootState extends State<LauncherRoot>
                 children: [
                   GestureDetector(
                     behavior: HitTestBehavior.translucent,
+                    onVerticalDragStart: _onDragStart,
                     onVerticalDragUpdate: (details) =>
                         _onDragUpdate(details, height),
                     onVerticalDragEnd: _onDragEnd,
@@ -172,6 +186,7 @@ class _LauncherRootState extends State<LauncherRoot>
                   ),
                   Expanded(
                     child: AppListView(
+                      onPanelDragStart: _onDragStart,
                       onPanelDragUpdate: (details) =>
                           _onDragUpdate(details, height),
                       onPanelDragEnd: _onDragEnd,
@@ -211,6 +226,7 @@ class _LauncherRootState extends State<LauncherRoot>
                         color: Colors.white.withValues(alpha: 0.85),
                         child: SafeArea(
                           child: PanelView(
+                            onHandleDragStart: _onDragStart,
                             onHandleDragUpdate: (details) =>
                                 _onDragUpdate(details, height),
                             onHandleDragEnd: _onDragEnd,
