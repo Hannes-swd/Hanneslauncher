@@ -119,8 +119,10 @@ if (-not [string]::IsNullOrWhiteSpace(($dirty -join ''))) {
 $pubspec = Get-Content $pubspecPath -Raw
 # [ \t]* statt \s* am Zeilenende: \s schliesst den Zeilenumbruch mit ein,
 # und im Multiline-Modus wuerde das Ersetzen unten damit die Leerzeile
-# hinter der Version mit auffressen.
-if ($pubspec -notmatch '(?m)^version:[ \t]*(\d+\.\d+\.\d+)\+(\d+)[ \t]*$') {
+# hinter der Version mit auffressen. Das Zeilenende steht im Vorausblick,
+# nicht im Treffer: pubspec.yaml hat hier CRLF, und ein $ direkt hinter
+# [ \t]* wuerde am \r scheitern - beim Ersetzen bliebe es dafuer erhalten.
+if ($pubspec -notmatch '(?m)^version:[ \t]*(\d+\.\d+\.\d+)\+(\d+)[ \t]*(?=\r?$)') {
     Write-Problem "In pubspec.yaml steht keine Zeile der Form 'version: 1.0.0+1'."
     exit 1
 }
@@ -176,7 +178,7 @@ if ($DryRun) {
 # --- 4. Version setzen und bauen -------------------------------------------
 
 Write-Step "Version in pubspec.yaml auf $Version+$newBuild setzen"
-$updated = $pubspec -replace '(?m)^version:[ \t]*\d+\.\d+\.\d+\+\d+[ \t]*$', "version: $Version+$newBuild"
+$updated = $pubspec -replace '(?m)^version:[ \t]*\d+\.\d+\.\d+\+\d+[ \t]*(?=\r?$)', "version: $Version+$newBuild"
 Set-TextNoBom $pubspecPath $updated
 
 Write-Step 'Release-APK bauen (dauert ein paar Minuten)'
