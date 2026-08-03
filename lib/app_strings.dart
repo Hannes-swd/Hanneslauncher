@@ -392,20 +392,37 @@ class AppStrings {
   String get updateUpToDate => _en
       ? 'You have the latest version.'
       : 'Du hast die neueste Version.';
-  String get updateDownload => _en ? 'Download APK' : 'APK herunterladen';
   String get updateNoApkInRelease => _en
       ? 'This release has no APK attached - open it on GitHub to see what\'s '
             'in it.'
       : 'An dieses Release ist keine APK angehängt - auf GitHub öffnen, um '
             'zu sehen, was drin ist.';
   String get updateInstallHint => _en
-      ? 'The browser downloads the file; tapping the finished download starts '
-            'Android\'s installer. It installs over the current version, so '
-            'all settings stay - the app is never uninstalled in between.'
-      : 'Der Browser lädt die Datei; ein Tipp auf den fertigen Download '
-            'startet Androids Installer. Er installiert über die aktuelle '
-            'Version, alle Einstellungen bleiben also erhalten - die App '
-            'wird zwischendurch nie deinstalliert.';
+      ? 'The app fetches the file itself and hands it to Android\'s '
+            'installer. It installs over the current version, so all settings '
+            'stay - the app is never uninstalled in between.'
+      : 'Die App lädt die Datei selbst und übergibt sie Androids Installer. '
+            'Er installiert über die aktuelle Version, alle Einstellungen '
+            'bleiben also erhalten - die App wird zwischendurch nie '
+            'deinstalliert.';
+  String get updateDownloadAndInstall =>
+      _en ? 'Download & install' : 'Herunterladen & installieren';
+  String updateDownloading(int percent) =>
+      _en ? 'Downloading… $percent%' : 'Wird geladen… $percent%';
+  String get updateStartingInstaller => _en
+      ? 'Handing it to Android\'s installer…'
+      : 'Wird an Androids Installer übergeben…';
+  String get updateDownloadFailed => _en
+      ? 'Download failed. Open the release on GitHub and try from there.'
+      : 'Herunterladen fehlgeschlagen. Öffne das Release auf GitHub und '
+            'versuch es von dort.';
+  String get updateNeedsInstallPermission => _en
+      ? 'Android has to allow this app to install apps. Turn it on, then tap '
+            'the button again.'
+      : 'Android muss dieser App erlauben, Apps zu installieren. Schalte es '
+            'ein und tippe dann noch einmal auf den Knopf.';
+  String get updateOpenInstallSettings =>
+      _en ? 'Open the setting' : 'Einstellung öffnen';
   String get updateCheckNow => _en ? 'Check now' : 'Jetzt prüfen';
   String get updateChecking => _en ? 'Checking…' : 'Wird geprüft…';
   String get updateNeverChecked =>

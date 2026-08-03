@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Where the release APKs are published. Everything else about the check is
@@ -95,6 +97,10 @@ class UpdateState {
     this.checking = false,
     this.lastCheck,
     this.lastCheckFailed = false,
+    this.downloading = false,
+    this.downloadedFraction = 0,
+    this.downloadFailed = false,
+    this.needsInstallPermission = false,
   });
 
   /// Empty until the platform has answered - which is also the state on a
@@ -106,6 +112,17 @@ class UpdateState {
   final bool checking;
   final DateTime? lastCheck;
   final bool lastCheckFailed;
+
+  /// The APK is being fetched right now; [downloadedFraction] runs 0..1 and
+  /// stays at 0 while the server doesn't say how big the file is.
+  final bool downloading;
+  final double downloadedFraction;
+  final bool downloadFailed;
+
+  /// Android won't let this app hand a file to the installer yet - the
+  /// screen says so and offers the settings switch instead of failing
+  /// silently, which is what the browser route did.
+  final bool needsInstallPermission;
 
   bool get available {
     final release = latest;
@@ -119,6 +136,10 @@ class UpdateState {
     bool? checking,
     DateTime? lastCheck,
     bool? lastCheckFailed,
+    bool? downloading,
+    double? downloadedFraction,
+    bool? downloadFailed,
+    bool? needsInstallPermission,
   }) {
     return UpdateState(
       installedVersion: installedVersion ?? this.installedVersion,
@@ -126,6 +147,11 @@ class UpdateState {
       checking: checking ?? this.checking,
       lastCheck: lastCheck ?? this.lastCheck,
       lastCheckFailed: lastCheckFailed ?? this.lastCheckFailed,
+      downloading: downloading ?? this.downloading,
+      downloadedFraction: downloadedFraction ?? this.downloadedFraction,
+      downloadFailed: downloadFailed ?? this.downloadFailed,
+      needsInstallPermission:
+          needsInstallPermission ?? this.needsInstallPermission,
     );
   }
 }
@@ -160,10 +186,14 @@ int compareVersions(String a, String b) {
   return 0;
 }
 
-/// Asks GitHub whether a newer release than the installed version exists.
+/// Asks GitHub whether a newer release than the installed version exists,
+/// and fetches the APK when asked to.
 ///
-/// Nothing is downloaded or installed here - the update screen hands the APK
-/// link to the browser, and Android's own installer takes it from there.
+/// The download happens here rather than in the browser: a browser download
+/// needs the *browser* to be allowed to install apps, and when it isn't, the
+/// install simply doesn't happen - with no message saying why. Doing it here
+/// means this app asks for that permission itself, once, and can say what is
+/// missing. Installing is still Android's own installer, as it has to be.
 class UpdateController extends ValueNotifier<UpdateState> {
   UpdateController._() : super(const UpdateState());
 
@@ -268,6 +298,13 @@ class UpdateController extends ValueNotifier<UpdateState> {
       checking: false,
       lastCheck: failed ? value.lastCheck : now,
       lastCheckFailed: failed,
+      // A check can run while a download is in flight (pulling the panel
+      // down starts one), and rebuilding the state from scratch here would
+      // otherwise wipe the progress bar mid-download.
+      downloading: value.downloading,
+      downloadedFraction: value.downloadedFraction,
+      downloadFailed: value.downloadFailed,
+      needsInstallPermission: value.needsInstallPermission,
     );
 
     if (failed) return;
@@ -275,6 +312,114 @@ class UpdateController extends ValueNotifier<UpdateState> {
     await prefs.setString(_checkedAtKey, now.toIso8601String());
     if (release != null) {
       await prefs.setString(_releaseKey, jsonEncode(release.toJson()));
+    }
+  }
+
+  /// Fetches the release APK and hands it to Android's installer. Progress
+  /// lands in [value] so the screen can show it; the install dialog itself
+  /// is Android's, and this app is replaced in place - every setting stays.
+  Future<void> downloadAndInstall() async {
+    final release = value.latest;
+    if (release == null || release.apkUrl.isEmpty || value.downloading) return;
+
+    // Asked before the download, not after: nobody wants to wait for 50 MB
+    // only to be told the app isn't allowed to install anything.
+    if (!await _canInstallApks()) {
+      value = value.copyWith(needsInstallPermission: true, downloadFailed: false);
+      return;
+    }
+
+    value = value.copyWith(
+      downloading: true,
+      downloadedFraction: 0,
+      downloadFailed: false,
+      needsInstallPermission: false,
+    );
+
+    final client = debugClientOverride ?? http.Client();
+    try {
+      // Wiped first: a half-finished file from a download that was cut off
+      // would otherwise sit there and be handed to the installer.
+      final directory = Directory(
+        '${(await getTemporaryDirectory()).path}/update',
+      );
+      if (directory.existsSync()) directory.deleteSync(recursive: true);
+      directory.createSync(recursive: true);
+      final file = File(
+        '${directory.path}/hanneslouncher-${release.version}.apk',
+      );
+
+      final response = await client.send(
+        http.Request('GET', Uri.parse(release.apkUrl)),
+      );
+      if (response.statusCode != 200) {
+        throw HttpException('${response.statusCode}');
+      }
+
+      final total = response.contentLength ?? 0;
+      final sink = file.openWrite();
+      var received = 0;
+      var lastPercent = -1;
+      await for (final chunk in response.stream) {
+        sink.add(chunk);
+        received += chunk.length;
+        if (total <= 0) continue;
+        // One rebuild per percent instead of one per chunk - a 50 MB file
+        // arrives in thousands of them.
+        final percent = received * 100 ~/ total;
+        if (percent == lastPercent) continue;
+        lastPercent = percent;
+        value = value.copyWith(downloadedFraction: received / total);
+      }
+      await sink.close();
+
+      final started = await _installApk(file.path);
+      value = value.copyWith(
+        downloading: false,
+        downloadedFraction: 1,
+        downloadFailed: !started,
+      );
+    } catch (_) {
+      // No connection, no space, a server that answered with something else:
+      // all the same to the screen, which offers the release page instead.
+      value = value.copyWith(downloading: false, downloadFailed: true);
+    } finally {
+      if (debugClientOverride == null) client.close();
+    }
+  }
+
+  /// Opens the system switch that lets this app install apps.
+  Future<void> requestInstallPermission() async {
+    try {
+      await _channel.invokeMethod('requestInstallPermission');
+    } catch (_) {
+      // Nothing to do here: the screen keeps offering the release page.
+    }
+  }
+
+  /// Called when the update screen comes back into view - the permission may
+  /// have been granted in the settings in the meantime.
+  Future<void> refreshInstallPermission() async {
+    if (!value.needsInstallPermission) return;
+    if (await _canInstallApks()) {
+      value = value.copyWith(needsInstallPermission: false);
+    }
+  }
+
+  Future<bool> _canInstallApks() async {
+    try {
+      return await _channel.invokeMethod<bool>('canInstallApks') ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> _installApk(String path) async {
+    try {
+      return await _channel.invokeMethod<bool>('installApk', {'path': path}) ??
+          false;
+    } catch (_) {
+      return false;
     }
   }
 

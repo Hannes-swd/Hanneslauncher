@@ -16,6 +16,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.net.ConnectivityManager
+import android.net.Uri
 import android.net.NetworkCapabilities
 import android.os.BatteryManager
 import android.os.Build
@@ -212,9 +213,65 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "version" -> result.success(installedVersion())
+                    "canInstallApks" -> result.success(canInstallApks())
+                    "requestInstallPermission" -> result.success(requestInstallPermission())
+                    "installApk" -> {
+                        val path = call.argument<String>("path")
+                        result.success(if (path == null) false else installApk(path))
+                    }
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    // Not a runtime prompt: "install unknown apps" is a per-app switch in
+    // the system settings, and sending the user there is the only way to get
+    // it turned on. Started without resolveActivity() on purpose - the
+    // settings screen isn't always visible to a package-visibility query,
+    // and a null result there would leave the user with no way in at all.
+    private fun requestInstallPermission(): Boolean {
+        return try {
+            startActivity(
+                Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+                    .setData(Uri.parse("package:$packageName"))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+            true
+        } catch (e: Exception) {
+            // Some vendor ROMs don't carry the per-app screen: the general
+            // one at least gets the user to the right list.
+            startIfResolvable(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES))
+        }
+    }
+
+    private fun canInstallApks(): Boolean {
+        // The permission only exists from Android 8 on; below that any app
+        // could hand a file to the installer.
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            packageManager.canRequestPackageInstalls()
+        } else {
+            true
+        }
+    }
+
+    // Hands a downloaded APK to Android's own installer. The file lives in
+    // this app's cache dir, so the installer - a different app - can only
+    // read it through the FileProvider plus a one-off read grant.
+    private fun installApk(path: String): Boolean {
+        return try {
+            val file = File(path)
+            if (!file.exists()) return false
+            val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(intent)
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 
     private fun installedVersion(): Map<String, Any?> {

@@ -66,14 +66,31 @@ class UpdateScreen extends StatefulWidget {
   State<UpdateScreen> createState() => _UpdateScreenState();
 }
 
-class _UpdateScreenState extends State<UpdateScreen> {
+class _UpdateScreenState extends State<UpdateScreen>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Opening this screen is asking about updates, so it checks - but only
     // if the last check has aged out, so repeatedly opening it doesn't burn
     // through GitHub's request budget.
     UpdateController.instance.refreshStale();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // "Install unknown apps" is granted on a system settings screen, not in a
+  // dialog - coming back from it is the only moment this app can notice.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      UpdateController.instance.refreshInstallPermission();
+    }
   }
 
   Future<void> _open(String url, AppStrings s) async {
@@ -134,17 +151,60 @@ class _UpdateScreenState extends State<UpdateScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                if (release!.apkUrl.isNotEmpty)
-                  FilledButton.icon(
-                    onPressed: () => _open(release.apkUrl, s),
-                    icon: const Icon(Icons.download_outlined),
-                    label: Text(s.updateDownload),
-                  )
-                else
+                if (release!.apkUrl.isEmpty)
                   Text(
                     s.updateNoApkInRelease,
                     style: const TextStyle(color: Colors.black54),
+                  )
+                else if (state.downloading) ...[
+                  // Determinate whenever the server said how big the file is,
+                  // which GitHub does - the indeterminate bar is for the rest.
+                  LinearProgressIndicator(
+                    value: state.downloadedFraction > 0
+                        ? state.downloadedFraction
+                        : null,
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    state.downloadedFraction >= 1
+                        ? s.updateStartingInstaller
+                        : s.updateDownloading(
+                            (state.downloadedFraction * 100).round(),
+                          ),
+                    style: const TextStyle(color: Colors.black54, fontSize: 13),
+                  ),
+                ] else
+                  FilledButton.icon(
+                    onPressed: UpdateController.instance.downloadAndInstall,
+                    icon: const Icon(Icons.download_outlined),
+                    label: Text(s.updateDownloadAndInstall),
+                  ),
+                if (state.needsInstallPermission) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    s.updateNeedsInstallPermission,
+                    style: const TextStyle(
+                      color: Color(0xFFD32F2F),
+                      fontSize: 13,
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed:
+                        UpdateController.instance.requestInstallPermission,
+                    icon: const Icon(Icons.settings_outlined),
+                    label: Text(s.updateOpenInstallSettings),
+                  ),
+                ],
+                if (state.downloadFailed) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    s.updateDownloadFailed,
+                    style: const TextStyle(
+                      color: Color(0xFFD32F2F),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 8),
                 Text(
                   s.updateInstallHint,

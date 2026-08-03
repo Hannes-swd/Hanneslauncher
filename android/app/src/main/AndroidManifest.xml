@@ -20,6 +20,12 @@
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions"/>
+    <!-- Lets the update screen hand a downloaded APK straight to Android's
+         installer instead of routing it through a browser download, which
+         needs the same permission for the browser and hides the failure when
+         it isn't granted. Android asks once, for this app, and
+         "installApk" in MainActivity.kt opens that dialog directly. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
     <!-- Cleartext HTTP is off by default since Android 9 - needed here so
          an action element's http:// call actually reaches a local smart
          home device (almost none of them have a certificate). Data sources
