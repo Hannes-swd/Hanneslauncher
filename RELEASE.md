@@ -32,7 +32,7 @@ Prüfen, ob es sitzt:
 gh auth status
 ```
 
-### Den Signaturschlüssel sichern — wichtig
+### Den Signaturschlüssel sichern, wichtig
 
 Android lässt eine APK nur dann über eine installierte App drüber
 installieren, wenn **beide mit demselben Schlüssel signiert sind**. Sonst
@@ -77,7 +77,7 @@ Aus dem Projektordner:
 Ohne `-Notes` baut das Skript die Release-Notizen aus den Commit-Titeln seit
 dem letzten Release zusammen.
 
-Erst mal nur sehen, was passieren würde — ändert und lädt nichts:
+Erst mal nur sehen, was passieren würde, ändert und lädt nichts:
 
 ```powershell
 .\tool\release.ps1 1.1.0 -DryRun
@@ -108,7 +108,7 @@ hochgeladen.
 Nützlich, wenn das Skript mittendrin abbricht und du ab da weitermachen
 willst.
 
-### Schritt 1 — Version festlegen
+### Schritt 1, Version festlegen
 
 In `pubspec.yaml` steht eine Zeile wie:
 
@@ -125,7 +125,7 @@ Beide Teile hochsetzen, z. B. auf `1.1.0+2`:
 Faustregel für vorne: kleine Änderung → `1.0.1`, neue Funktion → `1.1.0`,
 großer Umbau → `2.0.0`.
 
-### Schritt 2 — APK bauen
+### Schritt 2, APK bauen
 
 ```powershell
 flutter build apk --release
@@ -140,7 +140,7 @@ Download-Ordner des Handys):
 Copy-Item build\app\outputs\flutter-apk\app-release.apk build\app\outputs\flutter-apk\hanneslauncher-1.1.0.apk
 ```
 
-### Schritt 3 — Änderungen committen und pushen
+### Schritt 3, Änderungen committen und pushen
 
 ```powershell
 git add -A
@@ -148,13 +148,13 @@ git commit -m "release: v1.1.0"
 git push
 ```
 
-### Schritt 4 — Release anlegen und APK anhängen
+### Schritt 4, Release anlegen und APK anhängen
 
 ```powershell
 gh release create v1.1.0 build\app\outputs\flutter-apk\hanneslauncher-1.1.0.apk --title "v1.1.0" --notes "Neue Uhr-Stile, schnellerer Start"
 ```
 
-Das Tag `v1.1.0` legt `gh` dabei selbst auf den aktuellen Commit — du musst
+Das Tag `v1.1.0` legt `gh` dabei selbst auf den aktuellen Commit, du musst
 vorher **kein** `git tag` machen.
 
 Mehrzeilige Notizen gehen am bequemsten aus einer Datei:
@@ -187,7 +187,7 @@ lädt sie herunter; ein Tipp auf den fertigen Download startet Androids
 Installer. Beim ersten Mal fragt Android einmalig, ob der Browser Apps
 installieren darf.
 
-**Deine Einstellungen bleiben dabei erhalten** — es wird über die bestehende
+**Deine Einstellungen bleiben dabei erhalten**, es wird über die bestehende
 App drüber installiert, nichts deinstalliert.
 
 Zum Zeitpunkt der Prüfung:
@@ -263,5 +263,5 @@ gh release list
 
 Der Repo-Name steckt in **einer** Konstante:
 `kUpdateRepo` in `lib/update_controller.dart`. Wird das Repository
-umbenannt oder verschoben, dort anpassen — sonst sucht die App weiter am
+umbenannt oder verschoben, dort anpassen, sonst sucht die App weiter am
 alten Ort.
