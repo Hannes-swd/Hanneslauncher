@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The icon is drawn on white, so the adaptive icon's background layer
+         carries that same white behind the foreground's H. -->
+    <color name="ic_launcher_background">#FFFFFF</color>
+</resources>

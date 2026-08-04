@@ -1,6 +1,10 @@
-# hanneslauncher
+<p align="center">
+  <img src="icon/icon.png" width="88" alt="hanneslauncher icon">
+</p>
 
-A minimalist Android launcher, built with Flutter.
+<h1 align="center">hanneslauncher</h1>
+
+<p align="center">A minimalist Android launcher, built with Flutter.</p>
 
 No app grid, no pages to swipe through. The home screen is a clock, a few
 pinned apps and a letter bar along the right edge, everything else sits
