@@ -15,12 +15,10 @@ calendar.
 </p>
 
 <p align="center">
-  <a href="Images/showing.mp4">
-    <img src="Images/panel.png" width="30%" alt="Play the walkthrough recording">
-  </a>
+  <img src="Images/walkthrough.gif" width="32%" alt="Walkthrough: the panel, the widget editor and the app list">
   <br>
-  <a href="Images/showing.mp4"><b>▶ Play the walkthrough</b></a><br>
-  <sub>Everything below, shown in one go.</sub>
+  <sub>Everything below, shown in one go.
+  <a href="Images/showing.mp4">Full quality with sound</a>.</sub>
 </p>
 
 ---
