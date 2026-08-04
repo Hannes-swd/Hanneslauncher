@@ -15,7 +15,11 @@ calendar.
 </p>
 
 <p align="center">
-  <a href="Images/showing.mp4"><b>▶ Watch the walkthrough</b></a><br>
+  <a href="Images/showing.mp4">
+    <img src="Images/panel.png" width="30%" alt="Play the walkthrough recording">
+  </a>
+  <br>
+  <a href="Images/showing.mp4"><b>▶ Play the walkthrough</b></a><br>
   <sub>Everything below, shown in one go.</sub>
 </p>
 
