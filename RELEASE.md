@@ -51,7 +51,7 @@ Diese Datei ist damit so wichtig wie der Quellcode. Einmal an einen sicheren
 Ort kopieren:
 
 ```powershell
-Copy-Item "$env:USERPROFILE\.android\debug.keystore" "$env:USERPROFILE\OneDrive\hanneslouncher-debug.keystore"
+Copy-Item "$env:USERPROFILE\.android\debug.keystore" "$env:USERPROFILE\OneDrive\hanneslauncher-debug.keystore"
 ```
 
 Merke:
@@ -137,7 +137,7 @@ Unter sprechendem Namen ablegen (steht sonst zehnmal gleich im
 Download-Ordner des Handys):
 
 ```powershell
-Copy-Item build\app\outputs\flutter-apk\app-release.apk build\app\outputs\flutter-apk\hanneslouncher-1.1.0.apk
+Copy-Item build\app\outputs\flutter-apk\app-release.apk build\app\outputs\flutter-apk\hanneslauncher-1.1.0.apk
 ```
 
 ### Schritt 3 — Änderungen committen und pushen
@@ -151,7 +151,7 @@ git push
 ### Schritt 4 — Release anlegen und APK anhängen
 
 ```powershell
-gh release create v1.1.0 build\app\outputs\flutter-apk\hanneslouncher-1.1.0.apk --title "v1.1.0" --notes "Neue Uhr-Stile, schnellerer Start"
+gh release create v1.1.0 build\app\outputs\flutter-apk\hanneslauncher-1.1.0.apk --title "v1.1.0" --notes "Neue Uhr-Stile, schnellerer Start"
 ```
 
 Das Tag `v1.1.0` legt `gh` dabei selbst auf den aktuellen Commit — du musst
@@ -160,7 +160,7 @@ vorher **kein** `git tag` machen.
 Mehrzeilige Notizen gehen am bequemsten aus einer Datei:
 
 ```powershell
-gh release create v1.1.0 build\app\outputs\flutter-apk\hanneslouncher-1.1.0.apk --title "v1.1.0" --notes-file notes.md
+gh release create v1.1.0 build\app\outputs\flutter-apk\hanneslauncher-1.1.0.apk --title "v1.1.0" --notes-file notes.md
 ```
 
 Fertig. Prüfen:
@@ -173,7 +173,7 @@ gh release view v1.1.0
 
 ## 3. Was auf dem Handy passiert
 
-Die App fragt `https://api.github.com/repos/Hannes-swd/Hanneslouncher/releases/latest`
+Die App fragt `https://api.github.com/repos/Hannes-swd/Hanneslauncher/releases/latest`
 ab, nimmt das Tag (`v1.1.0` → `1.1.0`) und vergleicht es mit der installierten
 Version. Ist das Release höher, erscheint ein **roter Punkt**:
 
@@ -234,7 +234,7 @@ gh release edit v1.1.0 --notes "Korrigierter Text"
 APK nachträglich anhängen oder ersetzen:
 
 ```powershell
-gh release upload v1.1.0 build\app\outputs\flutter-apk\hanneslouncher-1.1.0.apk --clobber
+gh release upload v1.1.0 build\app\outputs\flutter-apk\hanneslauncher-1.1.0.apk --clobber
 ```
 
 Release komplett zurückziehen (inklusive Tag):

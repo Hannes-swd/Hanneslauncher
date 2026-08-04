@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hanneslouncher/data_sources_controller.dart';
-import 'package:hanneslouncher/widget_action.dart';
-import 'package:hanneslouncher/widget_element.dart';
+import 'package:hanneslauncher/data_sources_controller.dart';
+import 'package:hanneslauncher/widget_action.dart';
+import 'package:hanneslauncher/widget_element.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';

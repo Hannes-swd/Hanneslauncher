@@ -10,14 +10,14 @@ class BrowserApp {
 }
 
 /// The browsers on the device, and opening a link in one of them in
-/// particular - see the "hanneslouncher/browsers" channel in `MainActivity.kt`.
+/// particular - see the "hanneslauncher/browsers" channel in `MainActivity.kt`.
 ///
 /// `url_launcher` can only ask Android for "a browser" and gets whatever is
 /// set as the default, which is exactly what this exists to override.
 class BrowserApps {
   BrowserApps._();
 
-  static const _channel = MethodChannel('hanneslouncher/browsers');
+  static const _channel = MethodChannel('hanneslauncher/browsers');
 
   static Future<List<BrowserApp>> installed() async {
     try {

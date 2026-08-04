@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 /// placed right at the screen edge (like the alphabet bar) gets first dibs
 /// on touches there instead of losing the first attempt to the system.
 class SystemGestureExclusion {
-  static const _channel = MethodChannel('hanneslouncher/system_gestures');
+  static const _channel = MethodChannel('hanneslauncher/system_gestures');
 
   static Future<void> excludeRightEdge({
     required double barWidth,

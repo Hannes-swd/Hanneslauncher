@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hanneslouncher/panel_blocks_controller.dart';
-import 'package:hanneslouncher/widget_element.dart';
+import 'package:hanneslauncher/panel_blocks_controller.dart';
+import 'package:hanneslauncher/widget_element.dart';
 
 void main() {
   test('a rule still matches after being stored and read back', () {

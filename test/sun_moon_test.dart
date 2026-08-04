@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hanneslouncher/moon_phase.dart';
-import 'package:hanneslouncher/sun_times.dart';
+import 'package:hanneslauncher/moon_phase.dart';
+import 'package:hanneslauncher/sun_times.dart';
 
 void main() {
   group('sunTimesFor', () {

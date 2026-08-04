@@ -72,5 +72,5 @@ Die eingebauten Werte werden an zwei Stellen definiert, beide in
 - `_builtIn(key)` - was der Schlüssel tatsächlich liefert
 
 Reine Geräte-/Sensor-Werte (kein Netzwerk, keine fremde App) landen als
-neue native Methode in `hanneslouncher/device_stats`
+neue native Methode in `hanneslauncher/device_stats`
 (`android/app/.../MainActivity.kt` + `lib/device_stats_controller.dart`).

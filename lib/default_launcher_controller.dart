@@ -36,7 +36,7 @@ class DefaultLauncherState {
 }
 
 /// Asks Android which app is the home app, and sends the user to where that
-/// can be changed - see the "hanneslouncher/system_apps" channel in
+/// can be changed - see the "hanneslauncher/system_apps" channel in
 /// `MainActivity.kt`.
 ///
 /// An installed launcher that was never made the default is a dead end
@@ -48,7 +48,7 @@ class DefaultLauncherController extends ValueNotifier<DefaultLauncherState> {
   static final DefaultLauncherController instance =
       DefaultLauncherController._();
 
-  static const _channel = MethodChannel('hanneslouncher/system_apps');
+  static const _channel = MethodChannel('hanneslauncher/system_apps');
 
   /// Remembers that the nudge on startup has had its one turn. Deliberately
   /// not part of the settings backup: it says what this install has already

@@ -195,7 +195,7 @@ if (-not $buildOk) {
 
 # Unter einem Namen mit Versionsnummer hochladen: im Download-Ordner des
 # Handys liegen sonst irgendwann zehn Dateien namens app-release.apk.
-$namedApk = Join-Path (Split-Path $builtApk) "hanneslouncher-$Version.apk"
+$namedApk = Join-Path (Split-Path $builtApk) "hanneslauncher-$Version.apk"
 Copy-Item $builtApk $namedApk -Force
 
 # --- 5. Committen, pushen, Release anlegen ---------------------------------
@@ -214,7 +214,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Step "Release $tag auf GitHub anlegen und APK anhaengen"
-$notesFile = Join-Path $env:TEMP 'hanneslouncher-release-notes.md'
+$notesFile = Join-Path $env:TEMP 'hanneslauncher-release-notes.md'
 Set-TextNoBom $notesFile $Notes
 gh release create $tag $namedApk --title $tag --notes-file $notesFile
 $releaseOk = ($LASTEXITCODE -eq 0)

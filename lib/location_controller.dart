@@ -87,12 +87,12 @@ class LocationController extends ValueNotifier<({double lat, double lon})?> {
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         error = s.errorLocationDenied;
-        debugPrint('hanneslouncher: $error');
+        debugPrint('hanneslauncher: $error');
         return;
       }
       if (!await Geolocator.isLocationServiceEnabled()) {
         error = s.errorLocationOff;
-        debugPrint('hanneslouncher: $error');
+        debugPrint('hanneslauncher: $error');
         return;
       }
 
@@ -107,12 +107,12 @@ class LocationController extends ValueNotifier<({double lat, double lon})?> {
           ),
         );
       } catch (e) {
-        debugPrint('hanneslouncher: no fresh fix ($e), trying last known');
+        debugPrint('hanneslauncher: no fresh fix ($e), trying last known');
         position = await Geolocator.getLastKnownPosition();
       }
       if (position == null) {
         error = s.errorNoPosition;
-        debugPrint('hanneslouncher: $error');
+        debugPrint('hanneslauncher: $error');
         return;
       }
       _updatedAt = DateTime.now();
@@ -145,7 +145,7 @@ class LocationController extends ValueNotifier<({double lat, double lon})?> {
       await setLocaleIdentifier(_locale);
       final places = await placemarkFromCoordinates(lat, lon);
       if (places.isEmpty) {
-        debugPrint('hanneslouncher: no place for $lat,$lon');
+        debugPrint('hanneslauncher: no place for $lat,$lon');
         return;
       }
       final place = places.first;
@@ -173,7 +173,7 @@ class LocationController extends ValueNotifier<({double lat, double lon})?> {
       // No geocoder on this device, or it couldn't answer. Logged rather
       // than swallowed: a missing place name is otherwise indistinguishable
       // from one that simply hasn't arrived yet.
-      debugPrint('hanneslouncher: city lookup failed: $e');
+      debugPrint('hanneslauncher: city lookup failed: $e');
     }
   }
 

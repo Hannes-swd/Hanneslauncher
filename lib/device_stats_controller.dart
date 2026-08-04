@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Battery, storage, connection type, steps and today's most-used app -
-/// read from Android through `MainActivity.kt`'s "hanneslouncher/device_stats"
+/// read from Android through `MainActivity.kt`'s "hanneslauncher/device_stats"
 /// channel and cached here as plain synchronous fields, the same way
 /// [LocationController] caches the last known position. Nothing here pushes
 /// updates on its own; [ensureFresh] is called whenever the panel using
@@ -13,7 +13,7 @@ class DeviceStatsController extends ChangeNotifier {
 
   static final DeviceStatsController instance = DeviceStatsController._();
 
-  static const _channel = MethodChannel('hanneslouncher/device_stats');
+  static const _channel = MethodChannel('hanneslauncher/device_stats');
 
   // A fresh read every time the panel opens is plenty - nothing here needs
   // to track changes second by second.

@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hanneslouncher/app_strings.dart';
-import 'package:hanneslouncher/default_launcher_controller.dart';
-import 'package:hanneslouncher/icon_theme_controller.dart';
-import 'package:hanneslouncher/locale_controller.dart';
-import 'package:hanneslouncher/settings_catalog.dart';
-import 'package:hanneslouncher/update_controller.dart';
+import 'package:hanneslauncher/app_strings.dart';
+import 'package:hanneslauncher/default_launcher_controller.dart';
+import 'package:hanneslauncher/icon_theme_controller.dart';
+import 'package:hanneslauncher/locale_controller.dart';
+import 'package:hanneslauncher/settings_catalog.dart';
+import 'package:hanneslauncher/update_controller.dart';
 
 /// The catalog as it looks with nothing configured yet - enough for the
 /// search, which only ever reads titles, subtitles and keywords.

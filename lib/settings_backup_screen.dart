@@ -19,6 +19,19 @@ class SettingsBackupScreen extends StatefulWidget {
 class _SettingsBackupScreenState extends State<SettingsBackupScreen> {
   bool _busy = false;
 
+  /// clearSnackBars (not hideCurrentSnackBar) removes any already showing
+  /// one instantly - importing twice in a row would otherwise put two
+  /// SnackBars with the same text in the tree while the first animates out,
+  /// and the implicit Hero tag SnackBar derives from its content is then no
+  /// longer unique, which crashes with "multiple heroes share tag". The
+  /// _busy guard doesn't cover this: it is already false while the previous
+  /// SnackBar is still on screen.
+  void _notify(String message) {
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Future<void> _export(AppStrings s) async {
     setState(() => _busy = true);
     final json = SettingsBackupService.exportJson();
@@ -26,9 +39,7 @@ class _SettingsBackupScreenState extends State<SettingsBackupScreen> {
     if (!mounted) return;
     setState(() => _busy = false);
     if (!ok) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(s.backupExportFailed)));
+      _notify(s.backupExportFailed);
     }
   }
 
@@ -62,15 +73,11 @@ class _SettingsBackupScreenState extends State<SettingsBackupScreen> {
       await SettingsBackupService.apply(text);
       if (!mounted) return;
       setState(() => _busy = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(s.backupImportSuccess)));
+      _notify(s.backupImportSuccess);
     } catch (_) {
       if (!mounted) return;
       setState(() => _busy = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(s.backupImportFailed)));
+      _notify(s.backupImportFailed);
     }
   }
 

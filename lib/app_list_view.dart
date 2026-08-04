@@ -121,7 +121,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
 
   // The home screen typically stays alive in the background rather than
   // restarting, so a freshly installed (or uninstalled) app would otherwise
-  // never show up until hanneslouncher itself is restarted.
+  // never show up until hanneslauncher itself is restarted.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {

@@ -365,14 +365,14 @@ class AppStrings {
   String get defaultLauncherSteps => _en
       ? '1. Tap "Set as default".\n\n'
             '2. If a dialog asks which app to use as the home app, pick '
-            'hanneslouncher and confirm.\n\n'
-            '3. If a settings screen opens instead, tap hanneslouncher in '
+            'hanneslauncher and confirm.\n\n'
+            '3. If a settings screen opens instead, tap hanneslauncher in '
             'the list there.'
       : '1. Auf „Als Standard festlegen" tippen.\n\n'
             '2. Fragt ein Dialog, welche App die Start-App sein soll, dort '
-            'hanneslouncher auswählen und bestätigen.\n\n'
+            'hanneslauncher auswählen und bestätigen.\n\n'
             '3. Öffnet sich stattdessen ein Einstellungsbildschirm, dort '
-            'hanneslouncher in der Liste antippen.';
+            'hanneslauncher in der Liste antippen.';
   String get defaultLauncherManual => _en
       ? 'If nothing opens, it works by hand as well: Settings → Apps → '
             'Default apps → Home app. Depending on the phone that entry is '

@@ -56,7 +56,7 @@ class CalendarController extends ChangeNotifier {
 
   static final CalendarController instance = CalendarController._();
 
-  static const _channel = MethodChannel('hanneslouncher/calendar');
+  static const _channel = MethodChannel('hanneslauncher/calendar');
 
   bool _permissionGranted = false;
   bool get permissionGranted => _permissionGranted;

@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Where the release APKs are published. Everything else about the check is
 /// derived from this - the API call, the release page, the download link.
-const String kUpdateRepo = 'Hannes-swd/Hanneslouncher';
+const String kUpdateRepo = 'Hannes-swd/Hanneslauncher';
 
 /// A release as GitHub reports it, reduced to the parts this app shows or
 /// acts on. Kept as JSON in preferences so the "update available" mark
@@ -199,7 +199,7 @@ class UpdateController extends ValueNotifier<UpdateState> {
 
   static final UpdateController instance = UpdateController._();
 
-  static const _channel = MethodChannel('hanneslouncher/app_info');
+  static const _channel = MethodChannel('hanneslauncher/app_info');
 
   static const _releaseKey = 'update_latest_release';
   static const _checkedAtKey = 'update_checked_at';
@@ -346,7 +346,7 @@ class UpdateController extends ValueNotifier<UpdateState> {
       if (directory.existsSync()) directory.deleteSync(recursive: true);
       directory.createSync(recursive: true);
       final file = File(
-        '${directory.path}/hanneslouncher-${release.version}.apk',
+        '${directory.path}/hanneslauncher-${release.version}.apk',
       );
 
       final response = await client.send(

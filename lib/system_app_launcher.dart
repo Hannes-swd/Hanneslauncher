@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 class SystemAppLauncher {
   SystemAppLauncher._();
 
-  static const _channel = MethodChannel('hanneslouncher/system_apps');
+  static const _channel = MethodChannel('hanneslauncher/system_apps');
 
   static Future<void> openClock() async {
     try {

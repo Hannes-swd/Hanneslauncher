@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 class BackupFileBridge {
   BackupFileBridge._();
 
-  static const _channel = MethodChannel('hanneslouncher/backup');
+  static const _channel = MethodChannel('hanneslauncher/backup');
 
   /// Writes [json] to a file and opens the share sheet for it. Returns false
   /// if no file could be written or shared.

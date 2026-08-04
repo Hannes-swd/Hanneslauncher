@@ -32,7 +32,7 @@
          still enforce https on their own, in data_sources_controller.dart,
          regardless of this. -->
     <application
-        android:label="hanneslouncher"
+        android:label="hanneslauncher"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">

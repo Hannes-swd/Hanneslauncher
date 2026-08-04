@@ -1,4 +1,4 @@
-package com.example.hanneslouncher
+package com.example.hanneslauncher
 
 import android.Manifest
 import android.app.Activity
@@ -36,13 +36,13 @@ import java.io.File
 import java.util.Calendar
 
 class MainActivity : FlutterActivity() {
-    private val gestureChannelName = "hanneslouncher/system_gestures"
-    private val calendarChannelName = "hanneslouncher/calendar"
-    private val systemAppsChannelName = "hanneslouncher/system_apps"
-    private val backupChannelName = "hanneslouncher/backup"
-    private val deviceStatsChannelName = "hanneslouncher/device_stats"
-    private val appInfoChannelName = "hanneslouncher/app_info"
-    private val browsersChannelName = "hanneslouncher/browsers"
+    private val gestureChannelName = "hanneslauncher/system_gestures"
+    private val calendarChannelName = "hanneslauncher/calendar"
+    private val systemAppsChannelName = "hanneslauncher/system_apps"
+    private val backupChannelName = "hanneslauncher/backup"
+    private val deviceStatsChannelName = "hanneslauncher/device_stats"
+    private val appInfoChannelName = "hanneslauncher/app_info"
+    private val browsersChannelName = "hanneslauncher/browsers"
     private val calendarPermissionRequestCode = 4201
     private val importFileRequestCode = 4202
     private val stepsPermissionRequestCode = 4203
@@ -558,7 +558,7 @@ class MainActivity : FlutterActivity() {
         return try {
             val backupDir = File(filesDir, "backup")
             if (!backupDir.exists()) backupDir.mkdirs()
-            val file = File(backupDir, "hanneslouncher_backup.json")
+            val file = File(backupDir, "hanneslauncher_backup.json")
             file.writeText(json)
             val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
             val intent = Intent(Intent.ACTION_SEND).apply {

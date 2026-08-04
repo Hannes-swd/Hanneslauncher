@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hanneslouncher/update_controller.dart';
+import 'package:hanneslauncher/update_controller.dart';
 
 /// A GitHub `/releases/latest` payload, cut down to the fields the app reads.
 Map<String, dynamic> payload({
@@ -17,7 +17,7 @@ Map<String, dynamic> payload({
         assets ??
         [
           {
-            'name': 'hanneslouncher-1.1.0.apk',
+            'name': 'hanneslauncher-1.1.0.apk',
             'browser_download_url': 'https://example.test/app.apk',
           },
         ],

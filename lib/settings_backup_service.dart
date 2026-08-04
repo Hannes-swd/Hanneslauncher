@@ -129,7 +129,7 @@ class SettingsBackupService {
       throw const FormatException('Not readable JSON');
     }
     if (decoded is! Map<String, dynamic> || decoded['formatVersion'] == null) {
-      throw const FormatException('Not a hanneslouncher backup file');
+      throw const FormatException('Not a hanneslauncher backup file');
     }
 
     // First: every `colorIndex` below references this list (appended after
