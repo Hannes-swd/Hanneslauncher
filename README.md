@@ -14,6 +14,11 @@ calendar.
   <img src="Images/app-suche.png" width="30%" alt="App list while scrubbing the letter bar">
 </p>
 
+<p align="center">
+  <a href="Images/showing.mp4"><b>▶ Watch the walkthrough</b></a><br>
+  <sub>Everything below, shown in one go.</sub>
+</p>
+
 ---
 
 ## Home screen
