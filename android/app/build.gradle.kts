@@ -15,8 +15,12 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.hanneslauncher"
+        // Keeps the misspelling on purpose. This is the identity Android
+        // installs the app under, and every release so far carries it: change
+        // it and the next APK installs as a second, empty app next to the
+        // existing one instead of updating it. The code itself is spelled
+        // correctly, which is what `namespace` above is for.
+        applicationId = "com.example.hanneslouncher"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
