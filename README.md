@@ -182,3 +182,8 @@ gestures, runs through method channels in
 |---|---|
 | [PLACEHOLDERS.md](PLACEHOLDERS.md) | Every widget placeholder |
 | [RELEASE.md](RELEASE.md) | Bump the version, build, publish on GitHub |
+
+---
+
+<sub>Note: parts of this project, including this documentation, were written
+with the help of AI.</sub>
