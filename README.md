@@ -76,7 +76,7 @@ The panel is made of **blocks**, which can be reordered freely:
 
 | Block | What it shows |
 |---|---|
-| **App row** | 3–6 icons per line, names optional |
+| **App row** | 0 - 6 icons per line |
 | **Widget** | A card you built yourself (see below) |
 | **Calendar** | Events for the next few days, from the calendars already synced on the device. Tapping one opens it in the calendar app. |
 
