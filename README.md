@@ -6,6 +6,12 @@
 
 <p align="center">A minimalist Android launcher, built with Flutter.</p>
 
+**Quick Links:**
+- [Download APK](#installation)
+- [View Screenshots](#home-screen)
+- [Report Issues](https://github.com/Hannes-swd/Hanneslauncher/issues)
+- [F-Droid](https://f-droid.org/...) | [GitHub Releases](...)
+  
 No app grid, no pages to swipe through. The home screen is a clock, a few
 pinned apps and a letter bar along the right edge, everything else sits
 behind two gestures: **run your finger down the alphabet** for the app list,
