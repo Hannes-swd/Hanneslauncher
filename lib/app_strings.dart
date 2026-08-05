@@ -25,12 +25,13 @@ class AppStrings {
   String get noSettingsFound =>
       _en ? 'No setting found' : 'Keine Einstellung gefunden';
 
-  String get wallpaper => _en ? 'Wallpaper' : 'Hintergrundbild';
+  String get wallpaper => _en ? 'Wallpaper' : 'Hintergrund';
   String get noImageSelected =>
-      _en ? 'No image selected' : 'Kein Bild ausgewählt';
+      _en ? 'No image or video' : 'Kein Bild, kein Video';
   String get imageSelected => _en ? 'Image selected' : 'Bild ausgewählt';
+  String get videoSelected => _en ? 'Video selected' : 'Video ausgewählt';
   String get removeWallpaper =>
-      _en ? 'Remove wallpaper' : 'Hintergrundbild entfernen';
+      _en ? 'Remove wallpaper' : 'Hintergrund entfernen';
 
   String get appList => _en ? 'App list' : 'App-Liste';
   String get appListSubtitle =>

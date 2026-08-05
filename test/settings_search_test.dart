@@ -68,7 +68,7 @@ void main() {
   test('searching in English works while the app is in German', () {
     // Keywords carry both languages, so the search never depends on which
     // one the app happens to be set to.
-    expect(search('wallpaper'), contains('Hintergrundbild'));
+    expect(search('wallpaper'), contains('Hintergrund'));
     expect(search('font'), contains('App-Liste'));
     expect(search('backup'), contains('Sicherung'));
   });

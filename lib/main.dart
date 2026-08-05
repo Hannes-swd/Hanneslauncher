@@ -13,6 +13,7 @@ import 'panel_view.dart';
 import 'system_gesture_exclusion.dart';
 import 'update_controller.dart';
 import 'wallpaper_controller.dart';
+import 'wallpaper_view.dart';
 
 void main() {
   runApp(const MyApp());
@@ -37,7 +38,7 @@ class LauncherRoot extends StatefulWidget {
 }
 
 class _LauncherRootState extends State<LauncherRoot>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   // 0 = panel fully hidden (above the screen), 1 = panel fully open.
   late final AnimationController _controller = AnimationController(
     vsync: this,
@@ -45,9 +46,19 @@ class _LauncherRootState extends State<LauncherRoot>
     value: 0,
   );
 
+  // Whether the home screen is the thing on screen right now: the launcher
+  // is in front and the panel isn't covering it. A moving wallpaper (GIF or
+  // video) only runs while this holds - kept as its own notifier so the
+  // wallpaper is the only thing that rebuilds when it flips.
+  final ValueNotifier<bool> _homeVisible = ValueNotifier(true);
+
+  bool _inForeground = true;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _controller.addListener(_updateHomeVisible);
     WallpaperController.instance.load();
     LocaleController.instance.load();
     IconThemeController.instance.load();
@@ -68,8 +79,25 @@ class _LauncherRootState extends State<LauncherRoot>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
+    _homeVisible.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Anything short of `resumed` means the home screen isn't being looked
+    // at: another app opened on top, the screen turned off, the notification
+    // shade pulled down.
+    _inForeground = state == AppLifecycleState.resumed;
+    _updateHomeVisible();
+  }
+
+  void _updateHomeVisible() {
+    // The panel is a full screen sheet, so once it's all the way down there
+    // is nothing left of the wallpaper worth animating.
+    _homeVisible.value = _inForeground && _controller.value < 0.99;
   }
 
   // The panel follows the finger one to one: dragging down pulls it in,
@@ -153,23 +181,10 @@ class _LauncherRootState extends State<LauncherRoot>
         );
         return Stack(
           children: [
-            ValueListenableBuilder(
-              valueListenable: WallpaperController.instance,
-              builder: (context, wallpaper, child) {
-                return Container(
-                  color: Colors.white,
-                  width: double.infinity,
-                  height: double.infinity,
-                  child: wallpaper == null
-                      ? null
-                      : Image.file(
-                          wallpaper,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
-                        ),
-                );
-              },
+            ValueListenableBuilder<bool>(
+              valueListenable: _homeVisible,
+              builder: (context, visible, child) =>
+                  WallpaperView(animate: visible),
             ),
             Scaffold(
               backgroundColor: Colors.transparent,

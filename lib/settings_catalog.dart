@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import 'app_customize_screen.dart';
@@ -99,7 +97,7 @@ class SettingsEntry {
 /// before it's added) simply aren't there.
 List<SettingsEntry> buildSettingsCatalog({
   required AppStrings s,
-  required File? wallpaper,
+  required Wallpaper? wallpaper,
   required IconThemeSettings iconTheme,
   required int folderCount,
   required int webAppCount,
@@ -116,10 +114,15 @@ List<SettingsEntry> buildSettingsCatalog({
       icon: Icons.image_outlined,
       title: s.wallpaper,
       section: SettingsSection.appearance,
-      subtitle: wallpaper == null ? s.noImageSelected : s.imageSelected,
+      subtitle: switch (wallpaper?.kind) {
+        null => s.noImageSelected,
+        WallpaperKind.image => s.imageSelected,
+        WallpaperKind.video => s.videoSelected,
+      },
       keywords: const [
         'wallpaper', 'hintergrund', 'hintergrundbild', 'bild', 'foto',
-        'background', 'image', 'picture',
+        'background', 'image', 'picture', 'video', 'gif', 'mp4', 'film',
+        'bewegt', 'animiert', 'animated', 'live',
       ],
       trailing: wallpaper == null
           ? null
@@ -128,10 +131,17 @@ List<SettingsEntry> buildSettingsCatalog({
               height: 40,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.file(wallpaper, fit: BoxFit.cover),
+                // No thumbnail for a video - pulling a frame out of it costs
+                // a decoder run per settings rebuild, for a 40 pixel square.
+                child: wallpaper.isVideo
+                    ? const ColoredBox(
+                        color: Color(0xFFE0E0E0),
+                        child: Icon(Icons.movie_outlined, size: 22),
+                      )
+                    : Image.file(wallpaper.file, fit: BoxFit.cover),
               ),
             ),
-      onTap: (context) => WallpaperController.instance.pickAndSetImage(),
+      onTap: (context) => WallpaperController.instance.pickAndSet(),
     ),
     if (wallpaper != null)
       SettingsEntry(

@@ -36,6 +36,10 @@ calendar.
 Wallpaper, clock, pinned apps, that is all there is, and every one of them
 is optional.
 
+**The wallpaper** can be a picture, an animated GIF or a video. It is always
+silent, and it only moves while the home screen is actually in front of you -
+open another app or pull the settings panel down and it stops where it is.
+
 **The letter bar on the right** only ever shows the letters that actually
 hold something. Running a finger over one immediately reveals that letter's
 apps, with no app drawer in between. Keep dragging to the left to pick a row

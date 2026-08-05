@@ -35,8 +35,11 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
-  # Pick an image from the gallery for the home screen wallpaper.
+  # Pick an image or a video from the gallery for the home screen wallpaper.
   image_picker: ^1.1.2
+  # Plays a video wallpaper (mp4 and friends). Animated GIFs don't need it -
+  # Flutter's own Image widget already plays those.
+  video_player: ^2.11.1
   # Copy the picked image into a stable app-owned directory.
   path_provider: ^2.1.5
   path: ^1.9.0
