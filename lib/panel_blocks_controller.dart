@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'note_document.dart';
 import 'widget_element.dart';
 
 /// What a block on the panel shows.
@@ -16,6 +17,10 @@ enum PanelBlockType {
   /// An agenda of upcoming events from the device's calendars, filtered to
   /// [PanelBlock.itemKeys] (all calendars if empty) and [PanelBlock.daysAhead].
   calendar,
+
+  /// A written note, named by [PanelBlock.title] and held line by line in
+  /// [PanelBlock.notes].
+  notes,
 }
 
 /// One entry on the panel. The blocks are shown in list order.
@@ -31,6 +36,7 @@ class PanelBlock {
     this.cardHeight = 160,
     this.daysAhead = 7,
     this.linkedKey = '',
+    this.notes = const [],
   });
 
   final String id;
@@ -68,6 +74,9 @@ class PanelBlock {
   /// Empty means the card isn't linked to anything.
   final String linkedKey;
 
+  /// Notes: the note itself, one entry per line.
+  final List<NoteParagraph> notes;
+
   PanelBlock copyWith({
     List<String>? itemKeys,
     int? columns,
@@ -77,6 +86,7 @@ class PanelBlock {
     double? cardHeight,
     int? daysAhead,
     String? linkedKey,
+    List<NoteParagraph>? notes,
   }) {
     return PanelBlock(
       id: id,
@@ -89,6 +99,7 @@ class PanelBlock {
       cardHeight: cardHeight ?? this.cardHeight,
       daysAhead: daysAhead ?? this.daysAhead,
       linkedKey: linkedKey ?? this.linkedKey,
+      notes: notes ?? this.notes,
     );
   }
 
@@ -105,6 +116,7 @@ class PanelBlock {
     'cardHeight': cardHeight,
     'daysAhead': daysAhead,
     'linkedKey': linkedKey,
+    'notes': [for (final paragraph in notes) paragraph.toJson()],
   };
 
   static PanelBlock fromJson(Map<String, dynamic> json) => PanelBlock(
@@ -121,7 +133,25 @@ class PanelBlock {
     cardHeight: (json['cardHeight'] as num?)?.toDouble() ?? 160,
     daysAhead: json['daysAhead'] as int? ?? 7,
     linkedKey: json['linkedKey'] as String? ?? '',
+    notes: _notesFrom(json['notes']),
   );
+
+  /// Same reasoning as the elements below: one unreadable line is dropped
+  /// rather than taking the whole note down with it.
+  static List<NoteParagraph> _notesFrom(Object? stored) {
+    final raw = stored as List<dynamic>? ?? const [];
+    final paragraphs = <NoteParagraph>[];
+    for (final entry in raw) {
+      try {
+        paragraphs.add(
+          NoteParagraph.fromJson(entry as Map<String, dynamic>),
+        );
+      } catch (_) {
+        // Unreadable line - leave it out.
+      }
+    }
+    return paragraphs;
+  }
 
   /// Skips a single unreadable element rather than losing the whole card
   /// with it - same reasoning as the stored blocks themselves.
@@ -223,6 +253,16 @@ class PanelBlocksController extends ValueNotifier<List<PanelBlock>> {
     final block = PanelBlock(
       id: _newId(),
       type: PanelBlockType.widget,
+      title: title.trim(),
+    );
+    await _save([...value, block]);
+    return block;
+  }
+
+  Future<PanelBlock> addNotes(String title) async {
+    final block = PanelBlock(
+      id: _newId(),
+      type: PanelBlockType.notes,
       title: title.trim(),
     );
     await _save([...value, block]);

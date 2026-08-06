@@ -10,9 +10,12 @@ import 'data_sources_controller.dart';
 import 'device_stats_controller.dart';
 import 'locale_controller.dart';
 import 'location_controller.dart';
+import 'note_block_settings_screen.dart';
+import 'note_editor_screen.dart';
 import 'panel_block_card.dart';
 import 'panel_blocks_controller.dart';
 import 'settings_screen.dart';
+import 'text_prompt_dialog.dart';
 import 'update_screen.dart';
 import 'widget_editor_screen.dart';
 
@@ -132,6 +135,15 @@ class _PanelViewState extends State<PanelView> {
               ),
             ),
             SimpleDialogOption(
+              onPressed: () => Navigator.of(context).pop(PanelBlockType.notes),
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.sticky_note_2_outlined),
+                title: Text(s.blockNotes),
+                subtitle: Text(s.blockNotesTitle),
+              ),
+            ),
+            SimpleDialogOption(
               onPressed: () =>
                   Navigator.of(context).pop(PanelBlockType.calendar),
               child: ListTile(
@@ -163,6 +175,29 @@ class _PanelViewState extends State<PanelView> {
         // Straight into settings: this is also where the calendar
         // permission gets asked for the first time.
         await _edit(block);
+      case PanelBlockType.notes:
+        // Asked for straight away: the card carries the name, so an unnamed
+        // note would be an unlabelled box on the panel.
+        final name = await showDialog<String>(
+          context: context,
+          builder: (context) => TextPromptDialog(
+            title: s.blockNotes,
+            label: s.noteName,
+            initialValue: s.blockNotes,
+            s: s,
+          ),
+        );
+        if (name == null || !mounted) return;
+        final block = await controller.addNotes(
+          name.trim().isEmpty ? s.blockNotes : name,
+        );
+        if (!mounted) return;
+        // Straight into the note itself - writing in it is the whole point.
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => NoteEditorScreen(blockId: block.id),
+          ),
+        );
     }
   }
 
@@ -174,6 +209,8 @@ class _PanelViewState extends State<PanelView> {
           WidgetEditorScreen(blockId: block.id),
       PanelBlockType.calendar => (context) =>
           CalendarBlockSettingsScreen(blockId: block.id),
+      PanelBlockType.notes => (context) =>
+          NoteBlockSettingsScreen(blockId: block.id),
     };
     await Navigator.of(context).push(MaterialPageRoute(builder: builder));
   }

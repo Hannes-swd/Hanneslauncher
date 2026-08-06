@@ -7,6 +7,7 @@ import 'calendar_block_view.dart';
 import 'folder_sheet.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
+import 'notes_block_view.dart';
 import 'panel_blocks_controller.dart';
 import 'widget_card_view.dart';
 
@@ -33,6 +34,7 @@ class PanelBlockCard extends StatelessWidget {
           PanelBlockType.appRow => _AppRow(block: block, s: s),
           PanelBlockType.widget => WidgetCardView(block: block, s: s),
           PanelBlockType.calendar => CalendarBlockView(block: block, s: s),
+          PanelBlockType.notes => NotesBlockView(block: block, s: s),
         },
       ),
     );

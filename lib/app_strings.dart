@@ -188,6 +188,36 @@ class AppStrings {
   String get atLeastOneCalendar => _en
       ? 'At least one calendar has to stay selected'
       : 'Mindestens ein Kalender muss ausgewählt bleiben';
+  String get blockNotes => _en ? 'Notes' : 'Notizen';
+  String get blockNotesTitle => _en
+      ? 'A written note with formatting'
+      : 'Eine Notiz mit Formatierung';
+  String get noteName => _en ? 'Note name' : 'Notiz-Name';
+  String get openNote => _en ? 'Open note' : 'Notiz öffnen';
+  String get emptyNote =>
+      _en ? 'Empty note - tap to write' : 'Leere Notiz - zum Schreiben tippen';
+  String get noteHint => _en ? 'Write something…' : 'Schreib etwas…';
+  String get formatLabel => _en ? 'Format' : 'Formatieren';
+  String get closeFormat => _en ? 'Close' : 'Schließen';
+  String get deleteLine => _en ? 'Delete line' : 'Zeile löschen';
+  String get styleTitle => _en ? 'Title' : 'Titel';
+  String get styleHeading => _en ? 'Heading' : 'Überschrift';
+  String get styleText => _en ? 'Text' : 'Text';
+  String get styleNote => _en ? 'Annotation' : 'Anmerkung';
+  String get italicLabel => _en ? 'Italic' : 'Kursiv';
+  String get strikethroughLabel =>
+      _en ? 'Strikethrough' : 'Durchgestrichen';
+  String get underlineLabel => _en ? 'Underline' : 'Unterstrichen';
+  String get underlineColor =>
+      _en ? 'Underline color' : 'Unterstrich-Farbe';
+  String get highlightColor => _en ? 'Highlight' : 'Markierfarbe';
+  String get noColor => _en ? 'None' : 'Keine';
+  String get bulletList => _en ? 'Bullet list' : 'Aufzählung';
+  String get numberedList => _en ? 'Numbered list' : 'Nummerierung';
+  String get checklist => _en ? 'Checklist' : 'Checkliste';
+  String get weightLabel => _en ? 'Weight' : 'Dicke';
+  String get fontSizeLabel => _en ? 'Size' : 'Größe';
+
   String get emptyPanel => _en
       ? 'Nothing here yet. Add widgets or a row of apps with + above.'
       : 'Noch nichts hier. Oben mit + Widgets oder eine App-Reihe '
