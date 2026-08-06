@@ -24,6 +24,28 @@ class AppListSettingsScreen extends StatelessWidget {
                 children: [
                   _PreviewRow(settings: settings, s: s),
                   const SizedBox(height: 24),
+                  _SectionLabel(s.appListLayout),
+                  _LayoutModePicker(settings: settings, s: s),
+                  const SizedBox(height: 6),
+                  Text(
+                    s.appListLayoutHint,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _SectionLabel(s.appListHand),
+                  _HandPicker(settings: settings, s: s),
+                  const SizedBox(height: 6),
+                  Text(
+                    s.appListHandHint,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   _SectionLabel(s.textColor),
                   ColorSwatchPicker(
                     s: s,
@@ -122,6 +144,66 @@ class _PreviewRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _LayoutModePicker extends StatelessWidget {
+  const _LayoutModePicker({required this.settings, required this.s});
+
+  final AppListSettings settings;
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    final options = {
+      AppListLayoutMode.singleColumn: s.layoutSingleColumn,
+      AppListLayoutMode.columns: s.layoutColumns,
+    };
+    return Wrap(
+      spacing: 8,
+      children: [
+        for (final entry in options.entries)
+          ChoiceChip(
+            label: Text(entry.value),
+            selected: settings.layoutMode == entry.key,
+            onSelected: (_) {
+              AppListSettingsController.instance.update(
+                settings.copyWith(layoutMode: entry.key),
+              );
+            },
+          ),
+      ],
+    );
+  }
+}
+
+class _HandPicker extends StatelessWidget {
+  const _HandPicker({required this.settings, required this.s});
+
+  final AppListSettings settings;
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    final options = {
+      AppListHand.right: s.handRight,
+      AppListHand.left: s.handLeft,
+    };
+    return Wrap(
+      spacing: 8,
+      children: [
+        for (final entry in options.entries)
+          ChoiceChip(
+            label: Text(entry.value),
+            selected: settings.hand == entry.key,
+            onSelected: (_) {
+              AppListSettingsController.instance.update(
+                settings.copyWith(hand: entry.key),
+              );
+            },
+          ),
+      ],
     );
   }
 }

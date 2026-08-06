@@ -41,7 +41,13 @@ void main() {
       ),
     );
     await AppListSettingsController.instance.update(
-      const AppListSettings(colorIndex: 5, fontSize: 20, rowHeight: 80),
+      const AppListSettings(
+        colorIndex: 5,
+        fontSize: 20,
+        rowHeight: 80,
+        layoutMode: AppListLayoutMode.columns,
+        hand: AppListHand.left,
+      ),
     );
     await IconThemeController.instance.update(
       const IconThemeSettings(enabled: true, colorIndex: 2),
@@ -134,6 +140,8 @@ void main() {
     expect(appList.colorIndex, 5);
     expect(appList.fontSize, 20);
     expect(appList.rowHeight, 80);
+    expect(appList.layoutMode, AppListLayoutMode.columns);
+    expect(appList.hand, AppListHand.left);
 
     final iconTheme = IconThemeController.instance.value;
     expect(iconTheme.enabled, true);

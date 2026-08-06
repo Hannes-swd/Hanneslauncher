@@ -70,6 +70,8 @@ class SettingsBackupService {
         'fontSize': appList.fontSize,
         'rowHeight': appList.rowHeight,
         'sortMode': appList.sortMode.name,
+        'layoutMode': appList.layoutMode.name,
+        'hand': appList.hand.name,
       },
       'iconTheme': {
         'enabled': iconTheme.enabled,
@@ -209,6 +211,16 @@ class SettingsBackupService {
             AppListSortMode.values,
             appListJson['sortMode'],
             AppListSortMode.alphabetical,
+          ),
+          layoutMode: _enumOr(
+            AppListLayoutMode.values,
+            appListJson['layoutMode'],
+            AppListLayoutMode.singleColumn,
+          ),
+          hand: _enumOr(
+            AppListHand.values,
+            appListJson['hand'],
+            AppListHand.right,
           ),
         ),
       );

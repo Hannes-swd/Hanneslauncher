@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'app_list_settings_controller.dart';
 import 'app_list_view.dart';
 import 'calendar_controller.dart';
 import 'data_packages_controller.dart';
@@ -59,6 +60,7 @@ class _LauncherRootState extends State<LauncherRoot>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _controller.addListener(_updateHomeVisible);
+    AppListSettingsController.instance.addListener(_onAppListSettingsChanged);
     WallpaperController.instance.load();
     LocaleController.instance.load();
     IconThemeController.instance.load();
@@ -80,6 +82,9 @@ class _LauncherRootState extends State<LauncherRoot>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    AppListSettingsController.instance.removeListener(
+      _onAppListSettingsChanged,
+    );
     _controller.dispose();
     _homeVisible.dispose();
     super.dispose();
@@ -155,15 +160,31 @@ class _LauncherRootState extends State<LauncherRoot>
   static const _alphabetBarWidth = 28.0;
 
   double? _exclusionHeightSent;
+  bool? _exclusionLeftEdgeSent;
 
   void _updateGestureExclusion(double totalHeight) {
-    if (_exclusionHeightSent == totalHeight) return;
+    // Which edge the bar is on moves with the left-handed setting, so the
+    // strip Android must keep its hands off moves with it too.
+    final leftEdge = AppListSettingsController.instance.value.leftHanded;
+    if (_exclusionHeightSent == totalHeight &&
+        _exclusionLeftEdgeSent == leftEdge) {
+      return;
+    }
     _exclusionHeightSent = totalHeight;
-    SystemGestureExclusion.excludeRightEdge(
+    _exclusionLeftEdgeSent = leftEdge;
+    SystemGestureExclusion.excludeBarEdge(
       barWidth: _alphabetBarWidth,
       top: _dragStripHeight,
       bottom: totalHeight,
+      leftEdge: leftEdge,
     );
+  }
+
+  // Switching hands doesn't resize anything, so nothing else would ever ask
+  // for the exclusion strip to be moved.
+  void _onAppListSettingsChanged() {
+    final height = _exclusionHeightSent;
+    if (height != null) _updateGestureExclusion(height);
   }
 
   @override

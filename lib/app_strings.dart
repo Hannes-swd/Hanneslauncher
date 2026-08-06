@@ -34,8 +34,9 @@ class AppStrings {
       _en ? 'Remove wallpaper' : 'Hintergrund entfernen';
 
   String get appList => _en ? 'App list' : 'App-Liste';
-  String get appListSubtitle =>
-      _en ? 'Color, font, size, spacing' : 'Farbe, Schriftart, Größe, Abstand';
+  String get appListSubtitle => _en
+      ? 'Layout, color, font, size, spacing'
+      : 'Anordnung, Farbe, Schriftart, Größe, Abstand';
   String get exampleApp => _en ? 'Example app' : 'Beispiel App';
   String get searchApps => _en ? 'Search apps' : 'App suchen';
   String get searchDataSources => _en ? 'Search sources' : 'Quelle suchen';
@@ -45,6 +46,24 @@ class AppStrings {
   String get sortAlphabetical => _en ? 'A to Z' : 'Alphabetisch';
   String get sortNewestFirst =>
       _en ? 'Newest first' : 'Neueste zuerst';
+  String get appListLayout => _en ? 'Layout' : 'Anordnung';
+  String get layoutSingleColumn =>
+      _en ? 'One column (scrolls)' : 'Eine Spalte (scrollt)';
+  String get layoutColumns =>
+      _en ? 'Multiple columns' : 'Mehrere Spalten';
+  String get appListLayoutHint => _en
+      ? 'In one column, drag towards the top or bottom edge to scroll through '
+            'long letters.'
+      : 'Bei einer Spalte zum oberen oder unteren Rand ziehen, um durch lange '
+            'Buchstaben zu scrollen.';
+  String get appListHand => _en ? 'Hand' : 'Bedienhand';
+  String get handRight => _en ? 'Right-handed' : 'Rechtshänder';
+  String get handLeft => _en ? 'Left-handed' : 'Linkshänder';
+  String get appListHandHint => _en
+      ? 'Left-handed mirrors the app list: alphabet on the left, apps to the '
+            'right of it.'
+      : 'Linkshänder spiegelt die App-Liste: Alphabet links, Apps rechts '
+            'daneben.';
   String get textColor => _en ? 'Text color' : 'Textfarbe';
   String get font => _en ? 'Font' : 'Schriftart';
   String get fontStandard => _en ? 'Default' : 'Standard';

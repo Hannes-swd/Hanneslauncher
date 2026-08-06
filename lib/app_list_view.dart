@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:math' as math;
 
@@ -48,6 +49,12 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
   // drag-to-open-panel detector never overlaps its scrub gesture.
   static const double _alphabetBarWidth = 28;
 
+  // Single-column layout only: how deep the scroll zones at the top and the
+  // bottom edge of the list reach, and how fast the list scrolls per frame
+  // once the finger is all the way into one of them.
+  static const double _autoScrollZone = 110;
+  static const double _autoScrollMaxStep = 14;
+
   final SplayTreeMap<String, List<LauncherEntry>> _grouped = SplayTreeMap();
   List<String> _letters = [];
 
@@ -71,8 +78,30 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
 
+  // Scrolls the current letter's apps in single-column mode. Driven only by
+  // the drag on the alphabet bar (the list itself is never touched directly,
+  // it's only on screen while that drag lasts).
+  // keepScrollOffset: false so a list that's built fresh (every drag starts
+  // with no letter selected, so it is) always begins at the top instead of
+  // restoring where the last drag left off.
+  final ScrollController _listScrollController = ScrollController(
+    keepScrollOffset: false,
+  );
+  Timer? _autoScrollTimer;
+  double _autoScrollStep = 0;
+  // Last reported drag position, so the highlighted row can be recomputed
+  // while the list scrolls under a finger that isn't moving.
+  double _lastDragDy = 0;
+  double _lastDraggedOut = 0;
+
   AppListSettings _settings = AppListSettingsController.instance.value;
   double get _rowHeight => _settings.rowHeight;
+  bool get _singleColumn =>
+      _settings.layoutMode == AppListLayoutMode.singleColumn;
+  // Mirrors the whole thing: alphabet bar on the left, apps to the right.
+  bool get _leftHanded => _settings.leftHanded;
+  double get _scrollOffset =>
+      _listScrollController.hasClients ? _listScrollController.offset : 0;
 
   @override
   void initState() {
@@ -113,6 +142,8 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     AppListSettingsController.instance.removeListener(_onSettingsChanged);
     LauncherEntriesController.instance.removeListener(_onEntriesChanged);
+    _autoScrollTimer?.cancel();
+    _listScrollController.dispose();
     _bubblePosition.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
@@ -165,17 +196,31 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     );
   }
 
-  // Which app (if any) sits under the finger, given how far left of the
-  // alphabet bar it is and its vertical position. Null if outside the grid.
-  int? _targetIndexFor(String letter, double localDy, double draggedLeft) {
+  // Which app (if any) sits under the finger, given how far it has been
+  // dragged off the alphabet bar towards the list and its vertical position.
+  // Null if outside the grid.
+  int? _targetIndexFor(String letter, double localDy, double draggedOut) {
     final group = _grouped[letter];
     if (group == null || group.isEmpty) return null;
+
+    // One full-width row per app: only the vertical position matters, plus
+    // how far the group has been scrolled so far.
+    if (_singleColumn) {
+      if (_listSize == null || localDy < _headerHeight) return null;
+      final index = ((localDy - _headerHeight + _scrollOffset) / _rowHeight)
+          .floor();
+      if (index < 0 || index >= group.length) return null;
+      return index;
+    }
+
     final grid = _gridFor(group.length);
     if (grid == null) return null;
 
-    // draggedLeft counts leftwards from the bar's left edge, which is the
-    // list's right edge.
-    final x = _listSize!.width - draggedLeft;
+    // draggedOut counts away from the bar, so which list edge it starts from
+    // depends on the side the bar is on.
+    final x = _leftHanded
+        ? draggedOut
+        : _listSize!.width - draggedOut;
     final column = (x / grid.columnWidth).floor();
     if (column < 0 || column >= grid.columnCount) return null;
 
@@ -185,6 +230,97 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     final itemIndex = column * grid.rowsPerColumn + row;
     if (itemIndex < 0 || itemIndex >= group.length) return null;
     return itemIndex;
+  }
+
+  /// Handles one drag position reported by the alphabet bar: picks the
+  /// letter, the targeted app row within it, and - in single-column mode -
+  /// keeps the edge auto-scroll in sync.
+  void _handleScrub(String barLetter, double localDy, double draggedOut) {
+    // Below the threshold: scrubbing up/down on the bar picks the letter.
+    // Past it, the letter locks to whatever it was when the finger crossed
+    // over, and dy instead picks an app row within that group (using the
+    // list's own layout, not the bar's).
+    final targeting = draggedOut >= _listTargetThreshold;
+    final letter = targeting ? (_activeLetter ?? barLetter) : barLetter;
+    // A new letter always starts at the top of its group rather than
+    // wherever the previous, possibly much longer one was scrolled to.
+    if (letter != _activeLetter) _resetScroll();
+    _lastDragDy = localDy;
+    _lastDraggedOut = draggedOut;
+    final target = targeting
+        ? _targetIndexFor(letter, localDy, draggedOut)
+        : null;
+    _updateAutoScroll(targeting ? localDy : null);
+    if (letter != _activeLetter || target != _targetAppIndex) {
+      // Stays synchronous: the release handler reads _targetAppIndex right
+      // away to decide what to launch, so it must always reflect the latest
+      // drag position.
+      setState(() {
+        _activeLetter = letter;
+        _targetAppIndex = target;
+      });
+    }
+  }
+
+  void _resetScroll() {
+    _stopAutoScroll();
+    if (_listScrollController.hasClients) _listScrollController.jumpTo(0);
+  }
+
+  /// Starts, retargets or stops the edge scrolling. [localDy] is the finger's
+  /// vertical position over the list, or null when it isn't targeting a row.
+  void _updateAutoScroll(double? localDy) {
+    final size = _listSize;
+    if (!_singleColumn || localDy == null || size == null) {
+      _stopAutoScroll();
+      return;
+    }
+    final topEdge = _headerHeight + _autoScrollZone;
+    final bottomEdge = size.height - _autoScrollZone;
+    double step = 0;
+    if (localDy > bottomEdge) {
+      step =
+          ((localDy - bottomEdge) / _autoScrollZone).clamp(0.0, 1.0) *
+          _autoScrollMaxStep;
+    } else if (localDy < topEdge) {
+      step =
+          -((topEdge - localDy) / _autoScrollZone).clamp(0.0, 1.0) *
+          _autoScrollMaxStep;
+    }
+    _autoScrollStep = step;
+    if (step == 0) {
+      _stopAutoScroll();
+      return;
+    }
+    // Kept ticking on its own rather than scrolling per drag update, so
+    // holding the finger still at the edge keeps the list moving.
+    _autoScrollTimer ??= Timer.periodic(
+      const Duration(milliseconds: 16),
+      (_) => _tickAutoScroll(),
+    );
+  }
+
+  void _stopAutoScroll() {
+    _autoScrollTimer?.cancel();
+    _autoScrollTimer = null;
+    _autoScrollStep = 0;
+  }
+
+  void _tickAutoScroll() {
+    if (!mounted || !_listScrollController.hasClients) return;
+    final position = _listScrollController.position;
+    final target = (position.pixels + _autoScrollStep).clamp(
+      0.0,
+      position.maxScrollExtent,
+    );
+    if (target == position.pixels) return;
+    _listScrollController.jumpTo(target);
+    // The rows just moved under the finger, so which app it points at has
+    // to be recomputed even though the finger itself didn't move.
+    final letter = _activeLetter;
+    if (letter == null) return;
+    final index = _targetIndexFor(letter, _lastDragDy, _lastDraggedOut);
+    if (index != _targetAppIndex) setState(() => _targetAppIndex = index);
   }
 
   void _launchTargetedApp() {
@@ -219,8 +355,8 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
         // inset from the alphabet bar so its own vertical scrub gesture is
         // never contested.
         Positioned(
-          left: 0,
-          right: _alphabetBarWidth,
+          left: _leftHanded ? _alphabetBarWidth : 0,
+          right: _leftHanded ? 0 : _alphabetBarWidth,
           top: 0,
           bottom: 0,
           child: GestureDetector(
@@ -300,7 +436,12 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
                   ),
                   Expanded(
                     child: Align(
-                      alignment: Alignment.centerLeft,
+                      // Always on the far side from the alphabet bar, so the
+                      // bar (which wins the hit test where they overlap)
+                      // can't swallow taps on the pinned icons.
+                      alignment: _leftHanded
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                       child: _buildPinnedApps(),
                     ),
                   ),
@@ -309,75 +450,13 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
             },
           ),
         ),
+        // The left-handed layout is the same Row read the other way round:
+        // bar first, apps after it.
         Row(
           children: [
+            if (_leftHanded) _buildAlphabetBar(),
             Expanded(child: _buildList()),
-            SizedBox(
-              width: 28,
-              child: _AlphabetBar(
-                letters: _letters,
-                color: _settings.color,
-                onScrub: (barLetter, localDy, draggedLeft) {
-                  // Below the threshold: scrubbing up/down on the bar picks
-                  // the letter. Past it, the letter locks to whatever it
-                  // was when the finger crossed over, and dy instead picks
-                  // an app row within that group (using the list's own
-                  // layout, not the bar's).
-                  final targeting = draggedLeft >= _listTargetThreshold;
-                  final letter = targeting
-                      ? (_activeLetter ?? barLetter)
-                      : barLetter;
-                  final target = targeting
-                      ? _targetIndexFor(letter, localDy, draggedLeft)
-                      : null;
-                  if (letter != _activeLetter || target != _targetAppIndex) {
-                    // Stays synchronous: the release handler below reads
-                    // _targetAppIndex right away to decide what to launch,
-                    // so it must always reflect the latest drag position.
-                    setState(() {
-                      _activeLetter = letter;
-                      _targetAppIndex = target;
-                    });
-                  }
-                },
-                onBubblePositionChanged: (offset) {
-                  // Cheap update: only the bubble listens to this, so it
-                  // doesn't trigger a rebuild of the list/alphabet bar.
-                  _bubblePosition.value = offset;
-                },
-                onSearchHoverChanged: (hovering) {
-                  if (hovering == _searchHovering) return;
-                  setState(() {
-                    _searchHovering = hovering;
-                    if (hovering) {
-                      // Reaching the search icon drops whatever letter/app
-                      // was targeted a moment ago in the same drag, so
-                      // releasing there can never also launch a stale
-                      // target.
-                      _activeLetter = null;
-                      _targetAppIndex = null;
-                    }
-                  });
-                },
-                onSearchActivate: () {
-                  setState(() => _searchMode = true);
-                  // The field needs to exist first before it can take focus.
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) _searchFocusNode.requestFocus();
-                  });
-                },
-                onDragStateChanged: (dragging) {
-                  if (!dragging) _launchTargetedApp();
-                  setState(() {
-                    _isDragging = dragging;
-                    if (!dragging) {
-                      _activeLetter = null;
-                      _targetAppIndex = null;
-                    }
-                  });
-                },
-              ),
-            ),
+            if (!_leftHanded) _buildAlphabetBar(),
           ],
         ),
         // Also a permanent child for the same reason as the clock above.
@@ -388,9 +467,11 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
               return const SizedBox.shrink();
             }
             return Positioned(
-              // Grows past 60 as the finger drags further left, so the
-              // bubble follows it instead of staying pinned at the edge.
-              right: 60 + position.dx,
+              // Grows past 60 as the finger drags further away from the bar,
+              // so the bubble follows it instead of staying pinned at the
+              // edge - to the left of a right-hand bar, mirrored otherwise.
+              left: _leftHanded ? 60 + position.dx : null,
+              right: _leftHanded ? null : 60 + position.dx,
               top: (position.dy - 40).clamp(0.0, double.infinity),
               child: _searchHovering
                   ? _SearchBubble(color: _settings.color)
@@ -402,6 +483,59 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
           },
         ),
       ],
+    );
+  }
+
+  Widget _buildAlphabetBar() {
+    return SizedBox(
+      width: _alphabetBarWidth,
+      child: _AlphabetBar(
+        letters: _letters,
+        color: _settings.color,
+        leftHanded: _leftHanded,
+        onScrub: _handleScrub,
+        onBubblePositionChanged: (offset) {
+          // Cheap update: only the bubble listens to this, so it doesn't
+          // trigger a rebuild of the list/alphabet bar.
+          _bubblePosition.value = offset;
+        },
+        onSearchHoverChanged: (hovering) {
+          if (hovering == _searchHovering) return;
+          if (hovering) _stopAutoScroll();
+          setState(() {
+            _searchHovering = hovering;
+            if (hovering) {
+              // Reaching the search icon drops whatever letter/app was
+              // targeted a moment ago in the same drag, so releasing there
+              // can never also launch a stale target.
+              _activeLetter = null;
+              _targetAppIndex = null;
+            }
+          });
+        },
+        onSearchActivate: () {
+          setState(() => _searchMode = true);
+          // The field needs to exist first before it can take focus.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _searchFocusNode.requestFocus();
+          });
+        },
+        onDragStateChanged: (dragging) {
+          if (dragging) {
+            _resetScroll();
+          } else {
+            _stopAutoScroll();
+            _launchTargetedApp();
+          }
+          setState(() {
+            _isDragging = dragging;
+            if (!dragging) {
+              _activeLetter = null;
+              _targetAppIndex = null;
+            }
+          });
+        },
+      ),
     );
   }
 
@@ -421,8 +555,50 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
         }
         final letter = _activeLetter!;
         final appsInGroup = _grouped[letter]!;
-        final grid = _gridFor(appsInGroup.length);
-        if (grid == null) return const SizedBox.shrink();
+        final Widget body;
+        if (_singleColumn) {
+          // One app per full-width row. Longer groups than fit on screen
+          // aren't squeezed into extra columns any more - they're scrolled
+          // instead, by dragging towards the top or bottom edge. The list
+          // never sees the drag itself (that happens on the alphabet bar),
+          // hence the fixed physics and the programmatic controller.
+          body = ListView.builder(
+            controller: _listScrollController,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
+            itemExtent: _rowHeight,
+            itemCount: appsInGroup.length,
+            itemBuilder: (context, index) =>
+                _buildAppRow(appsInGroup[index], index),
+          );
+        } else {
+          final grid = _gridFor(appsInGroup.length);
+          if (grid == null) return const SizedBox.shrink();
+          body = Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var col = 0; col < grid.columnCount; col++)
+                SizedBox(
+                  width: grid.columnWidth,
+                  child: Column(
+                    children: [
+                      for (
+                        var row = 0;
+                        row < grid.rowsPerColumn &&
+                            col * grid.rowsPerColumn + row <
+                                appsInGroup.length;
+                        row++
+                      )
+                        _buildAppRow(
+                          appsInGroup[col * grid.rowsPerColumn + row],
+                          col * grid.rowsPerColumn + row,
+                        ),
+                    ],
+                  ),
+                ),
+            ],
+          );
+        }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,9 +606,16 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
             SizedBox(
               height: _headerHeight,
               child: Padding(
-                padding: const EdgeInsets.only(left: 16),
+                // Mirrored along with everything else: away from the bar, so
+                // the finger on it never covers the heading.
+                padding: EdgeInsets.only(
+                  left: _leftHanded ? 0 : 16,
+                  right: _leftHanded ? 16 : 0,
+                ),
                 child: Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: _leftHanded
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Text(
                     letter,
                     style: const TextStyle(
@@ -444,32 +627,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
                 ),
               ),
             ),
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (var col = 0; col < grid.columnCount; col++)
-                    SizedBox(
-                      width: grid.columnWidth,
-                      child: Column(
-                        children: [
-                          for (
-                            var row = 0;
-                            row < grid.rowsPerColumn &&
-                                col * grid.rowsPerColumn + row <
-                                    appsInGroup.length;
-                            row++
-                          )
-                            _buildAppRow(
-                              appsInGroup[col * grid.rowsPerColumn + row],
-                              col * grid.rowsPerColumn + row,
-                            ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
+            Expanded(child: body),
           ],
         );
       },
@@ -498,12 +656,20 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
       children: [
         SizedBox(
           height: _headerHeight,
+          // Mirrored too: the buttons stay on the side the hand comes from.
           child: Row(
+            textDirection: _leftHanded
+                ? TextDirection.rtl
+                : TextDirection.ltr,
             children: [
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 12),
+                  padding: EdgeInsets.only(
+                    left: _leftHanded ? 0 : 12,
+                    right: _leftHanded ? 12 : 0,
+                  ),
                   child: TextField(
+                    textAlign: _leftHanded ? TextAlign.right : TextAlign.left,
                     controller: _searchController,
                     focusNode: _searchFocusNode,
                     decoration: InputDecoration(
@@ -592,12 +758,15 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
         if (pinnedApps.isEmpty) return const SizedBox.shrink();
 
         // Positioning is handled by the caller; this just lays the icons
-        // out, with the user's own left margin instead of one tied to the
-        // clock's width.
+        // out, with the user's own margin instead of one tied to the clock's
+        // width - measured from whichever edge they're aligned to.
         return ValueListenableBuilder<double>(
           valueListenable: PinnedAppsLayoutController.instance,
-          builder: (context, leftMargin, child) => Padding(
-            padding: EdgeInsets.only(left: leftMargin),
+          builder: (context, margin, child) => Padding(
+            padding: EdgeInsets.only(
+              left: _leftHanded ? 0 : margin,
+              right: _leftHanded ? margin : 0,
+            ),
             child: child,
           ),
           child: Column(
@@ -629,14 +798,19 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
       color: isTargeted ? Colors.black12 : Colors.transparent,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
+        // Mirrored for the left-handed layout: icon on the outer edge, name
+        // reading towards the bar the finger is on.
         children: [
-          AppIcon(entry: entry, size: 32),
-          const SizedBox(width: 10),
+          if (!_leftHanded) ...[
+            AppIcon(entry: entry, size: 32),
+            const SizedBox(width: 10),
+          ],
           Expanded(
             child: Text(
               entry.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              textAlign: _leftHanded ? TextAlign.right : TextAlign.left,
               style: TextStyle(
                 color: _settings.color,
                 fontSize: _settings.fontSize,
@@ -647,6 +821,10 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
               ),
             ),
           ),
+          if (_leftHanded) ...[
+            const SizedBox(width: 10),
+            AppIcon(entry: entry, size: 32),
+          ],
         ],
       ),
     );
@@ -654,18 +832,21 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
 }
 
 /// Called with the currently hovered letter, the local vertical position
-/// (for the letter bubble), and how far left of the bar the finger has
-/// dragged (used to detect when it's over the app list, targeting a row).
+/// (for the letter bubble), and how far off the bar - towards the app list,
+/// so leftwards or rightwards depending on the side the bar is on - the
+/// finger has dragged (used to detect when it's over the list, targeting a
+/// row).
 typedef ScrubCallback = void Function(
   String letter,
   double localDy,
-  double draggedLeft,
+  double draggedOut,
 );
 
 class _AlphabetBar extends StatefulWidget {
   const _AlphabetBar({
     required this.letters,
     required this.color,
+    required this.leftHanded,
     required this.onScrub,
     required this.onBubblePositionChanged,
     required this.onSearchHoverChanged,
@@ -675,6 +856,10 @@ class _AlphabetBar extends StatefulWidget {
 
   final List<String> letters;
   final Color color;
+
+  /// Bar on the left of the screen with the app list to its right, so the
+  /// wave bulges - and the finger leaves the bar - the other way round.
+  final bool leftHanded;
   final ScrubCallback onScrub;
   final ValueChanged<Offset> onBubblePositionChanged;
 
@@ -730,7 +915,7 @@ class _AlphabetBarState extends State<_AlphabetBar> {
         : _AlphabetBar._maxRowHeight;
   }
 
-  void _handlePosition(Offset localPosition, double height) {
+  void _handlePosition(Offset localPosition, double width, double height) {
     final letters = widget.letters;
     final blockHeight = _rowCount * _rowHeight;
     final blockTop = (height - blockHeight) * _AlphabetBar._verticalBias;
@@ -738,12 +923,19 @@ class _AlphabetBarState extends State<_AlphabetBar> {
         .floor()
         .clamp(0, _rowCount - 1);
     // localPosition.dx is 0 at the bar's left edge, so it goes negative once
-    // the finger has moved left of it (e.g. over the app list). Rounded so
-    // sub-pixel jitter doesn't cause extra rebuilds.
-    final draggedLeft = math.max(0.0, -localPosition.dx).roundToDouble();
+    // the finger has moved left of it (e.g. over the app list) - and past
+    // the bar's width once it has moved right of it, which is where the list
+    // is in the left-handed layout. Rounded so sub-pixel jitter doesn't
+    // cause extra rebuilds.
+    final draggedOut = math
+        .max(
+          0.0,
+          widget.leftHanded ? localPosition.dx - width : -localPosition.dx,
+        )
+        .roundToDouble();
     // The wave visual saturates, but the raw distance is reported onwards
-    // so multi-column targeting can reach the leftmost column.
-    final shiftForWave = draggedLeft.clamp(0.0, _maxDragShift);
+    // so multi-column targeting can reach the outermost column.
+    final shiftForWave = draggedOut.clamp(0.0, _maxDragShift);
     if (index != _hoveredIndex || shiftForWave != _dragShift) {
       setState(() {
         _hoveredIndex = index;
@@ -752,8 +944,10 @@ class _AlphabetBarState extends State<_AlphabetBar> {
     }
     final onSearchRow = index == letters.length;
     widget.onSearchHoverChanged(onSearchRow);
-    if (!onSearchRow) widget.onScrub(letters[index], localPosition.dy, draggedLeft);
-    widget.onBubblePositionChanged(Offset(draggedLeft, localPosition.dy));
+    if (!onSearchRow) {
+      widget.onScrub(letters[index], localPosition.dy, draggedOut);
+    }
+    widget.onBubblePositionChanged(Offset(draggedOut, localPosition.dy));
   }
 
   void _endHover() {
@@ -783,10 +977,18 @@ class _AlphabetBarState extends State<_AlphabetBar> {
           behavior: HitTestBehavior.translucent,
           onPanStart: (details) {
             widget.onDragStateChanged(true);
-            _handlePosition(details.localPosition, constraints.maxHeight);
+            _handlePosition(
+              details.localPosition,
+              constraints.maxWidth,
+              constraints.maxHeight,
+            );
           },
           onPanUpdate: (details) {
-            _handlePosition(details.localPosition, constraints.maxHeight);
+            _handlePosition(
+              details.localPosition,
+              constraints.maxWidth,
+              constraints.maxHeight,
+            );
           },
           onPanEnd: (_) => _endHover(),
           onPanCancel: _endHover,
@@ -836,7 +1038,13 @@ class _AlphabetBarState extends State<_AlphabetBar> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 90),
           curve: Curves.easeOut,
-          transform: Matrix4.translationValues(-maxShift * strength, 0, 0),
+          // Bulges towards the app list, so the other way round once the bar
+          // sits on the left.
+          transform: Matrix4.translationValues(
+            (widget.leftHanded ? maxShift : -maxShift) * strength,
+            0,
+            0,
+          ),
           child: isSearchRow
               ? Icon(Icons.search, size: animatedSize + 8, color: widget.color)
               : AnimatedDefaultTextStyle(

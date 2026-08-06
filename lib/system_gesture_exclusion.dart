@@ -9,20 +9,24 @@ import 'package:flutter/services.dart';
 class SystemGestureExclusion {
   static const _channel = MethodChannel('hanneslauncher/system_gestures');
 
-  static Future<void> excludeRightEdge({
+  /// Excludes the strip the alphabet bar occupies - on the left edge in the
+  /// left-handed layout, on the right one otherwise.
+  static Future<void> excludeBarEdge({
     required double barWidth,
     required double top,
     required double bottom,
+    required bool leftEdge,
   }) async {
     final view = ui.PlatformDispatcher.instance.views.first;
     final dpr = view.devicePixelRatio;
     final screenWidthLogical = view.physicalSize.width / dpr;
+    final left = leftEdge ? 0.0 : screenWidthLogical - barWidth;
 
     try {
       await _channel.invokeMethod('setExclusionRect', {
-        'left': (screenWidthLogical - barWidth) * dpr,
+        'left': left * dpr,
         'top': top * dpr,
-        'right': screenWidthLogical * dpr,
+        'right': (left + barWidth) * dpr,
         'bottom': bottom * dpr,
       });
     } catch (_) {

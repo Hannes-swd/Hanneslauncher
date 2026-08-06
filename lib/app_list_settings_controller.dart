@@ -30,6 +30,22 @@ List<Color> get appListColorPalette => [
 /// any other way would make the bar itself meaningless.
 enum AppListSortMode { alphabetical, newestFirst }
 
+/// How a letter's apps are arranged once there are more of them than fit on
+/// screen at once.
+///
+/// [singleColumn] keeps every app on its own full-width row and scrolls the
+/// group while the finger is dragged towards the top or bottom edge - with
+/// many apps under one letter that stays readable, which is why it's the
+/// default. [columns] is the older layout: apps spill into further columns
+/// next to each other so the whole group is visible without scrolling, at
+/// the cost of ever narrower columns.
+enum AppListLayoutMode { singleColumn, columns }
+
+/// Which side of the screen the alphabet bar sits on - and with it the whole
+/// app list, mirrored. [right] is the default thumb-on-the-right layout,
+/// [left] the left-handed one: alphabet on the left, apps to the right of it.
+enum AppListHand { right, left }
+
 class AppListSettings {
   const AppListSettings({
     this.colorIndex = 0,
@@ -37,6 +53,8 @@ class AppListSettings {
     this.fontSize = 16,
     this.rowHeight = 72,
     this.sortMode = AppListSortMode.alphabetical,
+    this.layoutMode = AppListLayoutMode.singleColumn,
+    this.hand = AppListHand.right,
   });
 
   final int colorIndex;
@@ -44,8 +62,13 @@ class AppListSettings {
   final double fontSize;
   final double rowHeight;
   final AppListSortMode sortMode;
+  final AppListLayoutMode layoutMode;
+  final AppListHand hand;
 
   Color get color => appListColorPalette[colorIndex];
+
+  /// True while the app list is mirrored for left-handed use.
+  bool get leftHanded => hand == AppListHand.left;
 
   AppListSettings copyWith({
     int? colorIndex,
@@ -53,6 +76,8 @@ class AppListSettings {
     double? fontSize,
     double? rowHeight,
     AppListSortMode? sortMode,
+    AppListLayoutMode? layoutMode,
+    AppListHand? hand,
   }) {
     return AppListSettings(
       colorIndex: colorIndex ?? this.colorIndex,
@@ -60,6 +85,8 @@ class AppListSettings {
       fontSize: fontSize ?? this.fontSize,
       rowHeight: rowHeight ?? this.rowHeight,
       sortMode: sortMode ?? this.sortMode,
+      layoutMode: layoutMode ?? this.layoutMode,
+      hand: hand ?? this.hand,
     );
   }
 }
@@ -76,6 +103,8 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
   static const _fontSizeKey = 'applist_font_size';
   static const _rowHeightKey = 'applist_row_height';
   static const _sortModeKey = 'applist_sort_mode';
+  static const _layoutModeKey = 'applist_layout_mode';
+  static const _handKey = 'applist_hand';
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -86,6 +115,9 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
       rowHeight: prefs.getDouble(_rowHeightKey) ?? 72,
       sortMode:
           AppListSortMode.values[prefs.getInt(_sortModeKey) ?? 0],
+      layoutMode:
+          AppListLayoutMode.values[prefs.getInt(_layoutModeKey) ?? 0],
+      hand: AppListHand.values[prefs.getInt(_handKey) ?? 0],
     );
   }
 
@@ -97,5 +129,7 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
     await prefs.setDouble(_fontSizeKey, newValue.fontSize);
     await prefs.setDouble(_rowHeightKey, newValue.rowHeight);
     await prefs.setInt(_sortModeKey, newValue.sortMode.index);
+    await prefs.setInt(_layoutModeKey, newValue.layoutMode.index);
+    await prefs.setInt(_handKey, newValue.hand.index);
   }
 }
