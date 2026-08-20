@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
@@ -450,6 +451,23 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
             },
           ),
         ),
+        // Softens whatever is behind the launcher (the wallpaper) while
+        // search is open, so the typed text and the results stay readable
+        // over a busy picture. Sits below the Row, so only the background
+        // is blurred and never the search UI itself - and is a permanent
+        // child for the same reason as the clock above.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: _searchMode
+                ? BackdropFilter(
+                    filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                    // BackdropFilter only paints its blur where its child
+                    // covers, so it needs one filling the screen.
+                    child: const SizedBox.expand(),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ),
         // The left-handed layout is the same Row read the other way round:
         // bar first, apps after it.
         Row(
@@ -493,6 +511,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
         letters: _letters,
         color: _settings.color,
         leftHanded: _leftHanded,
+        hideUntilTouched: _settings.hideAlphabet,
         onScrub: _handleScrub,
         onBubblePositionChanged: (offset) {
           // Cheap update: only the bubble listens to this, so it doesn't
@@ -847,6 +866,7 @@ class _AlphabetBar extends StatefulWidget {
     required this.letters,
     required this.color,
     required this.leftHanded,
+    required this.hideUntilTouched,
     required this.onScrub,
     required this.onBubblePositionChanged,
     required this.onSearchHoverChanged,
@@ -860,6 +880,12 @@ class _AlphabetBar extends StatefulWidget {
   /// Bar on the left of the screen with the app list to its right, so the
   /// wave bulges - and the finger leaves the bar - the other way round.
   final bool leftHanded;
+
+  /// Draws the letters fully transparent while nothing is touching the bar,
+  /// fading them in for as long as a scrub lasts. The gesture detector is
+  /// unaffected - an invisible bar still catches the same touches.
+  final bool hideUntilTouched;
+
   final ScrubCallback onScrub;
   final ValueChanged<Offset> onBubblePositionChanged;
 
@@ -995,11 +1021,20 @@ class _AlphabetBarState extends State<_AlphabetBar> {
           child: Align(
             // _verticalBias is a 0..1 fraction; Alignment's y axis is -1..1.
             alignment: Alignment(0, _AlphabetBar._verticalBias * 2 - 1),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (var i = 0; i < _rowCount; i++) _buildRow(i),
-              ],
+            child: AnimatedOpacity(
+              // _hoveredIndex is set on pan start and cleared on release, so
+              // it doubles as "a finger is on the bar right now".
+              opacity: widget.hideUntilTouched && _hoveredIndex == null
+                  ? 0
+                  : 1,
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var i = 0; i < _rowCount; i++) _buildRow(i),
+                ],
+              ),
             ),
           ),
         );

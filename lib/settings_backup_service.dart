@@ -72,6 +72,7 @@ class SettingsBackupService {
         'sortMode': appList.sortMode.name,
         'layoutMode': appList.layoutMode.name,
         'hand': appList.hand.name,
+        'hideAlphabet': appList.hideAlphabet,
       },
       'iconTheme': {
         'enabled': iconTheme.enabled,
@@ -222,6 +223,7 @@ class SettingsBackupService {
             appListJson['hand'],
             AppListHand.right,
           ),
+          hideAlphabet: appListJson['hideAlphabet'] as bool? ?? false,
         ),
       );
     }

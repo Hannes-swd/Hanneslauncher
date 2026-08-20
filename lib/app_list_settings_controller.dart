@@ -55,6 +55,7 @@ class AppListSettings {
     this.sortMode = AppListSortMode.alphabetical,
     this.layoutMode = AppListLayoutMode.singleColumn,
     this.hand = AppListHand.right,
+    this.hideAlphabet = false,
   });
 
   final int colorIndex;
@@ -64,6 +65,11 @@ class AppListSettings {
   final AppListSortMode sortMode;
   final AppListLayoutMode layoutMode;
   final AppListHand hand;
+
+  /// Keeps the alphabet bar invisible until a finger is actually on it: the
+  /// letters fade in for the duration of the scrub and back out on release,
+  /// so the home screen stays free of them without losing the gesture.
+  final bool hideAlphabet;
 
   Color get color => appListColorPalette[colorIndex];
 
@@ -78,6 +84,7 @@ class AppListSettings {
     AppListSortMode? sortMode,
     AppListLayoutMode? layoutMode,
     AppListHand? hand,
+    bool? hideAlphabet,
   }) {
     return AppListSettings(
       colorIndex: colorIndex ?? this.colorIndex,
@@ -87,6 +94,7 @@ class AppListSettings {
       sortMode: sortMode ?? this.sortMode,
       layoutMode: layoutMode ?? this.layoutMode,
       hand: hand ?? this.hand,
+      hideAlphabet: hideAlphabet ?? this.hideAlphabet,
     );
   }
 }
@@ -105,6 +113,7 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
   static const _sortModeKey = 'applist_sort_mode';
   static const _layoutModeKey = 'applist_layout_mode';
   static const _handKey = 'applist_hand';
+  static const _hideAlphabetKey = 'applist_hide_alphabet';
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -118,6 +127,7 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
       layoutMode:
           AppListLayoutMode.values[prefs.getInt(_layoutModeKey) ?? 0],
       hand: AppListHand.values[prefs.getInt(_handKey) ?? 0],
+      hideAlphabet: prefs.getBool(_hideAlphabetKey) ?? false,
     );
   }
 
@@ -131,5 +141,6 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
     await prefs.setInt(_sortModeKey, newValue.sortMode.index);
     await prefs.setInt(_layoutModeKey, newValue.layoutMode.index);
     await prefs.setInt(_handKey, newValue.hand.index);
+    await prefs.setBool(_hideAlphabetKey, newValue.hideAlphabet);
   }
 }

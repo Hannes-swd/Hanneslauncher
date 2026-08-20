@@ -46,6 +46,24 @@ class AppListSettingsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(s.hideAlphabet),
+                    subtitle: Text(
+                      s.hideAlphabetHint,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    value: settings.hideAlphabet,
+                    onChanged: (value) {
+                      AppListSettingsController.instance.update(
+                        settings.copyWith(hideAlphabet: value),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
                   _SectionLabel(s.textColor),
                   ColorSwatchPicker(
                     s: s,

@@ -47,6 +47,7 @@ void main() {
         rowHeight: 80,
         layoutMode: AppListLayoutMode.columns,
         hand: AppListHand.left,
+        hideAlphabet: true,
       ),
     );
     await IconThemeController.instance.update(
@@ -142,6 +143,7 @@ void main() {
     expect(appList.rowHeight, 80);
     expect(appList.layoutMode, AppListLayoutMode.columns);
     expect(appList.hand, AppListHand.left);
+    expect(appList.hideAlphabet, isTrue);
 
     final iconTheme = IconThemeController.instance.value;
     expect(iconTheme.enabled, true);

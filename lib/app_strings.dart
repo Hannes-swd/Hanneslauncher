@@ -64,6 +64,13 @@ class AppStrings {
             'right of it.'
       : 'Linkshänder spiegelt die App-Liste: Alphabet links, Apps rechts '
             'daneben.';
+  String get hideAlphabet =>
+      _en ? 'Hide alphabet' : 'Alphabet ausblenden';
+  String get hideAlphabetHint => _en
+      ? 'The letters stay invisible and only appear while a finger is '
+            'swiping over the bar at the edge of the screen.'
+      : 'Die Buchstaben bleiben unsichtbar und erscheinen erst, wenn am '
+            'Bildschirmrand über die Leiste gewischt wird.';
   String get textColor => _en ? 'Text color' : 'Textfarbe';
   String get font => _en ? 'Font' : 'Schriftart';
   String get fontStandard => _en ? 'Default' : 'Standard';
