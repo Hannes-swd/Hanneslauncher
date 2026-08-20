@@ -453,14 +453,18 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
         ),
         // Softens whatever is behind the launcher (the wallpaper) while
         // search is open, so the typed text and the results stay readable
-        // over a busy picture. Sits below the Row, so only the background
-        // is blurred and never the search UI itself - and is a permanent
-        // child for the same reason as the clock above.
+        // over a busy picture - how strongly is the user's call, and 0
+        // leaves the wallpaper alone. Sits below the Row, so only the
+        // background is blurred and never the search UI itself, and is a
+        // permanent child for the same reason as the clock above.
         Positioned.fill(
           child: IgnorePointer(
-            child: _searchMode
+            child: _searchMode && _settings.searchBlur > 0
                 ? BackdropFilter(
-                    filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                    filter: ui.ImageFilter.blur(
+                      sigmaX: _settings.searchBlur,
+                      sigmaY: _settings.searchBlur,
+                    ),
                     // BackdropFilter only paints its blur where its child
                     // covers, so it needs one filling the screen.
                     child: const SizedBox.expand(),

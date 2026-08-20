@@ -64,6 +64,29 @@ class AppListSettingsScreen extends StatelessWidget {
                     },
                   ),
                   const SizedBox(height: 24),
+                  _SectionLabel(
+                    settings.searchBlur == 0
+                        ? s.searchBlur(s.searchBlurOff)
+                        : s.searchBlur('${settings.searchBlur.round()}'),
+                  ),
+                  Slider(
+                    value: settings.searchBlur,
+                    max: 30,
+                    divisions: 15,
+                    onChanged: (value) {
+                      AppListSettingsController.instance.update(
+                        settings.copyWith(searchBlur: value),
+                      );
+                    },
+                  ),
+                  Text(
+                    s.searchBlurHint,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   _SectionLabel(s.textColor),
                   ColorSwatchPicker(
                     s: s,
