@@ -188,6 +188,7 @@ List<SettingsEntry> buildSettingsCatalog({
         'verstecken', 'hide', 'unsichtbar', 'invisible', 'einblenden',
         'wischen', 'swipe', 'unschärfe', 'unschaerfe', 'blur', 'weichzeichnen',
         'suche', 'suchen', 'search', 'hintergrund', 'background',
+        'wallpaper', 'hintergrundbild', 'abheben', 'lesbar', 'readable',
       ],
       onTap: (context) => _push(context, const AppListSettingsScreen()),
     ),

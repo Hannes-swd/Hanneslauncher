@@ -71,15 +71,17 @@ class AppStrings {
             'swiping over the bar at the edge of the screen.'
       : 'Die Buchstaben bleiben unsichtbar und erscheinen erst, wenn am '
             'Bildschirmrand über die Leiste gewischt wird.';
-  String searchBlur(String value) => _en
-      ? 'Blur behind the search ($value)'
-      : 'Unschärfe hinter der Suche ($value)';
-  String get searchBlurOff => _en ? 'off' : 'aus';
-  String get searchBlurHint => _en
-      ? 'How strongly the wallpaper is softened while searching. 0 leaves it '
+  String backgroundBlur(String value) => _en
+      ? 'Blur the wallpaper ($value)'
+      : 'Hintergrund weichzeichnen ($value)';
+  String get backgroundBlurOff => _en ? 'off' : 'aus';
+  String get backgroundBlurHint => _en
+      ? 'Softens the wallpaper while the alphabet is showing and while '
+            'searching, so the letters and app names stand out. 0 leaves it '
             'sharp.'
-      : 'Wie stark das Hintergrundbild beim Suchen weichgezeichnet wird. 0 '
-            'lässt es scharf.';
+      : 'Zeichnet das Hintergrundbild weich, solange das Alphabet '
+            'eingeblendet ist und beim Suchen - damit sich Buchstaben und '
+            'App-Namen abheben. 0 lässt es scharf.';
   String get textColor => _en ? 'Text color' : 'Textfarbe';
   String get font => _en ? 'Font' : 'Schriftart';
   String get fontStandard => _en ? 'Default' : 'Standard';

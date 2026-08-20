@@ -48,7 +48,7 @@ void main() {
         layoutMode: AppListLayoutMode.columns,
         hand: AppListHand.left,
         hideAlphabet: true,
-        searchBlur: 6,
+        backgroundBlur: 6,
       ),
     );
     await IconThemeController.instance.update(
@@ -145,7 +145,7 @@ void main() {
     expect(appList.layoutMode, AppListLayoutMode.columns);
     expect(appList.hand, AppListHand.left);
     expect(appList.hideAlphabet, isTrue);
-    expect(appList.searchBlur, 6);
+    expect(appList.backgroundBlur, 6);
 
     final iconTheme = IconThemeController.instance.value;
     expect(iconTheme.enabled, true);

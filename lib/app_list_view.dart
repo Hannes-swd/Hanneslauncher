@@ -451,25 +451,37 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
             },
           ),
         ),
-        // Softens whatever is behind the launcher (the wallpaper) while
-        // search is open, so the typed text and the results stay readable
-        // over a busy picture - how strongly is the user's call, and 0
-        // leaves the wallpaper alone. Sits below the Row, so only the
-        // background is blurred and never the search UI itself, and is a
-        // permanent child for the same reason as the clock above.
+        // Softens the wallpaper for as long as the app list is actually in
+        // use - a scrub on the alphabet bar, or the search - so the letters
+        // and the app names stand out from whatever picture is behind them.
+        // Sits below the Row, so only the background is ever blurred and
+        // never the list itself, and is a permanent child for the same
+        // reason as the clock above.
         Positioned.fill(
           child: IgnorePointer(
-            child: _searchMode && _settings.searchBlur > 0
-                ? BackdropFilter(
-                    filter: ui.ImageFilter.blur(
-                      sigmaX: _settings.searchBlur,
-                      sigmaY: _settings.searchBlur,
-                    ),
-                    // BackdropFilter only paints its blur where its child
-                    // covers, so it needs one filling the screen.
-                    child: const SizedBox.expand(),
-                  )
-                : const SizedBox.shrink(),
+            child: TweenAnimationBuilder<double>(
+              // Fades in and out over the same 180ms the letters use, so a
+              // strong blur never snaps on mid-scrub.
+              tween: Tween<double>(
+                end: _isDragging || _searchMode
+                    ? _settings.backgroundBlur
+                    : 0,
+              ),
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              builder: (context, sigma, child) {
+                // Even a sigma of 0 costs a full offscreen pass, so once the
+                // blur has faded out (or is switched off) it is left out of
+                // the tree entirely.
+                if (sigma < 0.1) return const SizedBox.shrink();
+                return BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+                  // The filter needs something to paint; a box the size of
+                  // the screen states the intended area outright.
+                  child: const SizedBox.expand(),
+                );
+              },
+            ),
           ),
         ),
         // The left-handed layout is the same Row read the other way round:

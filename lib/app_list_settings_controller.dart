@@ -56,7 +56,7 @@ class AppListSettings {
     this.layoutMode = AppListLayoutMode.singleColumn,
     this.hand = AppListHand.right,
     this.hideAlphabet = false,
-    this.searchBlur = 14,
+    this.backgroundBlur = 14,
   });
 
   final int colorIndex;
@@ -72,9 +72,10 @@ class AppListSettings {
   /// so the home screen stays free of them without losing the gesture.
   final bool hideAlphabet;
 
-  /// How strongly the wallpaper behind the search is blurred, in pixels of
-  /// blur radius. 0 switches the blur off entirely.
-  final double searchBlur;
+  /// How strongly the wallpaper is blurred while the app list is in use - a
+  /// scrub on the alphabet bar, or the search - in pixels of blur radius.
+  /// 0 switches the blur off entirely and leaves the wallpaper alone.
+  final double backgroundBlur;
 
   Color get color => appListColorPalette[colorIndex];
 
@@ -90,7 +91,7 @@ class AppListSettings {
     AppListLayoutMode? layoutMode,
     AppListHand? hand,
     bool? hideAlphabet,
-    double? searchBlur,
+    double? backgroundBlur,
   }) {
     return AppListSettings(
       colorIndex: colorIndex ?? this.colorIndex,
@@ -101,7 +102,7 @@ class AppListSettings {
       layoutMode: layoutMode ?? this.layoutMode,
       hand: hand ?? this.hand,
       hideAlphabet: hideAlphabet ?? this.hideAlphabet,
-      searchBlur: searchBlur ?? this.searchBlur,
+      backgroundBlur: backgroundBlur ?? this.backgroundBlur,
     );
   }
 }
@@ -121,7 +122,9 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
   static const _layoutModeKey = 'applist_layout_mode';
   static const _handKey = 'applist_hand';
   static const _hideAlphabetKey = 'applist_hide_alphabet';
-  static const _searchBlurKey = 'applist_search_blur';
+  // Named for the search because that was all it applied to at first; kept
+  // under the old key so a value already set survives the rename.
+  static const _backgroundBlurKey = 'applist_search_blur';
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -136,7 +139,7 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
           AppListLayoutMode.values[prefs.getInt(_layoutModeKey) ?? 0],
       hand: AppListHand.values[prefs.getInt(_handKey) ?? 0],
       hideAlphabet: prefs.getBool(_hideAlphabetKey) ?? false,
-      searchBlur: prefs.getDouble(_searchBlurKey) ?? 14,
+      backgroundBlur: prefs.getDouble(_backgroundBlurKey) ?? 14,
     );
   }
 
@@ -151,6 +154,6 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
     await prefs.setInt(_layoutModeKey, newValue.layoutMode.index);
     await prefs.setInt(_handKey, newValue.hand.index);
     await prefs.setBool(_hideAlphabetKey, newValue.hideAlphabet);
-    await prefs.setDouble(_searchBlurKey, newValue.searchBlur);
+    await prefs.setDouble(_backgroundBlurKey, newValue.backgroundBlur);
   }
 }
