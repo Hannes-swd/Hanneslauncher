@@ -3,6 +3,7 @@ import 'package:installed_apps/installed_apps.dart';
 
 import 'app_icon.dart';
 import 'app_strings.dart';
+import 'builtin_entries.dart';
 import 'calendar_block_view.dart';
 import 'folder_sheet.dart';
 import 'launcher_entries_controller.dart';
@@ -105,6 +106,8 @@ class _AppRowItem extends StatelessWidget {
       onTap: () {
         if (entry.isFolder) {
           showFolderSheet(context, entry.folder!);
+        } else if (entry.isBuiltIn) {
+          openBuiltIn(context, entry.builtIn!);
         } else if (entry.isWebApp) {
           entry.launch();
         } else {

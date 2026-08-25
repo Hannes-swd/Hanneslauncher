@@ -61,6 +61,22 @@
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </activity>
+        <!-- Exists purely so Android will let this app read the active media
+             sessions - what is playing right now, for the offline mode's
+             track line. The service itself does nothing with the
+             notifications it is handed; see MediaNotificationListener.kt.
+             Until the user switches this app on under "Notification access"
+             in Android's settings, nothing here runs and the media line
+             simply stays empty. -->
+        <service
+            android:name=".MediaNotificationListener"
+            android:exported="false"
+            android:label="@string/media_listener_label"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService"/>
+            </intent-filter>
+        </service>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

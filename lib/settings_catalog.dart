@@ -12,6 +12,7 @@ import 'folders_settings_screen.dart';
 import 'icon_theme_controller.dart';
 import 'icon_theme_settings_screen.dart';
 import 'locale_controller.dart';
+import 'offline_mode_settings_screen.dart';
 import 'pinned_apps_settings_screen.dart';
 import 'settings_backup_screen.dart';
 import 'update_controller.dart';
@@ -167,6 +168,20 @@ List<SettingsEntry> buildSettingsCatalog({
         'ausrichtung', 'alignment', 'abstand', 'farbe', 'color',
       ],
       onTap: (context) => _push(context, const ClockSettingsScreen()),
+    ),
+    SettingsEntry(
+      icon: Icons.bedtime_outlined,
+      title: s.offlineMode,
+      section: SettingsSection.appearance,
+      subtitle: s.offlineModeSubtitle,
+      keywords: const [
+        'offline', 'offline-modus', 'offlinemodus', 'offline mode',
+        'nachtmodus', 'night', 'nacht', 'laden', 'charging', 'dock',
+        'nachttisch', 'bedside', 'quer', 'querformat', 'landscape',
+        'schwarz', 'black', 'uhr', 'clock', 'musik', 'music', 'spotify',
+        'titel', 'song', 'track',
+      ],
+      onTap: (context) => _push(context, const OfflineModeSettingsScreen()),
     ),
     SettingsEntry(
       icon: Icons.list_alt_outlined,

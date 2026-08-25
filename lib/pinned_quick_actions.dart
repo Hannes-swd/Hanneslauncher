@@ -44,7 +44,10 @@ Future<void> showPinnedQuickActions(
   } else if (entry.isWebApp) {
     await WebAppsController.instance.pickIcon(entry.webApp!.id);
   } else {
-    await AppOverridesController.instance.pickIcon(entry.app!.packageName);
+    // Built-ins have no package name, so they go into the same override
+    // store under their own key - which is what [LauncherEntry.customIcon]
+    // reads them back out of.
+    await AppOverridesController.instance.pickIcon(entry.key);
   }
 }
 

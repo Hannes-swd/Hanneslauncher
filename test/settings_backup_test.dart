@@ -11,6 +11,7 @@ import 'package:hanneslauncher/folders_controller.dart';
 import 'package:hanneslauncher/icon_theme_controller.dart';
 import 'package:hanneslauncher/launcher_entries_controller.dart';
 import 'package:hanneslauncher/locale_controller.dart';
+import 'package:hanneslauncher/offline_mode_controller.dart';
 import 'package:hanneslauncher/panel_blocks_controller.dart';
 import 'package:hanneslauncher/pinned_apps_controller.dart';
 import 'package:hanneslauncher/settings_backup_service.dart';
@@ -38,6 +39,13 @@ void main() {
         topPadding: 40,
         sidePadding: 12,
         barsFilledColorIndex: 4,
+      ),
+    );
+    await OfflineModeController.instance.update(
+      const OfflineModeSettings(
+        style: ClockStyle.splitFlap,
+        colorIndex: 6,
+        showMedia: true,
       ),
     );
     await AppListSettingsController.instance.update(
@@ -115,6 +123,7 @@ void main() {
     // Now blow everything away, as if this were a fresh install.
     await LocaleController.instance.update(AppLanguage.de);
     await ClockSettingsController.instance.update(const ClockSettings());
+    await OfflineModeController.instance.update(const OfflineModeSettings());
     await AppListSettingsController.instance.update(const AppListSettings());
     await IconThemeController.instance.update(const IconThemeSettings());
     await PanelBlocksController.instance.replaceAll([]);
@@ -129,6 +138,11 @@ void main() {
     await SettingsBackupService.apply(exported);
 
     expect(LocaleController.instance.value, AppLanguage.en);
+
+    final offline = OfflineModeController.instance.value;
+    expect(offline.style, ClockStyle.splitFlap);
+    expect(offline.colorIndex, 6);
+    expect(offline.showMedia, true);
 
     final clock = ClockSettingsController.instance.value;
     expect(clock.enabled, false);

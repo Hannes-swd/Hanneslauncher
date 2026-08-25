@@ -105,6 +105,42 @@ class AppStrings {
   String get splitFlap => _en ? 'Split-flap' : 'Klapptafel';
   String get orbit => 'Orbit';
   String get vertical => _en ? 'Vertical' : 'Vertikal';
+  // The offline mode: the screen turned into nothing but a clock on black,
+  // for a phone stood on its side while charging.
+  String get offlineMode => _en ? 'Offline mode' : 'Offline-Modus';
+  String get offlineModeSubtitle => _en
+      ? 'Clock on black, landscape, screen stays on'
+      : 'Uhr auf Schwarz, quer, Bildschirm bleibt an';
+  String get offlineModeExplanation => _en
+      ? 'Turns the screen into a clock on black, in landscape, and keeps it '
+            'on. Tap the screen to bring back the close button. It sits in '
+            'the app list like an app, so it can be pinned or put on a '
+            'widget the same way.'
+      : 'Macht den Bildschirm zu einer Uhr auf Schwarz, im Querformat, und '
+            'lässt ihn an. Zum Beenden auf den Bildschirm tippen, dann '
+            'erscheint das X. Er steht wie eine App in der App-Liste und '
+            'lässt sich genauso anpinnen oder auf ein Widget legen.';
+  String get startOfflineMode => _en ? 'Start now' : 'Jetzt starten';
+  String get offlineModeMedia => _en ? 'Show music' : 'Musik anzeigen';
+  String get offlineModeMediaHint => _en
+      ? 'Shows what is currently playing under the clock, with skip buttons. '
+            'Works with any player - Spotify, YouTube Music, podcasts - with '
+            'no account needed.'
+      : 'Zeigt unter der Uhr, was gerade läuft, mit Knöpfen für vor und '
+            'zurück. Funktioniert mit jedem Player - Spotify, YouTube Music, '
+            'Podcasts - ganz ohne Konto.';
+  String get offlineModeMediaPermission =>
+      _en ? 'Allow music access' : 'Musik-Zugriff erlauben';
+  String get offlineModeMediaPermissionHint => _en
+      ? 'Android only shares the playing track with an app switched on under '
+            '"Notification access". Open that screen and switch '
+            'hanneslauncher on.'
+      : 'Android gibt den laufenden Titel nur an Apps weiter, die unter '
+            '"Benachrichtigungszugriff" eingeschaltet sind. Dort '
+            'hanneslauncher einschalten.';
+  String get offlineModeMediaPermissionGranted =>
+      _en ? 'Access granted' : 'Zugriff erteilt';
+
   String get position => _en ? 'Position' : 'Position';
   String get alignLeft => _en ? 'Left' : 'Links';
   String get alignCenter => _en ? 'Center' : 'Mittig';

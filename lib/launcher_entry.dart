@@ -5,26 +5,48 @@ import 'package:installed_apps/app_info.dart';
 import 'package:installed_apps/installed_apps.dart';
 
 import 'app_overrides_controller.dart';
+import 'app_strings.dart';
+import 'builtin_entries.dart';
 import 'folders_controller.dart';
+import 'locale_controller.dart';
 import 'web_apps_controller.dart';
 
-/// One entry in the app list: an installed app, a saved web app, or a
-/// folder. Everything the launcher draws goes through this, so all three
-/// behave identically in the list, the alphabet index and the pinned apps.
+/// One entry in the app list: an installed app, a saved web app, a folder,
+/// or one of the launcher's own screens. Everything the launcher draws goes
+/// through this, so all four behave identically in the list, the alphabet
+/// index and the pinned apps.
 class LauncherEntry {
-  const LauncherEntry.app(this.app) : webApp = null, folder = null;
-  const LauncherEntry.web(this.webApp) : app = null, folder = null;
-  const LauncherEntry.folder(this.folder) : app = null, webApp = null;
+  const LauncherEntry.app(this.app)
+    : webApp = null,
+      folder = null,
+      builtIn = null;
+  const LauncherEntry.web(this.webApp)
+    : app = null,
+      folder = null,
+      builtIn = null;
+  const LauncherEntry.folder(this.folder)
+    : app = null,
+      webApp = null,
+      builtIn = null;
+  const LauncherEntry.builtIn(this.builtIn)
+    : app = null,
+      webApp = null,
+      folder = null;
 
   final AppInfo? app;
   final WebApp? webApp;
   final LauncherFolder? folder;
+  final BuiltInEntry? builtIn;
 
   bool get isWebApp => webApp != null;
 
   /// Folders can't be launched - opening one shows its contents instead, so
   /// callers check this before calling [launch].
   bool get isFolder => folder != null;
+
+  /// Nor can a built-in: putting a screen on top needs a BuildContext, so
+  /// callers check this and hand it to `openBuiltIn` instead.
+  bool get isBuiltIn => builtIn != null;
 
   /// Identifies the entry when it's pinned or put into a folder. Installed
   /// apps use their package name (unchanged from before web apps and folders
@@ -33,6 +55,7 @@ class LauncherEntry {
   String get key {
     if (app != null) return app!.packageName;
     if (webApp != null) return WebAppsController.pinKeyFor(webApp!.id);
+    if (builtIn != null) return builtIn!.key;
     return FoldersController.keyFor(folder!.id);
   }
 
@@ -45,6 +68,8 @@ class LauncherEntry {
     // to milliseconds, otherwise they'd always sort as newer than every
     // installed app just from being a bigger raw number.
     if (webApp != null) return (int.tryParse(webApp!.id) ?? 0) ~/ 1000;
+    // A built-in has always been there, so "newest first" puts it last.
+    if (builtIn != null) return 0;
     return (int.tryParse(folder!.id) ?? 0) ~/ 1000;
   }
 
@@ -57,6 +82,13 @@ class LauncherEntry {
         app!.name,
       );
     }
+    if (builtIn != null) {
+      // Renameable like an app, and translated when it isn't renamed.
+      return AppOverridesController.instance.nameFor(
+        builtIn!.key,
+        builtIn!.label(AppStrings(LocaleController.instance.value)),
+      );
+    }
     return webApp?.name ?? folder!.name;
   }
 
@@ -67,6 +99,11 @@ class LauncherEntry {
       return AppOverridesController.instance
           .forPackage(app!.packageName)
           ?.iconFile;
+    }
+    // Built-ins go through the same override store, keyed by their own key
+    // instead of a package name, so a picked picture sticks the same way.
+    if (builtIn != null) {
+      return AppOverridesController.instance.forPackage(builtIn!.key)?.iconFile;
     }
     return webApp?.iconFile;
   }
@@ -81,6 +118,7 @@ class LauncherEntry {
     } else if (webApp != null) {
       await WebAppsController.launch(webApp!);
     }
-    // Folders are handled by the caller (see [isFolder]).
+    // Folders and built-ins are handled by the caller (see [isFolder] and
+    // [isBuiltIn]).
   }
 }

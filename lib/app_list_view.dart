@@ -1,3 +1,4 @@
+import 'builtin_entries.dart';
 import 'dart:async';
 import 'dart:collection';
 import 'dart:math' as math;
@@ -333,10 +334,13 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     _open(group[index]);
   }
 
-  /// Launches an entry, or - for a folder - shows its contents instead.
+  /// Launches an entry, or - for a folder or one of the launcher's own
+  /// screens - opens that on top instead.
   void _open(LauncherEntry entry) {
     if (entry.isFolder) {
       showFolderSheet(context, entry.folder!);
+    } else if (entry.isBuiltIn) {
+      openBuiltIn(context, entry.builtIn!);
     } else {
       entry.launch();
     }

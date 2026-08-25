@@ -28,16 +28,7 @@ class ClockDisplay extends StatelessWidget {
           child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.topCenter,
-            child: switch (settings.style) {
-              ClockStyle.digital => const DigitalClock(),
-              ClockStyle.word => const WordClock(),
-              ClockStyle.roman => const RomanClock(),
-              ClockStyle.bars => const BarsClock(),
-              ClockStyle.dotMatrix => const DotMatrixClock(),
-              ClockStyle.splitFlap => const SplitFlapClock(),
-              ClockStyle.orbit => const OrbitClock(),
-              ClockStyle.vertical => const VerticalClock(),
-            },
+            child: clockFace(settings.style),
           ),
         );
       },
@@ -45,10 +36,69 @@ class ClockDisplay extends StatelessWidget {
   }
 }
 
+/// One clock face at its natural size, without the home screen's tap
+/// handler or positioning around it.
+///
+/// [settings] is what lets the offline mode draw the same faces in its own
+/// style and color: passed in, every face uses it instead of reading the
+/// live home screen clock settings, so changing one never moves the other.
+///
+/// [showDate] drops the date line the way the offline mode wants it - a
+/// clock read from across a room should say the time and nothing else. The
+/// two faces that never drew a date (word, bars) ignore it.
+///
+/// [digitalWeight] is the same idea for stroke thickness: only the digital
+/// face has a single weight to set, and only it needs a heavier one when
+/// blown up to fill a screen.
+Widget clockFace(
+  ClockStyle style, {
+  ClockSettings? settings,
+  bool showDate = true,
+  FontWeight digitalWeight = FontWeight.w300,
+}) {
+  return switch (style) {
+    ClockStyle.digital => DigitalClock(
+      settings: settings,
+      showDate: showDate,
+      fontWeight: digitalWeight,
+    ),
+    ClockStyle.word => WordClock(settings: settings),
+    ClockStyle.roman => RomanClock(settings: settings, showDate: showDate),
+    ClockStyle.bars => BarsClock(settings: settings),
+    ClockStyle.dotMatrix => DotMatrixClock(
+      settings: settings,
+      showDate: showDate,
+    ),
+    ClockStyle.splitFlap => SplitFlapClock(
+      settings: settings,
+      showDate: showDate,
+    ),
+    ClockStyle.orbit => OrbitClock(settings: settings, showDate: showDate),
+    ClockStyle.vertical => VerticalClock(
+      settings: settings,
+      showDate: showDate,
+    ),
+  };
+}
+
 class DigitalClock extends StatefulWidget {
-  const DigitalClock({super.key, this.fontSize = 56});
+  const DigitalClock({
+    super.key,
+    this.fontSize = 56,
+    this.settings,
+    this.showDate = true,
+    this.fontWeight = FontWeight.w300,
+  });
 
   final double fontSize;
+  final ClockSettings? settings;
+  final bool showDate;
+
+  /// Light by default, which is what suits the home screen at its usual
+  /// size. Blown up to fill a screen, though, a light weight thins out into
+  /// hairlines that are hard to read from any distance - so the offline
+  /// mode asks for a heavier one.
+  final FontWeight fontWeight;
 
   @override
   State<DigitalClock> createState() => _DigitalClockState();
@@ -81,7 +131,8 @@ class _DigitalClockState extends State<DigitalClock> {
     final mm = _now.minute.toString().padLeft(2, '0');
     return ValueListenableBuilder<ClockSettings>(
       valueListenable: ClockSettingsController.instance,
-      builder: (context, settings, child) {
+      builder: (context, liveSettings, child) {
+        final settings = widget.settings ?? liveSettings;
         final color = settings.digitalColor;
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -90,19 +141,27 @@ class _DigitalClockState extends State<DigitalClock> {
               '$hh:$mm',
               style: TextStyle(
                 fontSize: widget.fontSize,
-                fontWeight: FontWeight.w300,
+                fontWeight: widget.fontWeight,
                 color: color,
+                // Fixed-width digits, so the time doesn't shift sideways
+                // every time a 1 comes or goes, and no leading above and
+                // below the digits - which is only a few pixels at home
+                // size but a visible empty band once it's a screen tall.
+                fontFeatures: const [FontFeature.tabularFigures()],
+                height: 1,
               ),
             ),
-            Text(
-              '${_now.day.toString().padLeft(2, '0')}.'
-              '${_now.month.toString().padLeft(2, '0')}.'
-              '${_now.year}',
-              style: TextStyle(
-                fontSize: widget.fontSize * 0.28,
-                color: color.withValues(alpha: 0.6),
+            if (widget.showDate) ...[
+              Text(
+                '${_now.day.toString().padLeft(2, '0')}.'
+                '${_now.month.toString().padLeft(2, '0')}.'
+                '${_now.year}',
+                style: TextStyle(
+                  fontSize: widget.fontSize * 0.28,
+                  color: color.withValues(alpha: 0.6),
+                ),
               ),
-            ),
+            ],
           ],
         );
       },
@@ -115,9 +174,16 @@ class _DigitalClockState extends State<DigitalClock> {
 /// numerals have no notion of it - and zero itself has none at all, so it
 /// falls back to "0".
 class RomanClock extends StatefulWidget {
-  const RomanClock({super.key, this.fontSize = 56});
+  const RomanClock({
+    super.key,
+    this.fontSize = 56,
+    this.settings,
+    this.showDate = true,
+  });
 
   final double fontSize;
+  final ClockSettings? settings;
+  final bool showDate;
 
   @override
   State<RomanClock> createState() => _RomanClockState();
@@ -150,7 +216,8 @@ class _RomanClockState extends State<RomanClock> {
     if (hour == 0) hour = 12;
     return ValueListenableBuilder<ClockSettings>(
       valueListenable: ClockSettingsController.instance,
-      builder: (context, settings, child) {
+      builder: (context, liveSettings, child) {
+        final settings = widget.settings ?? liveSettings;
         final color = settings.romanColor;
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -163,15 +230,17 @@ class _RomanClockState extends State<RomanClock> {
                 color: color,
               ),
             ),
-            Text(
-              '${_now.day.toString().padLeft(2, '0')}.'
-              '${_now.month.toString().padLeft(2, '0')}.'
-              '${_now.year}',
-              style: TextStyle(
-                fontSize: widget.fontSize * 0.28,
-                color: color.withValues(alpha: 0.6),
+            if (widget.showDate) ...[
+              Text(
+                '${_now.day.toString().padLeft(2, '0')}.'
+                '${_now.month.toString().padLeft(2, '0')}.'
+                '${_now.year}',
+                style: TextStyle(
+                  fontSize: widget.fontSize * 0.28,
+                  color: color.withValues(alpha: 0.6),
+                ),
               ),
-            ),
+            ],
           ],
         );
       },
@@ -203,10 +272,16 @@ String _toRoman(int number) {
 /// proportion to how far its unit has gotten through its own cycle, moving
 /// again every second.
 class BarsClock extends StatefulWidget {
-  const BarsClock({super.key, this.barHeight = 120, this.barWidth = 28});
+  const BarsClock({
+    super.key,
+    this.barHeight = 120,
+    this.barWidth = 28,
+    this.settings,
+  });
 
   final double barHeight;
   final double barWidth;
+  final ClockSettings? settings;
 
   @override
   State<BarsClock> createState() => _BarsClockState();
@@ -237,7 +312,8 @@ class _BarsClockState extends State<BarsClock> {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<ClockSettings>(
       valueListenable: ClockSettingsController.instance,
-      builder: (context, settings, child) {
+      builder: (context, liveSettings, child) {
+        final settings = widget.settings ?? liveSettings;
         return Row(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -329,9 +405,16 @@ class _Bar extends StatelessWidget {
 /// accent color throughout - a digit's dots are either lit or dimmed, never
 /// a different color.
 class DotMatrixClock extends StatefulWidget {
-  const DotMatrixClock({super.key, this.dotSize = 8});
+  const DotMatrixClock({
+    super.key,
+    this.dotSize = 8,
+    this.settings,
+    this.showDate = true,
+  });
 
   final double dotSize;
+  final ClockSettings? settings;
+  final bool showDate;
 
   @override
   State<DotMatrixClock> createState() => _DotMatrixClockState();
@@ -364,7 +447,8 @@ class _DotMatrixClockState extends State<DotMatrixClock> {
     final mm = _now.minute.toString().padLeft(2, '0');
     return ValueListenableBuilder<ClockSettings>(
       valueListenable: ClockSettingsController.instance,
-      builder: (context, settings, child) {
+      builder: (context, liveSettings, child) {
+        final settings = widget.settings ?? liveSettings;
         final color = settings.dotColor;
         final digitGap = widget.dotSize * 0.7;
         final groupGap = widget.dotSize * 1.1;
@@ -402,16 +486,18 @@ class _DotMatrixClockState extends State<DotMatrixClock> {
                 ),
               ],
             ),
-            SizedBox(height: widget.dotSize),
-            Text(
-              '${_now.day.toString().padLeft(2, '0')}.'
-              '${_now.month.toString().padLeft(2, '0')}.'
-              '${_now.year}',
-              style: TextStyle(
-                fontSize: widget.dotSize * 1.4,
-                color: color.withValues(alpha: 0.6),
+            if (widget.showDate) ...[
+              SizedBox(height: widget.dotSize),
+              Text(
+                '${_now.day.toString().padLeft(2, '0')}.'
+                '${_now.month.toString().padLeft(2, '0')}.'
+                '${_now.year}',
+                style: TextStyle(
+                  fontSize: widget.dotSize * 1.4,
+                  color: color.withValues(alpha: 0.6),
+                ),
               ),
-            ),
+            ],
           ],
         );
       },
@@ -530,11 +616,15 @@ class SplitFlapClock extends StatefulWidget {
     this.digitWidth = 44,
     this.digitHeight = 64,
     this.fontSize = 40,
+    this.settings,
+    this.showDate = true,
   });
 
   final double digitWidth;
   final double digitHeight;
   final double fontSize;
+  final ClockSettings? settings;
+  final bool showDate;
 
   @override
   State<SplitFlapClock> createState() => _SplitFlapClockState();
@@ -567,7 +657,8 @@ class _SplitFlapClockState extends State<SplitFlapClock> {
     final mm = _now.minute.toString().padLeft(2, '0');
     return ValueListenableBuilder<ClockSettings>(
       valueListenable: ClockSettingsController.instance,
-      builder: (context, settings, child) {
+      builder: (context, liveSettings, child) {
+        final settings = widget.settings ?? liveSettings;
         final bgColor = settings.splitFlapBgColor;
         final textColor = settings.splitFlapTextColor;
         return Column(
@@ -625,16 +716,18 @@ class _SplitFlapClockState extends State<SplitFlapClock> {
                 ),
               ],
             ),
-            SizedBox(height: widget.fontSize * 0.3),
-            Text(
-              '${_now.day.toString().padLeft(2, '0')}.'
-              '${_now.month.toString().padLeft(2, '0')}.'
-              '${_now.year}',
-              style: TextStyle(
-                fontSize: widget.fontSize * 0.28,
-                color: textColor.withValues(alpha: 0.6),
+            if (widget.showDate) ...[
+              SizedBox(height: widget.fontSize * 0.3),
+              Text(
+                '${_now.day.toString().padLeft(2, '0')}.'
+                '${_now.month.toString().padLeft(2, '0')}.'
+                '${_now.year}',
+                style: TextStyle(
+                  fontSize: widget.fontSize * 0.28,
+                  color: textColor.withValues(alpha: 0.6),
+                ),
               ),
-            ),
+            ],
           ],
         );
       },
@@ -777,9 +870,16 @@ class _FlapCard extends StatelessWidget {
 /// the exact time legible even though the ring itself is abstract. One
 /// accent color throughout.
 class OrbitClock extends StatefulWidget {
-  const OrbitClock({super.key, this.size = 140});
+  const OrbitClock({
+    super.key,
+    this.size = 140,
+    this.settings,
+    this.showDate = true,
+  });
 
   final double size;
+  final ClockSettings? settings;
+  final bool showDate;
 
   @override
   State<OrbitClock> createState() => _OrbitClockState();
@@ -817,7 +917,8 @@ class _OrbitClockState extends State<OrbitClock> {
     final mm = _now.minute.toString().padLeft(2, '0');
     return ValueListenableBuilder<ClockSettings>(
       valueListenable: ClockSettingsController.instance,
-      builder: (context, settings, child) {
+      builder: (context, liveSettings, child) {
+        final settings = widget.settings ?? liveSettings;
         final color = settings.orbitColor;
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -847,16 +948,18 @@ class _OrbitClockState extends State<OrbitClock> {
                 color: color.withValues(alpha: 0.7),
               ),
             ),
-            SizedBox(height: widget.size * 0.02),
-            Text(
-              '${_now.day.toString().padLeft(2, '0')}.'
-              '${_now.month.toString().padLeft(2, '0')}.'
-              '${_now.year}',
-              style: TextStyle(
-                fontSize: widget.size * 0.1,
-                color: color.withValues(alpha: 0.45),
+            if (widget.showDate) ...[
+              SizedBox(height: widget.size * 0.02),
+              Text(
+                '${_now.day.toString().padLeft(2, '0')}.'
+                '${_now.month.toString().padLeft(2, '0')}.'
+                '${_now.year}',
+                style: TextStyle(
+                  fontSize: widget.size * 0.1,
+                  color: color.withValues(alpha: 0.45),
+                ),
               ),
-            ),
+            ],
           ],
         );
       },
@@ -914,9 +1017,16 @@ class _OrbitPainter extends CustomPainter {
 /// text, with a small dot between hour and minute instead of a colon. One
 /// accent color throughout.
 class VerticalClock extends StatefulWidget {
-  const VerticalClock({super.key, this.fontSize = 38});
+  const VerticalClock({
+    super.key,
+    this.fontSize = 38,
+    this.settings,
+    this.showDate = true,
+  });
 
   final double fontSize;
+  final ClockSettings? settings;
+  final bool showDate;
 
   @override
   State<VerticalClock> createState() => _VerticalClockState();
@@ -949,7 +1059,8 @@ class _VerticalClockState extends State<VerticalClock> {
     final mm = _now.minute.toString().padLeft(2, '0');
     return ValueListenableBuilder<ClockSettings>(
       valueListenable: ClockSettingsController.instance,
-      builder: (context, settings, child) {
+      builder: (context, liveSettings, child) {
+        final settings = widget.settings ?? liveSettings;
         final color = settings.verticalColor;
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -985,16 +1096,18 @@ class _VerticalClockState extends State<VerticalClock> {
                   height: 1.05,
                 ),
               ),
-            SizedBox(height: widget.fontSize * 0.3),
-            Text(
-              '${_now.day.toString().padLeft(2, '0')}.'
-              '${_now.month.toString().padLeft(2, '0')}.'
-              '${_now.year}',
-              style: TextStyle(
-                fontSize: widget.fontSize * 0.28,
-                color: color.withValues(alpha: 0.6),
+            if (widget.showDate) ...[
+              SizedBox(height: widget.fontSize * 0.3),
+              Text(
+                '${_now.day.toString().padLeft(2, '0')}.'
+                '${_now.month.toString().padLeft(2, '0')}.'
+                '${_now.year}',
+                style: TextStyle(
+                  fontSize: widget.fontSize * 0.28,
+                  color: color.withValues(alpha: 0.6),
+                ),
               ),
-            ),
+            ],
           ],
         );
       },
@@ -1005,7 +1118,9 @@ class _VerticalClockState extends State<VerticalClock> {
 /// A German QLOCKTWO-style word clock: a fixed grid of letters where the
 /// ones spelling out the current time (rounded to 5 minutes) are lit up.
 class WordClock extends StatefulWidget {
-  const WordClock({super.key});
+  const WordClock({super.key, this.settings});
+
+  final ClockSettings? settings;
 
   @override
   State<WordClock> createState() => _WordClockState();
@@ -1046,7 +1161,8 @@ class _WordClockState extends State<WordClock> {
             : _activeCellsDe(_now);
         return ValueListenableBuilder<ClockSettings>(
           valueListenable: ClockSettingsController.instance,
-          builder: (context, settings, child) {
+          builder: (context, liveSettings, child) {
+            final settings = widget.settings ?? liveSettings;
             final activeColor = settings.wordActiveColor;
             final inactiveColor = settings.wordInactiveColor;
             return Container(

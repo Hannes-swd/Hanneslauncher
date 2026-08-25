@@ -5,6 +5,7 @@ import android.app.Activity
 import android.app.AppOpsManager
 import android.app.role.RoleManager
 import android.app.usage.UsageStatsManager
+import android.content.ComponentName
 import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
@@ -16,6 +17,10 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.media.MediaMetadata
+import android.media.session.MediaController
+import android.media.session.MediaSessionManager
+import android.media.session.PlaybackState
 import android.net.ConnectivityManager
 import android.net.Uri
 import android.net.NetworkCapabilities
@@ -26,6 +31,7 @@ import android.os.Looper
 import android.os.Process
 import android.provider.CalendarContract
 import android.provider.Settings
+import android.view.WindowManager
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -43,6 +49,8 @@ class MainActivity : FlutterActivity() {
     private val deviceStatsChannelName = "hanneslauncher/device_stats"
     private val appInfoChannelName = "hanneslauncher/app_info"
     private val browsersChannelName = "hanneslauncher/browsers"
+    private val offlineModeChannelName = "hanneslauncher/offline_mode"
+    private val mediaChannelName = "hanneslauncher/media"
     private val calendarPermissionRequestCode = 4201
     private val importFileRequestCode = 4202
     private val stepsPermissionRequestCode = 4203
@@ -250,6 +258,137 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        // The offline mode is meant to be looked at from across the room
+        // while the phone charges, so the screen must not turn itself off
+        // for as long as it is open. A window flag rather than a wakelock:
+        // it is tied to this window, so it can't outlive the app and drain
+        // the battery if something goes wrong on the way out.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, offlineModeChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "keepScreenOn" -> {
+                        val on = call.argument<Boolean>("on") ?: false
+                        runOnUiThread {
+                            if (on) {
+                                window.addFlags(
+                                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                                )
+                            } else {
+                                window.clearFlags(
+                                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                                )
+                            }
+                        }
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        // What's playing right now, read from Android's own media sessions -
+        // the same thing the lock screen shows. That covers every player at
+        // once (Spotify, YouTube Music, a podcast app) with no account, no
+        // login and no subscription, which no single service's API can.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, mediaChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "hasPermission" -> result.success(hasNotificationAccess())
+                    "requestPermission" -> result.success(requestNotificationAccess())
+                    "current" -> result.success(currentMedia())
+                    "next" -> result.success(sendMediaCommand(next = true))
+                    "previous" -> result.success(sendMediaCommand(next = false))
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    // Reading the media sessions needs this app to be an enabled
+    // notification listener, which is not a runtime permission - there is no
+    // prompt for it, only a system settings screen the user has to walk
+    // through themselves. Android names the enabled ones in one flat
+    // secure setting, so that is what gets searched for this package.
+    private fun hasNotificationAccess(): Boolean {
+        val enabled = Settings.Secure.getString(
+            contentResolver,
+            "enabled_notification_listeners",
+        ) ?: return false
+        return enabled.split(':').any {
+            ComponentName.unflattenFromString(it)?.packageName == packageName
+        }
+    }
+
+    // Opens that screen. Started without resolveActivity() for the same
+    // reason as the default-launcher one: a settings screen isn't reliably
+    // visible to a package visibility query, and a null answer there would
+    // leave no way in at all.
+    private fun requestNotificationAccess(): Boolean {
+        return try {
+            startActivity(
+                Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    // The session worth showing: the one actually playing, or else the first
+    // one there is, so a track paused mid-listen still names itself instead
+    // of the screen going blank. Null when nothing is playing at all, or
+    // when the permission hasn't been granted - both mean "show nothing",
+    // and the Dart side doesn't need to tell them apart.
+    private fun activeMediaController(): MediaController? {
+        if (!hasNotificationAccess()) return null
+        return try {
+            val manager = getSystemService(MediaSessionManager::class.java)
+                ?: return null
+            val listener = ComponentName(this, MediaNotificationListener::class.java)
+            val sessions = manager.getActiveSessions(listener)
+            sessions.firstOrNull {
+                it.playbackState?.state == PlaybackState.STATE_PLAYING
+            } ?: sessions.firstOrNull()
+        } catch (_: Exception) {
+            // getActiveSessions throws rather than returning empty when the
+            // listener isn't accepted (yet) - just as much a "nothing to
+            // show" as an empty list.
+            null
+        }
+    }
+
+    private fun currentMedia(): Map<String, Any?>? {
+        val controller = activeMediaController() ?: return null
+        val metadata = controller.metadata ?: return null
+        val title = metadata.getString(MediaMetadata.METADATA_KEY_TITLE)
+        val artist =
+            metadata.getString(MediaMetadata.METADATA_KEY_ARTIST)
+                ?: metadata.getString(
+                    MediaMetadata.METADATA_KEY_ALBUM_ARTIST,
+                )
+        // A session with no title at all is a player that has started but
+        // has nothing loaded - there would be nothing to draw.
+        if (title.isNullOrBlank()) return null
+        return mapOf(
+            "title" to title,
+            "artist" to artist,
+            "playing" to
+                (controller.playbackState?.state == PlaybackState.STATE_PLAYING),
+        )
+    }
+
+    private fun sendMediaCommand(next: Boolean): Boolean {
+        val controller = activeMediaController() ?: return false
+        return try {
+            if (next) {
+                controller.transportControls.skipToNext()
+            } else {
+                controller.transportControls.skipToPrevious()
+            }
+            true
+        } catch (_: Exception) {
+            false
+        }
     }
 
     // Which app the home button currently opens, so the settings can say

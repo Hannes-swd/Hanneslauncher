@@ -10,8 +10,9 @@ import 'pinned_apps_controller.dart';
 class PinnedAppsSettingsScreen extends StatelessWidget {
   const PinnedAppsSettingsScreen({super.key});
 
-  /// Folders and web apps first: there are only a handful of them and they'd
-  /// be tedious to find among hundreds of packages otherwise.
+  /// Folders, web apps and the launcher's own screens first: there are only
+  /// a handful of them and they'd be tedious to find among hundreds of
+  /// packages otherwise.
   List<LauncherEntry> _entries() {
     final all = LauncherEntriesController.instance.entries;
     return [
@@ -20,7 +21,9 @@ class PinnedAppsSettingsScreen extends StatelessWidget {
       for (final entry in all)
         if (entry.isWebApp) entry,
       for (final entry in all)
-        if (!entry.isFolder && !entry.isWebApp) entry,
+        if (entry.isBuiltIn) entry,
+      for (final entry in all)
+        if (!entry.isFolder && !entry.isWebApp && !entry.isBuiltIn) entry,
     ];
   }
 

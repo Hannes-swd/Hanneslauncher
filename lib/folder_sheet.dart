@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_icon.dart';
 import 'app_strings.dart';
+import 'builtin_entries.dart';
 import 'folders_controller.dart';
 import 'folders_settings_screen.dart' show FolderContentsPicker;
 import 'launcher_entries_controller.dart';
@@ -206,7 +207,11 @@ class _FolderItem extends StatelessWidget {
         } else {
           // The window has done its job once something is launched.
           Navigator.of(context).pop();
-          entry.launch();
+          if (entry.isBuiltIn) {
+            openBuiltIn(context, entry.builtIn!);
+          } else {
+            entry.launch();
+          }
         }
       },
       child: Column(

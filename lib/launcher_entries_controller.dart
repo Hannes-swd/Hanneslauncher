@@ -3,12 +3,15 @@ import 'package:installed_apps/app_info.dart';
 import 'package:installed_apps/installed_apps.dart';
 
 import 'app_overrides_controller.dart';
+import 'builtin_entries.dart';
 import 'folders_controller.dart';
 import 'launcher_entry.dart';
+import 'locale_controller.dart';
 import 'web_apps_controller.dart';
 
 /// The single list of everything the launcher can show: installed apps,
-/// saved web apps and folders, sorted by displayed name.
+/// saved web apps, folders and the launcher's own built-in screens, sorted
+/// by displayed name.
 ///
 /// Kept in one place because folders reference their contents by key, so
 /// resolving a folder needs the same lookup the app list and the pinned apps
@@ -19,6 +22,9 @@ class LauncherEntriesController extends ChangeNotifier {
     AppOverridesController.instance.addListener(_rebuild);
     WebAppsController.instance.addListener(_rebuild);
     FoldersController.instance.addListener(_rebuild);
+    // The built-in entries are named in the app's own language, so a
+    // language change moves them to a different spot in the sorted list.
+    LocaleController.instance.addListener(_rebuild);
   }
 
   static final LauncherEntriesController instance =
@@ -82,6 +88,7 @@ class LauncherEntriesController extends ChangeNotifier {
         LauncherEntry.web(webApp),
       for (final folder in FoldersController.instance.value)
         LauncherEntry.folder(folder),
+      for (final builtIn in BuiltInEntry.values) LauncherEntry.builtIn(builtIn),
     ];
     _entries.sort(
       (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),

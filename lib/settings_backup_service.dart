@@ -12,13 +12,15 @@ import 'folders_controller.dart';
 import 'icon_theme_controller.dart';
 import 'launcher_entries_controller.dart';
 import 'locale_controller.dart';
+import 'offline_mode_controller.dart';
 import 'panel_blocks_controller.dart';
 import 'pinned_apps_controller.dart';
 import 'web_apps_controller.dart';
 
 /// Everything the user has configured, as one JSON document: colors,
 /// positions, the panel's widgets and calendar/app blocks, pinned apps,
-/// folders, web apps, data sources, app renames, clock style and language.
+/// folders, web apps, data sources, app renames, clock and offline mode
+/// style, and language.
 ///
 /// Custom pictures (the wallpaper, replaced app icons, web app icons) are
 /// left out on purpose - their files live in this install's own private
@@ -30,6 +32,7 @@ class SettingsBackupService {
 
   static Map<String, dynamic> build() {
     final clock = ClockSettingsController.instance.value;
+    final offline = OfflineModeController.instance.value;
     final appList = AppListSettingsController.instance.value;
     final iconTheme = IconThemeController.instance.value;
 
@@ -63,6 +66,11 @@ class SettingsBackupService {
         'alignment': clock.alignment.name,
         'topPadding': clock.topPadding,
         'sidePadding': clock.sidePadding,
+      },
+      'offlineMode': {
+        'style': offline.style.name,
+        'colorIndex': offline.colorIndex,
+        'showMedia': offline.showMedia,
       },
       'appList': {
         'colorIndex': appList.colorIndex,
@@ -197,6 +205,21 @@ class SettingsBackupService {
           ),
           topPadding: (clockJson['topPadding'] as num?)?.toDouble() ?? 0,
           sidePadding: (clockJson['sidePadding'] as num?)?.toDouble() ?? 16,
+        ),
+      );
+    }
+
+    final offlineJson = decoded['offlineMode'] as Map<String, dynamic>?;
+    if (offlineJson != null) {
+      await OfflineModeController.instance.update(
+        OfflineModeSettings(
+          style: _enumOr(
+            ClockStyle.values,
+            offlineJson['style'],
+            ClockStyle.digital,
+          ),
+          colorIndex: offlineJson['colorIndex'] as int? ?? 1,
+          showMedia: offlineJson['showMedia'] as bool? ?? false,
         ),
       );
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'builtin_entries.dart';
 import 'icon_theme_controller.dart';
 import 'launcher_entry.dart';
 
@@ -55,6 +56,8 @@ class AppIcon extends StatelessWidget {
     if (systemIcon != null) {
       return Image.memory(systemIcon, width: size, height: size);
     }
+    final builtIn = entry.builtIn;
+    if (builtIn != null) return Icon(builtIn.icon, size: size);
     return Icon(entry.isWebApp ? Icons.public : Icons.apps, size: size);
   }
 

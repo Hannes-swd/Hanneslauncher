@@ -1,3 +1,4 @@
+import 'builtin_entries.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -92,6 +93,8 @@ class WidgetCardView extends StatelessWidget {
     final entry = entries.first;
     if (entry.isFolder) {
       showFolderSheet(context, entry.folder!);
+    } else if (entry.isBuiltIn) {
+      await openBuiltIn(context, entry.builtIn!);
     } else {
       await entry.launch();
     }

@@ -10,6 +10,7 @@ import 'default_launcher_screen.dart';
 import 'device_stats_controller.dart';
 import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
+import 'offline_mode_controller.dart';
 import 'panel_view.dart';
 import 'system_gesture_exclusion.dart';
 import 'update_controller.dart';
@@ -64,6 +65,7 @@ class _LauncherRootState extends State<LauncherRoot>
     WallpaperController.instance.load();
     LocaleController.instance.load();
     IconThemeController.instance.load();
+    OfflineModeController.instance.load();
     // Reads the installed version and the last check's result from disk, so
     // the settings button already carries the update mark on the first
     // frame. The check itself waits for the panel to be opened.

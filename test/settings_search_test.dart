@@ -57,6 +57,9 @@ void main() {
       'wiederherstellen': 'Sicherung',
       'api': 'Datenquellen',
       'wetter': 'Datenquellen',
+      'nachttisch': 'Offline-Modus',
+      'querformat': 'Offline-Modus',
+      'spotify': 'Offline-Modus',
     };
     for (final entry in cases.entries) {
       test('"${entry.key}" finds ${entry.value}', () {

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The name Android shows this app under in its "Notification access"
+         list, where the user switches the media reading on. -->
+    <string name="media_listener_label">hanneslauncher</string>
+</resources>
