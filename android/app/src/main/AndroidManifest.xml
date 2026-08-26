@@ -68,9 +68,15 @@
              Until the user switches this app on under "Notification access"
              in Android's settings, nothing here runs and the media line
              simply stays empty. -->
+        <!-- Exported because the binder comes from outside this app: it is
+             Android's own notification manager that binds the service, so
+             not exporting it leaves the entry sitting in the settings list
+             permanently greyed out. Requiring
+             BIND_NOTIFICATION_LISTENER_SERVICE is what keeps it safe - only
+             the system holds that permission, so no other app can bind. -->
         <service
             android:name=".MediaNotificationListener"
-            android:exported="false"
+            android:exported="true"
             android:label="@string/media_listener_label"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter>
