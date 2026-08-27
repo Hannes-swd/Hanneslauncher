@@ -17,4 +17,16 @@ class ScreenWake {
       // Best-effort: without it the screen just times out as usual.
     }
   }
+
+  /// Opens Android's battery saver settings. An app can't switch that mode
+  /// on itself - it sits behind a permission only system apps hold - so the
+  /// most this can do is put the user in front of the switch.
+  static Future<bool> openBatterySaverSettings() async {
+    try {
+      return await _channel.invokeMethod<bool>('openBatterySaverSettings') ??
+          false;
+    } catch (_) {
+      return false;
+    }
+  }
 }

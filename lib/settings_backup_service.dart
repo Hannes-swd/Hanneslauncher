@@ -52,6 +52,7 @@ class SettingsBackupService {
         'wordActiveColorIndex': clock.wordActiveColorIndex,
         'wordInactiveColorIndex': clock.wordInactiveColorIndex,
         'digitalColorIndex': clock.digitalColorIndex,
+        'digitalFontFamily': clock.digitalFontFamily,
         'romanColorIndex': clock.romanColorIndex,
         'dotColorIndex': clock.dotColorIndex,
         'splitFlapBgColorIndex': clock.splitFlapBgColorIndex,
@@ -71,6 +72,8 @@ class SettingsBackupService {
         'style': offline.style.name,
         'colorIndex': offline.colorIndex,
         'showMedia': offline.showMedia,
+        'digitalFontFamily': offline.digitalFontFamily,
+        'burnInProtection': offline.burnInProtection,
       },
       'appList': {
         'colorIndex': appList.colorIndex,
@@ -94,8 +97,7 @@ class SettingsBackupService {
           block.toJson(),
       ],
       'folders': [
-        for (final folder in FoldersController.instance.value)
-          folder.toJson(),
+        for (final folder in FoldersController.instance.value) folder.toJson(),
       ],
       'webApps': [
         for (final app in WebAppsController.instance.value)
@@ -176,11 +178,11 @@ class SettingsBackupService {
           wordBgColorIndex: clockJson['wordBgColorIndex'] as int? ?? 0,
           wordBgOpacity:
               (clockJson['wordBgOpacity'] as num?)?.toDouble() ?? 0.6,
-          wordActiveColorIndex:
-              clockJson['wordActiveColorIndex'] as int? ?? 1,
+          wordActiveColorIndex: clockJson['wordActiveColorIndex'] as int? ?? 1,
           wordInactiveColorIndex:
               clockJson['wordInactiveColorIndex'] as int? ?? 0,
           digitalColorIndex: clockJson['digitalColorIndex'] as int? ?? 0,
+          digitalFontFamily: clockJson['digitalFontFamily'] as String? ?? '',
           romanColorIndex: clockJson['romanColorIndex'] as int? ?? 0,
           dotColorIndex: clockJson['dotColorIndex'] as int? ?? 0,
           splitFlapBgColorIndex:
@@ -191,8 +193,7 @@ class SettingsBackupService {
               clockJson['splitFlapTextColorIndex'] as int? ?? 1,
           orbitColorIndex: clockJson['orbitColorIndex'] as int? ?? 0,
           verticalColorIndex: clockJson['verticalColorIndex'] as int? ?? 0,
-          barsFilledColorIndex:
-              clockJson['barsFilledColorIndex'] as int? ?? 0,
+          barsFilledColorIndex: clockJson['barsFilledColorIndex'] as int? ?? 0,
           barsUnfilledColorIndex:
               clockJson['barsUnfilledColorIndex'] as int? ?? 0,
           barsUnfilledOpacity:
@@ -220,6 +221,8 @@ class SettingsBackupService {
           ),
           colorIndex: offlineJson['colorIndex'] as int? ?? 1,
           showMedia: offlineJson['showMedia'] as bool? ?? false,
+          digitalFontFamily: offlineJson['digitalFontFamily'] as String? ?? '',
+          burnInProtection: offlineJson['burnInProtection'] as bool? ?? true,
         ),
       );
     }

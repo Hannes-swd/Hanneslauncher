@@ -39,6 +39,7 @@ void main() {
         topPadding: 40,
         sidePadding: 12,
         barsFilledColorIndex: 4,
+        digitalFontFamily: 'monospace',
       ),
     );
     await OfflineModeController.instance.update(
@@ -46,6 +47,8 @@ void main() {
         style: ClockStyle.splitFlap,
         colorIndex: 6,
         showMedia: true,
+        digitalFontFamily: 'serif',
+        burnInProtection: false,
       ),
     );
     await AppListSettingsController.instance.update(
@@ -95,9 +98,7 @@ void main() {
     ]);
     await PinnedAppsController.instance.restore(['com.example.mail']);
     await PinnedAppsLayoutController.instance.setLeftMargin(42);
-    await CustomColorsController.instance.restore([
-      const Color(0xFF123456),
-    ]);
+    await CustomColorsController.instance.restore([const Color(0xFF123456)]);
     // Restoring pinned apps only keeps ones that resolve on this device (an
     // uninstalled app's pin is dropped rather than occupying a slot
     // forever) - there is no platform channel in a test to answer with the
@@ -143,6 +144,8 @@ void main() {
     expect(offline.style, ClockStyle.splitFlap);
     expect(offline.colorIndex, 6);
     expect(offline.showMedia, true);
+    expect(offline.digitalFontFamily, 'serif');
+    expect(offline.burnInProtection, false);
 
     final clock = ClockSettingsController.instance.value;
     expect(clock.enabled, false);
@@ -151,6 +154,7 @@ void main() {
     expect(clock.topPadding, 40);
     expect(clock.sidePadding, 12);
     expect(clock.barsFilledColorIndex, 4);
+    expect(clock.digitalFontFamily, 'monospace');
 
     final appList = AppListSettingsController.instance.value;
     expect(appList.colorIndex, 5);
@@ -166,10 +170,9 @@ void main() {
     expect(iconTheme.colorIndex, 2);
 
     expect(PanelBlocksController.instance.value.single.id, 'b1');
-    expect(
-      PanelBlocksController.instance.value.single.itemKeys,
-      ['com.example.mail'],
-    );
+    expect(PanelBlocksController.instance.value.single.itemKeys, [
+      'com.example.mail',
+    ]);
 
     expect(FoldersController.instance.value.single.name, 'Spiele');
     expect(WebAppsController.instance.value.single.url, 'https://example.com');
@@ -184,43 +187,37 @@ void main() {
     expect(DataSourcesController.instance.value.single.key, 'wetter');
     expect(PinnedAppsController.instance.value, ['com.example.mail']);
     expect(PinnedAppsLayoutController.instance.value, 42);
-    expect(
-      CustomColorsController.instance.value,
-      [const Color(0xFF123456)],
-    );
+    expect(CustomColorsController.instance.value, [const Color(0xFF123456)]);
   });
 
-  test(
-    'apply drops pinned apps that do not exist on this device',
-    () async {
-      // Only "com.example.mail" is "installed" here - a backup made on
-      // another phone naming a second app this one never had.
-      LauncherEntriesController.instance.debugSetInstalledApps([
-        const AppInfo(
-          name: 'Mail',
-          icon: null,
-          packageName: 'com.example.mail',
-          versionName: '1.0.0',
-          versionCode: 1,
-          platformType: PlatformType.nativeOrOthers,
-          installedTimestamp: 0,
-          isSystemApp: false,
-          isLaunchableApp: true,
-          category: AppCategory.undefined,
-        ),
-      ]);
-      await PinnedAppsController.instance.restore([]);
+  test('apply drops pinned apps that do not exist on this device', () async {
+    // Only "com.example.mail" is "installed" here - a backup made on
+    // another phone naming a second app this one never had.
+    LauncherEntriesController.instance.debugSetInstalledApps([
+      const AppInfo(
+        name: 'Mail',
+        icon: null,
+        packageName: 'com.example.mail',
+        versionName: '1.0.0',
+        versionCode: 1,
+        platformType: PlatformType.nativeOrOthers,
+        installedTimestamp: 0,
+        isSystemApp: false,
+        isLaunchableApp: true,
+        category: AppCategory.undefined,
+      ),
+    ]);
+    await PinnedAppsController.instance.restore([]);
 
-      await SettingsBackupService.apply(
-        jsonEncode({
-          'formatVersion': 1,
-          'pinnedApps': ['com.example.mail', 'com.other.app'],
-        }),
-      );
+    await SettingsBackupService.apply(
+      jsonEncode({
+        'formatVersion': 1,
+        'pinnedApps': ['com.example.mail', 'com.other.app'],
+      }),
+    );
 
-      expect(PinnedAppsController.instance.value, ['com.example.mail']);
-    },
-  );
+    expect(PinnedAppsController.instance.value, ['com.example.mail']);
+  });
 
   test('apply rejects anything that is not a backup file', () async {
     expect(

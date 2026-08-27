@@ -20,6 +20,8 @@ class OfflineModeSettings {
     this.style = ClockStyle.digital,
     this.colorIndex = 1,
     this.showMedia = false,
+    this.digitalFontFamily = '',
+    this.burnInProtection = true,
   });
 
   final ClockStyle style;
@@ -34,15 +36,30 @@ class OfflineModeSettings {
   /// permission they have to grant by hand first.
   final bool showMedia;
 
+  /// The typeface for the digital face's digits, separate from the home
+  /// screen's: at this size, on black, a different one usually reads better
+  /// than the one that suits a small clock on a wallpaper.
+  final String digitalFontFamily;
+
+  /// Whether the clock creeps a few pixels every couple of minutes. A phone
+  /// left standing all night draws the same digits into the same OLED
+  /// pixels for hours, which is what burns an image in permanently - the
+  /// movement is too small and too slow to notice, and spreads the wear.
+  final bool burnInProtection;
+
   OfflineModeSettings copyWith({
     ClockStyle? style,
     int? colorIndex,
     bool? showMedia,
+    String? digitalFontFamily,
+    bool? burnInProtection,
   }) {
     return OfflineModeSettings(
       style: style ?? this.style,
       colorIndex: colorIndex ?? this.colorIndex,
       showMedia: showMedia ?? this.showMedia,
+      digitalFontFamily: digitalFontFamily ?? this.digitalFontFamily,
+      burnInProtection: burnInProtection ?? this.burnInProtection,
     );
   }
 
@@ -54,6 +71,7 @@ class OfflineModeSettings {
     return ClockSettings(
       style: style,
       digitalColorIndex: colorIndex,
+      digitalFontFamily: digitalFontFamily,
       romanColorIndex: colorIndex,
       dotColorIndex: colorIndex,
       orbitColorIndex: colorIndex,
@@ -83,6 +101,8 @@ class OfflineModeController extends ValueNotifier<OfflineModeSettings> {
   static const _styleKey = 'offline_style';
   static const _colorKey = 'offline_color';
   static const _showMediaKey = 'offline_show_media';
+  static const _digitalFontKey = 'offline_digital_font';
+  static const _burnInKey = 'offline_burn_in_protection';
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -94,6 +114,8 @@ class OfflineModeController extends ValueNotifier<OfflineModeSettings> {
       ),
       colorIndex: prefs.getInt(_colorKey) ?? 1,
       showMedia: prefs.getBool(_showMediaKey) ?? false,
+      digitalFontFamily: prefs.getString(_digitalFontKey) ?? '',
+      burnInProtection: prefs.getBool(_burnInKey) ?? true,
     );
   }
 
@@ -103,5 +125,7 @@ class OfflineModeController extends ValueNotifier<OfflineModeSettings> {
     await prefs.setString(_styleKey, settings.style.name);
     await prefs.setInt(_colorKey, settings.colorIndex);
     await prefs.setBool(_showMediaKey, settings.showMedia);
+    await prefs.setString(_digitalFontKey, settings.digitalFontFamily);
+    await prefs.setBool(_burnInKey, settings.burnInProtection);
   }
 }

@@ -4,6 +4,7 @@ import 'package:hanneslauncher/app_list_settings_controller.dart'
     show appListColorPalette;
 import 'package:hanneslauncher/app_overrides_controller.dart';
 import 'package:hanneslauncher/builtin_entries.dart';
+import 'package:hanneslauncher/clock_font_picker.dart';
 import 'package:hanneslauncher/clock_settings_controller.dart';
 import 'package:hanneslauncher/launcher_entries_controller.dart';
 import 'package:hanneslauncher/locale_controller.dart';
@@ -56,6 +57,97 @@ void main() {
 
       expect(clock.style, ClockStyle.roman);
       expect(clock.digitalColorIndex, 1);
+    });
+  });
+
+  group('the digits font', () {
+    test('reaches the digital face through the clock settings', () {
+      final clock = const OfflineModeSettings(
+        digitalFontFamily: 'monospace',
+      ).toClockSettings();
+
+      expect(clock.digitalFontFamily, 'monospace');
+    });
+
+    test('is a family Android ships, so nothing has to be bundled', () {
+      // The empty string is the device's own default, which is why it is
+      // stored that way rather than as a name.
+      expect(clockFontFamilies, contains(''));
+      expect(clockFontFamilies.toSet(), hasLength(clockFontFamilies.length));
+    });
+
+    testWidgets('is what the offline screen draws the time in', (tester) async {
+      await OfflineModeController.instance.update(
+        const OfflineModeSettings(digitalFontFamily: 'serif'),
+      );
+      await tester.pumpWidget(const MaterialApp(home: OfflineModeScreen()));
+
+      final time = tester.widget<Text>(
+        find.byWidgetPredicate(
+          (widget) => widget is Text && widget.data?.contains(':') == true,
+        ),
+      );
+      expect(time.style?.fontFamily, 'serif');
+    });
+
+    testWidgets('left at the default asks for no family at all', (
+      tester,
+    ) async {
+      await tester.pumpWidget(const MaterialApp(home: OfflineModeScreen()));
+
+      final time = tester.widget<Text>(
+        find.byWidgetPredicate(
+          (widget) => widget is Text && widget.data?.contains(':') == true,
+        ),
+      );
+      // Null rather than a name, so the phone's own system font is used.
+      expect(time.style?.fontFamily, isNull);
+    });
+
+    test('the home screen clock keeps its own, separate from this one', () {
+      const home = ClockSettings(digitalFontFamily: 'casual');
+      final offline = const OfflineModeSettings(
+        digitalFontFamily: 'monospace',
+      ).toClockSettings();
+
+      expect(home.digitalFontFamily, 'casual');
+      expect(offline.digitalFontFamily, 'monospace');
+    });
+  });
+
+  group('burn-in protection', () {
+    testWidgets('creeps the clock along over time', (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: OfflineModeScreen()));
+
+      Matrix4? transform() => tester
+          .widget<AnimatedContainer>(find.byType(AnimatedContainer))
+          .transform;
+
+      final start = transform();
+      expect(start, isNotNull);
+
+      // Two steps on, it must have moved somewhere else.
+      await tester.pump(const Duration(minutes: 2));
+      final moved = transform();
+      expect(moved, isNot(start));
+
+      await tester.pump(const Duration(minutes: 2));
+      expect(transform(), isNot(moved));
+    });
+
+    testWidgets('holds still when it is switched off', (tester) async {
+      await OfflineModeController.instance.update(
+        const OfflineModeSettings(burnInProtection: false),
+      );
+      await tester.pumpWidget(const MaterialApp(home: OfflineModeScreen()));
+
+      Matrix4? transform() => tester
+          .widget<AnimatedContainer>(find.byType(AnimatedContainer))
+          .transform;
+
+      final start = transform();
+      await tester.pump(const Duration(minutes: 10));
+      expect(transform(), start);
     });
   });
 

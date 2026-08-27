@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_strings.dart';
+import 'clock_font_picker.dart';
 import 'clock_settings_controller.dart';
 import 'clock_widget.dart';
 import 'color_swatch_picker.dart';
@@ -8,6 +9,7 @@ import 'locale_controller.dart';
 import 'media_session.dart';
 import 'offline_mode_controller.dart';
 import 'offline_mode_screen.dart';
+import 'screen_wake.dart';
 
 class OfflineModeSettingsScreen extends StatefulWidget {
   const OfflineModeSettingsScreen({super.key});
@@ -79,16 +81,28 @@ class _OfflineModeSettingsScreenState extends State<OfflineModeSettingsScreen>
                   const Divider(height: 32),
                   _heading(s.style),
                   _StyleGrid(settings: settings),
+                  if (settings.style == ClockStyle.digital) ...[
+                    _heading(s.font),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: ClockFontPicker(
+                        s: s,
+                        selected: settings.digitalFontFamily,
+                        onSelected: (family) =>
+                            OfflineModeController.instance.update(
+                              settings.copyWith(digitalFontFamily: family),
+                            ),
+                      ),
+                    ),
+                  ],
                   _heading(s.colorLabel),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: ColorSwatchPicker(
                       s: s,
                       selectedIndex: settings.colorIndex,
-                      onSelected: (index) =>
-                          OfflineModeController.instance.update(
-                            settings.copyWith(colorIndex: index),
-                          ),
+                      onSelected: (index) => OfflineModeController.instance
+                          .update(settings.copyWith(colorIndex: index)),
                     ),
                   ),
                   const Divider(height: 32),
@@ -125,6 +139,22 @@ class _OfflineModeSettingsScreenState extends State<OfflineModeSettingsScreen>
                           ? null
                           : MediaSession.requestPermission,
                     ),
+                  const Divider(height: 32),
+                  SwitchListTile(
+                    title: Text(s.offlineModeBurnIn),
+                    subtitle: Text(s.offlineModeBurnInHint),
+                    value: settings.burnInProtection,
+                    onChanged: (value) => OfflineModeController.instance.update(
+                      settings.copyWith(burnInProtection: value),
+                    ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.battery_saver_outlined),
+                    title: Text(s.offlineModeBatterySaver),
+                    subtitle: Text(s.offlineModeBatterySaverHint),
+                    trailing: const Icon(Icons.open_in_new),
+                    onTap: ScreenWake.openBatterySaverSettings,
+                  ),
                 ],
               );
             },

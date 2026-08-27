@@ -27,6 +27,7 @@ class ClockSettings {
     this.wordActiveColorIndex = 1,
     this.wordInactiveColorIndex = 0,
     this.digitalColorIndex = 0,
+    this.digitalFontFamily = '',
     this.romanColorIndex = 0,
     this.dotColorIndex = 0,
     this.splitFlapBgColorIndex = 0,
@@ -64,6 +65,13 @@ class ClockSettings {
   // Digital, Roman and Dot Matrix clock: the one text/dot color each draws
   // with.
   final int digitalColorIndex;
+
+  /// Which typeface the digital face draws its digits in - one of
+  /// [clockFontFamilies], empty for the system default. Only the digital
+  /// style has one: the others either draw their own shapes (bars, dots,
+  /// orbit) or depend on a fixed letter grid (word clock).
+  final String digitalFontFamily;
+
   final int romanColorIndex;
   final int dotColorIndex;
 
@@ -97,21 +105,16 @@ class ClockSettings {
   Color get romanColor => appListColorPalette[romanColorIndex];
   Color get dotColor => appListColorPalette[dotColorIndex];
 
-  Color get splitFlapBgColor =>
-      appListColorPalette[splitFlapBgColorIndex].withValues(
-        alpha: splitFlapBgOpacity,
-      );
-  Color get splitFlapTextColor =>
-      appListColorPalette[splitFlapTextColorIndex];
+  Color get splitFlapBgColor => appListColorPalette[splitFlapBgColorIndex]
+      .withValues(alpha: splitFlapBgOpacity);
+  Color get splitFlapTextColor => appListColorPalette[splitFlapTextColorIndex];
 
   Color get orbitColor => appListColorPalette[orbitColorIndex];
   Color get verticalColor => appListColorPalette[verticalColorIndex];
 
   Color get barsFilledColor => appListColorPalette[barsFilledColorIndex];
-  Color get barsUnfilledColor =>
-      appListColorPalette[barsUnfilledColorIndex].withValues(
-        alpha: barsUnfilledOpacity,
-      );
+  Color get barsUnfilledColor => appListColorPalette[barsUnfilledColorIndex]
+      .withValues(alpha: barsUnfilledOpacity);
   Color get barsTextColor => appListColorPalette[barsTextColorIndex];
 
   ClockSettings copyWith({
@@ -122,6 +125,7 @@ class ClockSettings {
     int? wordActiveColorIndex,
     int? wordInactiveColorIndex,
     int? digitalColorIndex,
+    String? digitalFontFamily,
     int? romanColorIndex,
     int? dotColorIndex,
     int? splitFlapBgColorIndex,
@@ -146,6 +150,7 @@ class ClockSettings {
       wordInactiveColorIndex:
           wordInactiveColorIndex ?? this.wordInactiveColorIndex,
       digitalColorIndex: digitalColorIndex ?? this.digitalColorIndex,
+      digitalFontFamily: digitalFontFamily ?? this.digitalFontFamily,
       romanColorIndex: romanColorIndex ?? this.romanColorIndex,
       dotColorIndex: dotColorIndex ?? this.dotColorIndex,
       splitFlapBgColorIndex:
@@ -155,8 +160,7 @@ class ClockSettings {
           splitFlapTextColorIndex ?? this.splitFlapTextColorIndex,
       orbitColorIndex: orbitColorIndex ?? this.orbitColorIndex,
       verticalColorIndex: verticalColorIndex ?? this.verticalColorIndex,
-      barsFilledColorIndex:
-          barsFilledColorIndex ?? this.barsFilledColorIndex,
+      barsFilledColorIndex: barsFilledColorIndex ?? this.barsFilledColorIndex,
       barsUnfilledColorIndex:
           barsUnfilledColorIndex ?? this.barsUnfilledColorIndex,
       barsUnfilledOpacity: barsUnfilledOpacity ?? this.barsUnfilledOpacity,
@@ -182,6 +186,7 @@ class ClockSettingsController extends ValueNotifier<ClockSettings> {
   static const _wordActiveColorKey = 'clock_word_active_color';
   static const _wordInactiveColorKey = 'clock_word_inactive_color';
   static const _digitalColorKey = 'clock_digital_color';
+  static const _digitalFontKey = 'clock_digital_font';
   static const _romanColorKey = 'clock_roman_color';
   static const _dotColorKey = 'clock_dot_color';
   static const _splitFlapBgColorKey = 'clock_split_flap_bg_color';
@@ -207,6 +212,7 @@ class ClockSettingsController extends ValueNotifier<ClockSettings> {
       wordActiveColorIndex: prefs.getInt(_wordActiveColorKey) ?? 1,
       wordInactiveColorIndex: prefs.getInt(_wordInactiveColorKey) ?? 0,
       digitalColorIndex: prefs.getInt(_digitalColorKey) ?? 0,
+      digitalFontFamily: prefs.getString(_digitalFontKey) ?? '',
       romanColorIndex: prefs.getInt(_romanColorKey) ?? 0,
       dotColorIndex: prefs.getInt(_dotColorKey) ?? 0,
       splitFlapBgColorIndex: prefs.getInt(_splitFlapBgColorKey) ?? 0,
@@ -232,21 +238,13 @@ class ClockSettingsController extends ValueNotifier<ClockSettings> {
     await prefs.setInt(_wordBgColorKey, newValue.wordBgColorIndex);
     await prefs.setDouble(_wordBgOpacityKey, newValue.wordBgOpacity);
     await prefs.setInt(_wordActiveColorKey, newValue.wordActiveColorIndex);
-    await prefs.setInt(
-      _wordInactiveColorKey,
-      newValue.wordInactiveColorIndex,
-    );
+    await prefs.setInt(_wordInactiveColorKey, newValue.wordInactiveColorIndex);
     await prefs.setInt(_digitalColorKey, newValue.digitalColorIndex);
+    await prefs.setString(_digitalFontKey, newValue.digitalFontFamily);
     await prefs.setInt(_romanColorKey, newValue.romanColorIndex);
     await prefs.setInt(_dotColorKey, newValue.dotColorIndex);
-    await prefs.setInt(
-      _splitFlapBgColorKey,
-      newValue.splitFlapBgColorIndex,
-    );
-    await prefs.setDouble(
-      _splitFlapBgOpacityKey,
-      newValue.splitFlapBgOpacity,
-    );
+    await prefs.setInt(_splitFlapBgColorKey, newValue.splitFlapBgColorIndex);
+    await prefs.setDouble(_splitFlapBgOpacityKey, newValue.splitFlapBgOpacity);
     await prefs.setInt(
       _splitFlapTextColorKey,
       newValue.splitFlapTextColorIndex,
@@ -254,10 +252,7 @@ class ClockSettingsController extends ValueNotifier<ClockSettings> {
     await prefs.setInt(_orbitColorKey, newValue.orbitColorIndex);
     await prefs.setInt(_verticalColorKey, newValue.verticalColorIndex);
     await prefs.setInt(_barsFilledColorKey, newValue.barsFilledColorIndex);
-    await prefs.setInt(
-      _barsUnfilledColorKey,
-      newValue.barsUnfilledColorIndex,
-    );
+    await prefs.setInt(_barsUnfilledColorKey, newValue.barsUnfilledColorIndex);
     await prefs.setDouble(
       _barsUnfilledOpacityKey,
       newValue.barsUnfilledOpacity,

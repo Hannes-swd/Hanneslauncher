@@ -45,9 +45,29 @@ class _OfflineModeScreenState extends State<OfflineModeScreen> {
   /// screen that is on the whole time anyway.
   static const _mediaPollInterval = Duration(seconds: 2);
 
+  /// How often the clock creeps to its next spot, and how far it may stray
+  /// from centre in each direction. Slow and small on purpose: the point is
+  /// to spread the wear over a night, not to be seen doing it.
+  static const _driftInterval = Duration(minutes: 2);
+  static const _driftX = 10.0;
+  static const _driftY = 8.0;
+
+  /// The corners it walks, in order, as fractions of the two amounts above.
+  /// A fixed round rather than random steps, so it can't happen to sit in
+  /// nearly the same place twice in a row.
+  static const _driftSteps = [
+    Offset(-1, -1),
+    Offset(1, -1),
+    Offset(1, 1),
+    Offset(-1, 1),
+    Offset(0, 0),
+  ];
+
   bool _showClose = false;
   Timer? _hideTimer;
   Timer? _mediaTimer;
+  Timer? _driftTimer;
+  int _driftStep = 0;
   NowPlaying? _nowPlaying;
 
   @override
@@ -64,12 +84,14 @@ class _OfflineModeScreenState extends State<OfflineModeScreen> {
     ScreenWake.setKeepOn(true);
     OfflineModeController.instance.addListener(_onSettingsChanged);
     _startMediaPolling();
+    _startDrifting();
   }
 
   @override
   void dispose() {
     _hideTimer?.cancel();
     _mediaTimer?.cancel();
+    _driftTimer?.cancel();
     OfflineModeController.instance.removeListener(_onSettingsChanged);
     ScreenWake.setKeepOn(false);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -82,7 +104,23 @@ class _OfflineModeScreenState extends State<OfflineModeScreen> {
   /// The media line can be switched on while the mode is already open (from
   /// the settings screen it can be started from), so the polling follows the
   /// setting instead of only being decided once.
-  void _onSettingsChanged() => _startMediaPolling();
+  void _onSettingsChanged() {
+    _startMediaPolling();
+    _startDrifting();
+  }
+
+  void _startDrifting() {
+    _driftTimer?.cancel();
+    if (!OfflineModeController.instance.value.burnInProtection) {
+      // Back to dead centre, rather than frozen wherever it had crept to.
+      if (_driftStep != 0) setState(() => _driftStep = 0);
+      return;
+    }
+    _driftTimer = Timer.periodic(_driftInterval, (_) {
+      if (!mounted) return;
+      setState(() => _driftStep = (_driftStep + 1) % _driftSteps.length);
+    });
+  }
 
   void _startMediaPolling() {
     _mediaTimer?.cancel();
@@ -132,16 +170,29 @@ class _OfflineModeScreenState extends State<OfflineModeScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Expanded(
-                            // Every face draws at its own natural size, so
-                            // scaling here is what makes all eight of them
-                            // fill a landscape screen equally.
-                            child: FittedBox(
-                              fit: BoxFit.contain,
-                              child: clockFace(
-                                settings.style,
-                                settings: settings.toClockSettings(),
-                                showDate: false,
-                                digitalWeight: offlineDigitalWeight,
+                            // Animated over seconds, so the burn-in drift is
+                            // a creep rather than a jump - at this size a
+                            // sudden 10px hop would be the most noticeable
+                            // thing on an otherwise still screen.
+                            child: AnimatedContainer(
+                              duration: const Duration(seconds: 4),
+                              curve: Curves.easeInOut,
+                              transform: Matrix4.translationValues(
+                                _driftSteps[_driftStep].dx * _driftX,
+                                _driftSteps[_driftStep].dy * _driftY,
+                                0,
+                              ),
+                              // Every face draws at its own natural size, so
+                              // scaling here is what makes all eight of them
+                              // fill a landscape screen equally.
+                              child: FittedBox(
+                                fit: BoxFit.contain,
+                                child: clockFace(
+                                  settings.style,
+                                  settings: settings.toClockSettings(),
+                                  showDate: false,
+                                  digitalWeight: offlineDigitalWeight,
+                                ),
                               ),
                             ),
                           ),

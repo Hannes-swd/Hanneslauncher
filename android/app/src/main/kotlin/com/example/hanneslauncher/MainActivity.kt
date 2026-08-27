@@ -267,6 +267,13 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, offlineModeChannelName)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
+                    // Android's own battery saver can only be switched by a
+                    // system app (it is behind WRITE_SECURE_SETTINGS), so
+                    // this opens the screen where the user does it instead
+                    // of pretending the app could.
+                    "openBatterySaverSettings" -> result.success(
+                        openSettings(Settings.ACTION_BATTERY_SAVER_SETTINGS),
+                    )
                     "keepScreenOn" -> {
                         val on = call.argument<Boolean>("on") ?: false
                         runOnUiThread {
@@ -303,6 +310,18 @@ class MainActivity : FlutterActivity() {
             }
     }
 
+    // Started without resolveActivity() on purpose, like the other settings
+    // screens here: one isn't reliably visible to a package visibility
+    // query, and a null answer would leave no way in at all.
+    private fun openSettings(action: String): Boolean {
+        return try {
+            startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     // Reading the media sessions needs this app to be an enabled
     // notification listener, which is not a runtime permission - there is no
     // prompt for it, only a system settings screen the user has to walk
@@ -318,21 +337,9 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    // Opens that screen. Started without resolveActivity() for the same
-    // reason as the default-launcher one: a settings screen isn't reliably
-    // visible to a package visibility query, and a null answer there would
-    // leave no way in at all.
-    private fun requestNotificationAccess(): Boolean {
-        return try {
-            startActivity(
-                Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-            )
-            true
-        } catch (_: Exception) {
-            false
-        }
-    }
+    // Opens that screen.
+    private fun requestNotificationAccess(): Boolean =
+        openSettings(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
 
     // The session worth showing: the one actually playing, or else the first
     // one there is, so a track paused mid-listen still names itself instead

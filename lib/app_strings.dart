@@ -40,17 +40,14 @@ class AppStrings {
   String get exampleApp => _en ? 'Example app' : 'Beispiel App';
   String get searchApps => _en ? 'Search apps' : 'App suchen';
   String get searchDataSources => _en ? 'Search sources' : 'Quelle suchen';
-  String get noSearchResults =>
-      _en ? 'No app found' : 'Keine App gefunden';
+  String get noSearchResults => _en ? 'No app found' : 'Keine App gefunden';
   String get sortBy => _en ? 'Sort' : 'Sortieren';
   String get sortAlphabetical => _en ? 'A to Z' : 'Alphabetisch';
-  String get sortNewestFirst =>
-      _en ? 'Newest first' : 'Neueste zuerst';
+  String get sortNewestFirst => _en ? 'Newest first' : 'Neueste zuerst';
   String get appListLayout => _en ? 'Layout' : 'Anordnung';
   String get layoutSingleColumn =>
       _en ? 'One column (scrolls)' : 'Eine Spalte (scrollt)';
-  String get layoutColumns =>
-      _en ? 'Multiple columns' : 'Mehrere Spalten';
+  String get layoutColumns => _en ? 'Multiple columns' : 'Mehrere Spalten';
   String get appListLayoutHint => _en
       ? 'In one column, drag towards the top or bottom edge to scroll through '
             'long letters.'
@@ -64,8 +61,7 @@ class AppStrings {
             'right of it.'
       : 'Linkshänder spiegelt die App-Liste: Alphabet links, Apps rechts '
             'daneben.';
-  String get hideAlphabet =>
-      _en ? 'Hide alphabet' : 'Alphabet ausblenden';
+  String get hideAlphabet => _en ? 'Hide alphabet' : 'Alphabet ausblenden';
   String get hideAlphabetHint => _en
       ? 'The letters stay invisible and only appear while a finger is '
             'swiping over the bar at the edge of the screen.'
@@ -87,6 +83,10 @@ class AppStrings {
   String get fontStandard => _en ? 'Default' : 'Standard';
   String get fontSerif => 'Serif';
   String get fontMonospace => 'Monospace';
+  // The rest of Android's own families, offered for the clock's digits.
+  String get fontCondensed => _en ? 'Condensed' : 'Schmal';
+  String get fontCasual => _en ? 'Casual' : 'Locker';
+  String get fontCursive => _en ? 'Handwriting' : 'Handschrift';
   String textSize(int value) =>
       _en ? 'Text size ($value)' : 'Textgröße ($value)';
   String lineSpacing(int value) =>
@@ -138,6 +138,21 @@ class AppStrings {
       : 'Android gibt den laufenden Titel nur an Apps weiter, die unter '
             '"Benachrichtigungszugriff" eingeschaltet sind. Dort '
             'hanneslauncher einschalten.';
+  String get offlineModeBurnIn => _en ? 'Burn-in protection' : 'Einbrennschutz';
+  String get offlineModeBurnInHint => _en
+      ? 'Moves the clock a few pixels every couple of minutes, so hours of '
+            'standing still do not burn the digits into the screen.'
+      : 'Verschiebt die Uhr alle paar Minuten um wenige Pixel, damit sich '
+            'die Ziffern bei stundenlangem Stehen nicht in den Bildschirm '
+            'einbrennen.';
+  String get offlineModeBatterySaver =>
+      _en ? 'Battery saver' : 'Energiesparmodus';
+  String get offlineModeBatterySaverHint => _en
+      ? "Opens Android's own battery saver. An app is not allowed to switch "
+            'it on by itself, so the switch is there, not here.'
+      : 'Öffnet Androids eigenen Energiesparmodus. Eine App darf ihn nicht '
+            'selbst einschalten, der Schalter sitzt also dort, nicht hier.';
+
   String get offlineModeMediaPermissionGranted =>
       _en ? 'Access granted' : 'Zugriff erteilt';
 
@@ -147,15 +162,12 @@ class AppStrings {
   String get alignRight => _en ? 'Right' : 'Rechts';
   String distanceFromTop(int pixels) =>
       _en ? 'Distance from top ($pixels)' : 'Abstand von oben ($pixels)';
-  String distanceFromSide(int pixels) => _en
-      ? 'Distance from edge ($pixels)'
-      : 'Abstand vom Rand ($pixels)';
+  String distanceFromSide(int pixels) =>
+      _en ? 'Distance from edge ($pixels)' : 'Abstand vom Rand ($pixels)';
   String get appearanceCustom => _en ? 'Appearance' : 'Aussehen';
-  String get backgroundColor =>
-      _en ? 'Background color' : 'Hintergrundfarbe';
-  String backgroundStrength(int percent) => _en
-      ? 'Background strength ($percent%)'
-      : 'Hintergrundstärke ($percent%)';
+  String get backgroundColor => _en ? 'Background color' : 'Hintergrundfarbe';
+  String backgroundStrength(int percent) =>
+      _en ? 'Background strength ($percent%)' : 'Hintergrundstärke ($percent%)';
   String get activeLetters => _en ? 'Active letters' : 'Aktive Buchstaben';
   String get inactiveLetters =>
       _en ? 'Inactive letters' : 'Inaktive Buchstaben';
@@ -211,8 +223,7 @@ class AppStrings {
       _en ? 'Name and address are required' : 'Name und Adresse sind nötig';
   String get webAppBrowser => 'Browser';
   String get chooseBrowser => _en ? 'Choose browser' : 'Browser auswählen';
-  String get systemDefaultBrowser =>
-      _en ? 'System default' : 'Systemstandard';
+  String get systemDefaultBrowser => _en ? 'System default' : 'Systemstandard';
   String get noBrowsersFound =>
       _en ? 'No browsers found' : 'Keine Browser gefunden';
 
@@ -221,9 +232,8 @@ class AppStrings {
   String get blockAppRow => _en ? 'Apps' : 'Apps';
   String get blockAppRowTitle => _en ? 'App row' : 'App-Reihe';
   String get blockCalendar => _en ? 'Calendar' : 'Kalender';
-  String get blockCalendarTitle => _en
-      ? 'Upcoming events from the device'
-      : 'Anstehende Termine vom Gerät';
+  String get blockCalendarTitle =>
+      _en ? 'Upcoming events from the device' : 'Anstehende Termine vom Gerät';
   String get calendarPermissionNeeded => _en
       ? 'Needs permission to read calendars'
       : 'Braucht Zugriff auf die Kalender';
@@ -243,9 +253,8 @@ class AppStrings {
       ? 'At least one calendar has to stay selected'
       : 'Mindestens ein Kalender muss ausgewählt bleiben';
   String get blockNotes => _en ? 'Notes' : 'Notizen';
-  String get blockNotesTitle => _en
-      ? 'A written note with formatting'
-      : 'Eine Notiz mit Formatierung';
+  String get blockNotesTitle =>
+      _en ? 'A written note with formatting' : 'Eine Notiz mit Formatierung';
   String get noteName => _en ? 'Note name' : 'Notiz-Name';
   String get openNote => _en ? 'Open note' : 'Notiz öffnen';
   String get emptyNote =>
@@ -259,11 +268,9 @@ class AppStrings {
   String get styleText => _en ? 'Text' : 'Text';
   String get styleNote => _en ? 'Annotation' : 'Anmerkung';
   String get italicLabel => _en ? 'Italic' : 'Kursiv';
-  String get strikethroughLabel =>
-      _en ? 'Strikethrough' : 'Durchgestrichen';
+  String get strikethroughLabel => _en ? 'Strikethrough' : 'Durchgestrichen';
   String get underlineLabel => _en ? 'Underline' : 'Unterstrichen';
-  String get underlineColor =>
-      _en ? 'Underline color' : 'Unterstrich-Farbe';
+  String get underlineColor => _en ? 'Underline color' : 'Unterstrich-Farbe';
   String get highlightColor => _en ? 'Highlight' : 'Markierfarbe';
   String get noColor => _en ? 'None' : 'Keine';
   String get bulletList => _en ? 'Bullet list' : 'Aufzählung';
@@ -286,8 +293,9 @@ class AppStrings {
   String get widgetPlaceholder => _en
       ? 'Widget content comes in the next step'
       : 'Widget-Inhalt kommt im nächsten Schritt';
-  String get emptyWidget =>
-      _en ? 'Empty widget - hold to edit' : 'Leeres Widget - halten zum Bearbeiten';
+  String get emptyWidget => _en
+      ? 'Empty widget - hold to edit'
+      : 'Leeres Widget - halten zum Bearbeiten';
   String get widgetTitle => _en ? 'Widget name' : 'Widget-Name';
   String get addElement => _en ? 'Add line' : 'Zeile hinzufügen';
   String get elementText => _en ? 'Text' : 'Text';
@@ -305,8 +313,7 @@ class AppStrings {
   String get rangeInverted => _en
       ? "\"From\" is greater than \"to\" - this can never match"
       : '"Von" ist größer als "Bis" - das kann nie zutreffen';
-  String get iconTemplateTitle =>
-      _en ? 'Start from' : 'Ausgangspunkt';
+  String get iconTemplateTitle => _en ? 'Start from' : 'Ausgangspunkt';
   String get weatherIconTemplate =>
       _en ? 'Weather icons (auto)' : 'Wettersymbole (automatisch)';
   String get weatherIconTemplateHint => _en
@@ -322,8 +329,7 @@ class AppStrings {
   String get noWeatherSourceHint => _en
       ? 'No weather source found - fill in the value field yourself'
       : 'Keine Wetterquelle gefunden - Wert-Feld selbst ausfüllen';
-  String get testAnotherValue =>
-      _en ? 'Test a value' : 'Einen Wert testen';
+  String get testAnotherValue => _en ? 'Test a value' : 'Einen Wert testen';
   String get valueMissing => _en
       ? 'The value is empty - check the placeholder above'
       : 'Der Wert ist leer - Platzhalter oben prüfen';
@@ -365,12 +371,14 @@ class AppStrings {
       : 'APIs, aus denen die Widgets lesen ($count)';
   String get addDataSource => _en ? 'Add source' : 'Quelle hinzufügen';
   String get sourceKey => _en ? 'Short key' : 'Kurzschlüssel';
-  String get sourceKeyHint =>
-      _en ? 'used in placeholders, e.g. weather' : 'für Platzhalter, z.B. wetter';
+  String get sourceKeyHint => _en
+      ? 'used in placeholders, e.g. weather'
+      : 'für Platzhalter, z.B. wetter';
   String get sourceName => _en ? 'Name' : 'Name';
   String get sourceUrl => 'URL';
-  String get sourceHeaders =>
-      _en ? 'Headers (one per line, name: value)' : 'Header (pro Zeile, Name: Wert)';
+  String get sourceHeaders => _en
+      ? 'Headers (one per line, name: value)'
+      : 'Header (pro Zeile, Name: Wert)';
   String refreshEvery(int minutes) =>
       _en ? 'Refresh every $minutes min' : 'Alle $minutes min aktualisieren';
   String get testSource => _en ? 'Test' : 'Testen';
@@ -404,8 +412,7 @@ class AppStrings {
   String get iconTheme => _en ? 'Icon design' : 'Icon-Design';
   String get iconThemeSubtitle =>
       _en ? 'All icons in one color' : 'Alle Icons in einer Farbe';
-  String get iconThemeEnabled =>
-      _en ? 'Theme icons' : 'Icons einfärben';
+  String get iconThemeEnabled => _en ? 'Theme icons' : 'Icons einfärben';
   String get iconThemeHint => _en
       ? 'The original icons are kept - switching this off brings them back.'
       : 'Die Original-Icons bleiben erhalten - beim Ausschalten sind sie '
@@ -422,13 +429,13 @@ class AppStrings {
   String get addToFolder => _en ? 'Add to folder' : 'Zum Ordner hinzufügen';
   String get addApps => _en ? 'Add apps' : 'Apps hinzufügen';
   String get newSubfolder => _en ? 'New folder inside' : 'Neuer Unterordner';
-  String get emptyFolder => _en ? 'This folder is empty' : 'Dieser Ordner ist leer';
+  String get emptyFolder =>
+      _en ? 'This folder is empty' : 'Dieser Ordner ist leer';
   String get noFolders => _en
       ? 'No folders yet. Add one with the button below - it then shows up in '
             'the app list and can be pinned to the home screen.'
       : 'Noch keine Ordner. Unten einen hinzufügen - er erscheint dann in der '
-            'App-Liste und kann auf den Homescreen gepinnt werden.'
-      ;
+            'App-Liste und kann auf den Homescreen gepinnt werden.';
   String get nameRequired => _en ? 'A name is required' : 'Ein Name ist nötig';
   String get deleteFolder => _en ? 'Delete folder' : 'Ordner löschen';
   String get folderCycleBlocked => _en
@@ -439,17 +446,14 @@ class AppStrings {
   String get languageSubtitle => _en ? 'App language' : 'App-Sprache';
   String get german => 'Deutsch';
   String get english => 'English';
-  String get languageSystem =>
-      _en ? 'System language' : 'Sprache des Systems';
-  String languageSystemSubtitle(String language) => _en
-      ? 'System language · $language'
-      : 'Sprache des Systems · $language';
+  String get languageSystem => _en ? 'System language' : 'Sprache des Systems';
+  String languageSystemSubtitle(String language) =>
+      _en ? 'System language · $language' : 'Sprache des Systems · $language';
 
   // Making this the home app happens outside the app, in a system dialog or
   // a settings screen whose path differs by manufacturer - so besides the
   // button there is written help for when neither opens.
-  String get defaultLauncher =>
-      _en ? 'Default home app' : 'Standard-Start-App';
+  String get defaultLauncher => _en ? 'Default home app' : 'Standard-Start-App';
   String get defaultLauncherIsDefault => _en
       ? 'This launcher opens with the home button'
       : 'Dieser Launcher öffnet sich mit der Home-Taste';
@@ -457,9 +461,8 @@ class AppStrings {
       _en ? 'Currently: $name' : 'Zurzeit: $name';
   String get defaultLauncherNone =>
       _en ? 'No home app set' : 'Keine Start-App festgelegt';
-  String get defaultLauncherCardTitle => _en
-      ? 'Not the home app yet'
-      : 'Noch nicht die Standard-Start-App';
+  String get defaultLauncherCardTitle =>
+      _en ? 'Not the home app yet' : 'Noch nicht die Standard-Start-App';
   String get defaultLauncherCardText => _en
       ? 'Until it is, the home button keeps opening the old launcher.'
       : 'Bis dahin öffnet die Home-Taste weiter den alten Launcher.';
@@ -522,9 +525,8 @@ class AppStrings {
       : 'Sicherungsdatei konnte nicht erstellt oder geteilt werden';
   String get backupImportSuccess =>
       _en ? 'Settings imported' : 'Einstellungen importiert';
-  String get backupImportFailed => _en
-      ? 'Not a readable backup file'
-      : 'Keine lesbare Sicherungsdatei';
+  String get backupImportFailed =>
+      _en ? 'Not a readable backup file' : 'Keine lesbare Sicherungsdatei';
 
   // The update check (update_screen.dart) - this app doesn't come from a
   // store, so new versions arrive as an APK attached to a GitHub release
@@ -533,25 +535,22 @@ class AppStrings {
   String get updateSubtitleUpToDate => _en ? 'Up to date' : 'Aktuell';
   String updateSubtitleInstalled(String version) =>
       _en ? 'Version $version · up to date' : 'Version $version · aktuell';
-  String updateSubtitleAvailable(String version) => _en
-      ? 'Version $version available'
-      : 'Version $version verfügbar';
+  String updateSubtitleAvailable(String version) =>
+      _en ? 'Version $version available' : 'Version $version verfügbar';
   String get updateSubtitleUnknown =>
       _en ? 'Check for a new version' : 'Auf neue Version prüfen';
   String updateInstalledVersion(String version) =>
       _en ? 'Installed: $version' : 'Installiert: $version';
-  String get updateVersionUnknown => _en
-      ? 'Installed version unknown'
-      : 'Installierte Version unbekannt';
+  String get updateVersionUnknown =>
+      _en ? 'Installed version unknown' : 'Installierte Version unbekannt';
   String updateLatestVersion(String version) =>
       _en ? 'Latest release: $version' : 'Neuestes Release: $version';
   String get updateNoReleaseYet =>
       _en ? 'No release found yet' : 'Noch kein Release gefunden';
   String get updateAvailableTitle =>
       _en ? 'Update available' : 'Update verfügbar';
-  String get updateUpToDate => _en
-      ? 'You have the latest version.'
-      : 'Du hast die neueste Version.';
+  String get updateUpToDate =>
+      _en ? 'You have the latest version.' : 'Du hast die neueste Version.';
   String get updateNoApkInRelease => _en
       ? 'This release has no APK attached - open it on GitHub to see what\'s '
             'in it.'
@@ -596,9 +595,8 @@ class AppStrings {
   String get updateWhatsNew => _en ? 'What\'s new' : 'Was ist neu';
   String get updateOpenRelease =>
       _en ? 'Open release on GitHub' : 'Release auf GitHub öffnen';
-  String get updateOpenFailed => _en
-      ? 'Couldn\'t open the link'
-      : 'Link konnte nicht geöffnet werden';
+  String get updateOpenFailed =>
+      _en ? 'Couldn\'t open the link' : 'Link konnte nicht geöffnet werden';
 
   String get addColor => _en ? 'Add color' : 'Farbe hinzufügen';
 
@@ -614,7 +612,8 @@ class AppStrings {
   String get packageBattery => _en ? 'Battery' : 'Akku';
   String get packageStorage => _en ? 'Storage' : 'Speicherplatz';
   String get packageConnection => _en ? 'Connection' : 'Verbindung';
-  String get packageSunTimes => _en ? 'Sunrise/sunset' : 'Sonnenauf-/-untergang';
+  String get packageSunTimes =>
+      _en ? 'Sunrise/sunset' : 'Sonnenauf-/-untergang';
   String get packageMoonPhase => _en ? 'Moon phase' : 'Mondphase';
   String get packageSteps => _en ? 'Steps' : 'Schritte';
   String get packageMostUsedApp =>
@@ -698,8 +697,9 @@ class AppStrings {
       : 'Jetzt noch den Pfad ergänzen, der etwas ändert, z.B. toggle';
   String get insertToggledValue =>
       _en ? 'Insert toggled value' : 'Umgeschalteten Wert einfügen';
-  String get actionPreviewLabel =>
-      _en ? 'This is what a tap sends right now:' : 'Das wird beim Antippen gerade gesendet:';
+  String get actionPreviewLabel => _en
+      ? 'This is what a tap sends right now:'
+      : 'Das wird beim Antippen gerade gesendet:';
   String get actionPreviewEmpty =>
       _en ? '(no address yet)' : '(noch keine Adresse)';
   String get actionToggleUnreadable => _en

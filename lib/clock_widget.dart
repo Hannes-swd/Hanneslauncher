@@ -143,6 +143,9 @@ class _DigitalClockState extends State<DigitalClock> {
                 fontSize: widget.fontSize,
                 fontWeight: widget.fontWeight,
                 color: color,
+                fontFamily: settings.digitalFontFamily.isEmpty
+                    ? null
+                    : settings.digitalFontFamily,
                 // Fixed-width digits, so the time doesn't shift sideways
                 // every time a 1 comes or goes, and no leading above and
                 // below the digits - which is only a few pixels at home
@@ -249,10 +252,34 @@ class _RomanClockState extends State<RomanClock> {
 }
 
 const List<int> _romanValues = [
-  1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1,
+  1000,
+  900,
+  500,
+  400,
+  100,
+  90,
+  50,
+  40,
+  10,
+  9,
+  5,
+  4,
+  1,
 ];
 const List<String> _romanSymbols = [
-  'M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I',
+  'M',
+  'CM',
+  'D',
+  'CD',
+  'C',
+  'XC',
+  'L',
+  'XL',
+  'X',
+  'IX',
+  'V',
+  'IV',
+  'I',
 ];
 
 String _toRoman(int number) {
@@ -1001,8 +1028,7 @@ class _OrbitPainter extends CustomPainter {
     }
 
     final dotAngle = fraction * 2 * pi - pi / 2;
-    final dotCenter =
-        center + Offset(cos(dotAngle), sin(dotAngle)) * radius;
+    final dotCenter = center + Offset(cos(dotAngle), sin(dotAngle)) * radius;
     canvas.drawCircle(dotCenter, 5, Paint()..color = color);
   }
 
@@ -1166,10 +1192,7 @@ class _WordClockState extends State<WordClock> {
             final activeColor = settings.wordActiveColor;
             final inactiveColor = settings.wordInactiveColor;
             return Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 6,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
               decoration: BoxDecoration(
                 color: settings.wordBgColor.withValues(
                   alpha: settings.wordBgOpacity,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_strings.dart';
+import 'clock_font_picker.dart';
 import 'clock_settings_controller.dart';
 import 'clock_widget.dart';
 import 'color_swatch_picker.dart';
@@ -150,7 +151,11 @@ class _StyleGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final styles = <({ClockStyle style, String title, Widget preview})>[
-      (style: ClockStyle.digital, title: s.digital, preview: const _DigitalPreview()),
+      (
+        style: ClockStyle.digital,
+        title: s.digital,
+        preview: const _DigitalPreview(),
+      ),
       (style: ClockStyle.word, title: s.custom, preview: const _WordPreview()),
       (style: ClockStyle.roman, title: s.roman, preview: const _RomanPreview()),
       (style: ClockStyle.bars, title: s.bars, preview: const _BarsPreview()),
@@ -295,6 +300,15 @@ class _DigitalAppearance extends StatelessWidget {
               settings.copyWith(digitalColorIndex: i),
             );
           },
+        ),
+        const SizedBox(height: 16),
+        _Label(s.font),
+        ClockFontPicker(
+          s: s,
+          selected: settings.digitalFontFamily,
+          onSelected: (family) => ClockSettingsController.instance.update(
+            settings.copyWith(digitalFontFamily: family),
+          ),
         ),
         const SizedBox(height: 24),
       ],
@@ -497,9 +511,7 @@ class _BarsAppearance extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _Label(
-          s.barsUnfilledStrength(
-            (settings.barsUnfilledOpacity * 100).round(),
-          ),
+          s.barsUnfilledStrength((settings.barsUnfilledOpacity * 100).round()),
         ),
         Slider(
           value: settings.barsUnfilledOpacity,
@@ -608,7 +620,6 @@ class _Label extends StatelessWidget {
   }
 }
 
-
 class _StyleOption extends StatelessWidget {
   const _StyleOption({
     required this.title,
@@ -692,10 +703,7 @@ class _WordPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
-      height: 90,
-      child: FittedBox(child: WordClock()),
-    );
+    return const SizedBox(height: 90, child: FittedBox(child: WordClock()));
   }
 }
 
