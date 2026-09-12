@@ -1294,6 +1294,8 @@ const _deVor = _Word(3, [0, 1, 2]);
 const _deNach = _Word(3, [7, 8, 9, 10]);
 const _deHalb = _Word(4, [0, 1, 2, 3]);
 const _deUhr = _Word(9, [8, 9, 10]);
+// "EIN" without the trailing S - "es ist ein Uhr", not "eins Uhr".
+const _deEin = _Word(5, [0, 1, 2]);
 
 const Map<int, _Word> _deHourWords = {
   1: _Word(5, [0, 1, 2, 3]), // EINS
@@ -1353,7 +1355,11 @@ Set<(int, int)> _activeCellsDe(DateTime time) {
     words.addAll([_deFuenfMin, _deVor]);
     displayHour = hour % 12 + 1;
   }
-  words.add(_deHourWords[displayHour]!);
+  // Only the full hour uses the "ein Uhr" form; "fünf nach eins" and
+  // "halb eins" keep the S.
+  words.add(
+    displayHour == 1 && m5 == 0 ? _deEin : _deHourWords[displayHour]!,
+  );
   return _cellsOf(words);
 }
 
