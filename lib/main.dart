@@ -56,11 +56,17 @@ class _LauncherRootState extends State<LauncherRoot>
 
   bool _inForeground = true;
 
+  // The panel's block list. Lives up here because the panel is never torn
+  // down - it is only moved off-screen - so its scroll offset survives every
+  // close and has to be reset from outside.
+  final ScrollController _panelScroll = ScrollController();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _controller.addListener(_updateHomeVisible);
+    _controller.addListener(_resetScrollWhenClosed);
     AppListSettingsController.instance.addListener(_onAppListSettingsChanged);
     WallpaperController.instance.load();
     LocaleController.instance.load();
@@ -88,6 +94,7 @@ class _LauncherRootState extends State<LauncherRoot>
       _onAppListSettingsChanged,
     );
     _controller.dispose();
+    _panelScroll.dispose();
     _homeVisible.dispose();
     super.dispose();
   }
@@ -98,7 +105,23 @@ class _LauncherRootState extends State<LauncherRoot>
     // at: another app opened on top, the screen turned off, the notification
     // shade pulled down.
     _inForeground = state == AppLifecycleState.resumed;
+    // Tapping an app in the panel leaves it open behind that app, so coming
+    // back from it would land in the panel instead of on the home screen.
+    // Snapped shut rather than animated: nobody is looking at this moment,
+    // and on return the home screen is simply there. Only `paused` (fully
+    // covered) counts - `inactive` is also what a pulled-down notification
+    // shade or a passing system dialog looks like.
+    if (state == AppLifecycleState.paused) _controller.value = 0;
     _updateHomeVisible();
+  }
+
+  // Whatever was scrolled to last time is not where the next open should
+  // start; the top of the list is.
+  void _resetScrollWhenClosed() {
+    if (_controller.value != 0) return;
+    if (!_panelScroll.hasClients) return;
+    if (_panelScroll.offset == 0) return;
+    _panelScroll.jumpTo(0);
   }
 
   void _updateHomeVisible() {
@@ -268,6 +291,7 @@ class _LauncherRootState extends State<LauncherRoot>
                                 _onDragUpdate(details, height),
                             onHandleDragEnd: _onDragEnd,
                             onCloseRequested: _closePanel,
+                            scrollController: _panelScroll,
                           ),
                         ),
                       ),

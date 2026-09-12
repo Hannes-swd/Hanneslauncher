@@ -28,6 +28,7 @@ class PanelView extends StatefulWidget {
     required this.onHandleDragUpdate,
     required this.onHandleDragEnd,
     required this.onCloseRequested,
+    required this.scrollController,
   });
 
   /// Dragging the header closes/opens the panel. Only the header does this,
@@ -39,6 +40,11 @@ class PanelView extends StatefulWidget {
   /// Pulling the list up while it's already at its end closes the panel,
   /// which is what the gesture would do anywhere else on the header.
   final VoidCallback onCloseRequested;
+
+  /// Owned by the launcher root rather than by this state: the panel stays
+  /// alive off-screen, so something outside it has to know when it was
+  /// closed in order to send the list back to the top for the next open.
+  final ScrollController scrollController;
 
   @override
   State<PanelView> createState() => _PanelViewState();
@@ -297,6 +303,7 @@ class _PanelViewState extends State<PanelView> {
             return false;
           },
           child: ReorderableListView.builder(
+            scrollController: widget.scrollController,
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
             // Own handles: the whole card is the handle, but only after a
             // long press, so ordinary dragging still scrolls the list.
