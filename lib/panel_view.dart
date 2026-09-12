@@ -229,11 +229,23 @@ class _PanelViewState extends State<PanelView> {
       valueListenable: LocaleController.instance,
       builder: (context, language, child) {
         final s = AppStrings(language);
-        return Column(
-          children: [
-            _header(s),
-            Expanded(child: _blockList(s)),
-          ],
+        return GestureDetector(
+          // Tapping next to a card puts the keyboard away. Nothing in
+          // Flutter does this by itself, so once a card's input field had
+          // been tapped there was no way left to get rid of the keyboard.
+          //
+          // Translucent rather than opaque: a tap that lands on something -
+          // a card, a button, the field itself - is that thing's, because
+          // its recogniser sits deeper. Only taps on the empty space in
+          // between reach this one.
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: Column(
+            children: [
+              _header(s),
+              Expanded(child: _blockList(s)),
+            ],
+          ),
         );
       },
     );

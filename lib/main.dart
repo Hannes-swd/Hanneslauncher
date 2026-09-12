@@ -71,7 +71,7 @@ class _LauncherRootState extends State<LauncherRoot>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _controller.addListener(_updateHomeVisible);
-    _controller.addListener(_resetScrollWhenClosed);
+    _controller.addListener(_tidyClosedPanel);
     AppListSettingsController.instance.addListener(_onAppListSettingsChanged);
     WallpaperController.instance.load();
     LocaleController.instance.load();
@@ -121,13 +121,39 @@ class _LauncherRootState extends State<LauncherRoot>
     _updateHomeVisible();
   }
 
-  // Whatever was scrolled to last time is not where the next open should
-  // start; the top of the list is.
-  void _resetScrollWhenClosed() {
-    if (_controller.value != 0) return;
-    if (!_panelScroll.hasClients) return;
-    if (_panelScroll.offset == 0) return;
-    _panelScroll.jumpTo(0);
+  // Whether the panel has been open since the last time it was tidied up.
+  // The tidying below has to run once when it shuts, not on every frame of
+  // the animation that gets it there.
+  bool _wasOpen = false;
+
+  /// Puts the panel back to how it should look next time it is opened, the
+  /// moment it is fully shut.
+  void _tidyClosedPanel() {
+    if (_controller.value > 0) {
+      _wasOpen = true;
+      return;
+    }
+    if (!_wasOpen) return;
+    _wasOpen = false;
+
+    // Whatever was scrolled to last time is not where the next open should
+    // start; the top of the list is.
+    if (_panelScroll.hasClients && _panelScroll.offset != 0) {
+      _panelScroll.jumpTo(0);
+    }
+    // And nothing in the panel may keep the keyboard up once the panel is
+    // gone. The panel is never torn down - it is only moved off-screen - so
+    // a text field on one of its cards holds on to the focus, and the
+    // keyboard sits over the home screen with nothing left on it to tap.
+    _dismissKeyboard();
+  }
+
+  /// True when something was focused and has now been let go.
+  bool _dismissKeyboard() {
+    final focus = FocusManager.instance.primaryFocus;
+    if (focus == null || !focus.hasFocus) return false;
+    focus.unfocus();
+    return true;
   }
 
   void _updateHomeVisible() {
@@ -149,6 +175,10 @@ class _LauncherRootState extends State<LauncherRoot>
   // would then decide the next drag.
   void _onDragStart(DragStartDetails details) {
     _dragTotal = 0;
+    // Moving the panel is not the moment to still be typing into it, and a
+    // keyboard appearing and disappearing mid-drag resizes everything under
+    // the finger.
+    _dismissKeyboard();
   }
 
   // The panel follows the finger one to one: dragging down pulls it in,
@@ -270,7 +300,13 @@ class _LauncherRootState extends State<LauncherRoot>
             // to doing nothing, same as any launcher.
             canPop: !panelOpen,
             onPopInvokedWithResult: (didPop, result) {
-              if (!didPop) _closePanel();
+              if (didPop) return;
+              // The keyboard first, the panel second - the order every other
+              // app on the phone uses. Otherwise the one press that was
+              // meant to put the keyboard away takes the whole panel with
+              // it, and whatever was being typed goes with it.
+              if (_dismissKeyboard()) return;
+              _closePanel();
             },
             child: child!,
           ),
