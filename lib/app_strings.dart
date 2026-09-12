@@ -303,6 +303,86 @@ class AppStrings {
   String get elementImage => _en ? 'Picture' : 'Bild';
   String get elementBox => _en ? 'Box' : 'Fläche';
   String get elementAction => _en ? 'Action button' : 'Aktions-Button';
+  String get elementInput => _en ? 'Input field' : 'Eingabefeld';
+  String get elementResults => _en ? 'Search results' : 'Suchergebnisse';
+
+  // One line each in the "add a line" dialog. Seven types with nothing but
+  // their names is a list you have to try your way through.
+  String get elementTextWhat => _en
+      ? 'A line of text, or a value from a source'
+      : 'Eine Zeile Text, oder ein Wert aus einer Quelle';
+  String get elementIconWhat => _en
+      ? 'A symbol that changes with a value'
+      : 'Ein Symbol, das sich mit einem Wert ändert';
+  String get elementImageWhat =>
+      _en ? 'A picture from a web address' : 'Ein Bild von einer Web-Adresse';
+  String get elementBoxWhat => _en
+      ? 'A coloured area - behind text it makes it readable'
+      : 'Eine farbige Fläche - hinter Text macht sie ihn lesbar';
+  String get elementActionWhat => _en
+      ? 'Sends a request, opens an address, or searches'
+      : 'Schickt eine Anfrage, öffnet eine Adresse, oder sucht';
+  String get elementInputWhat => _en
+      ? 'A field to type in'
+      : 'Ein Feld zum Reintippen';
+  String get elementResultsWhat => _en
+      ? 'Apps, settings, contacts and sums for what is typed'
+      : 'Apps, Einstellungen, Kontakte und Rechnungen zum Getippten';
+
+  // Search element - the tick boxes, and the rows they produce.
+  String get searchWatchesField => _en ? 'Searches with' : 'Sucht mit';
+  String get searchWatchesFieldHint => _en
+      ? 'The input field whose text is searched for. Add an input field to '
+            'the card first.'
+      : 'Das Eingabefeld, dessen Text gesucht wird. Dafür zuerst ein '
+            'Eingabefeld auf die Karte legen.';
+  String get searchNoFieldYet => _en
+      ? 'No input field on any card yet'
+      : 'Noch kein Eingabefeld auf einer Karte';
+  String get searchSourcesLabel => _en ? 'Search in' : 'Suchen in';
+  String get searchSourceApps => 'Apps';
+  String get searchSourceSettings => _en ? 'Settings' : 'Einstellungen';
+  String get searchSourceCalculation => _en ? 'Sums' : 'Rechnen';
+  String get searchSourceContacts => _en ? 'Contacts' : 'Kontakte';
+  String get searchSourceAppsHint => _en
+      ? 'Apps, folders and web apps - tapping one opens it'
+      : 'Apps, Ordner und Web-Apps - Antippen öffnet sie';
+  String get searchSourceSettingsHint => _en
+      ? 'Every setting this launcher has, straight to the right screen'
+      : 'Jede Einstellung dieses Launchers, direkt zum passenden Bildschirm';
+  String get searchSourceCalculationHint => _en
+      ? 'Typing 12*7 answers 84. Words are left alone.'
+      : '12*7 eingetippt ergibt 84. Wörter bleiben unangetastet.';
+  String get searchSourceContactsHint => _en
+      ? 'Android asks for permission the first time you search - tapping a '
+            'result puts the number in the dialer, it does not call'
+      : 'Android fragt beim ersten Suchen nach der Berechtigung - ein '
+            'Treffer legt die Nummer in die Telefon-App, ruft aber nicht an';
+  String get searchWebLabel => _en ? 'Web search' : 'Web-Suche';
+  String get searchWebNone => _en ? 'None' : 'Keine';
+  String get searchWebOwn => _en ? 'Own address' : 'Eigene Adresse';
+  String get searchWebOwnHint => _en
+      ? 'Put {{suche}} where the typed words belong'
+      : '{{suche}} dorthin setzen, wo die eingetippten Wörter hingehören';
+  String searchOnTheWeb(String query) =>
+      _en ? 'Search the web: $query' : 'Im Web suchen: $query';
+  String get searchResultLimit => _en ? 'Rows per kind' : 'Zeilen pro Art';
+  String get searchNothingFound => _en ? 'Nothing found' : 'Nichts gefunden';
+  String get searchTypeSomething =>
+      _en ? 'Type something' : 'Tipp etwas ein';
+
+  // Text element - where its line comes from.
+  String get textModeLabel => _en ? 'Shows' : 'Zeigt';
+  String get textModeFree => _en ? 'Own text' : 'Eigener Text';
+  String get textModeInputValue =>
+      _en ? 'What is in a field' : 'Inhalt eines Feldes';
+  String get textModeCalculation =>
+      _en ? 'Result of a sum' : 'Ergebnis einer Rechnung';
+  String get textModeCalculationHint => _en
+      ? 'Reads the field as a sum and shows the answer - empty while it '
+            'isn\'t one. This is the calculator display.'
+      : 'Liest das Feld als Rechnung und zeigt das Ergebnis - leer, solange '
+            'es keine ist. Das ist die Rechner-Anzeige.';
   String get colorLabel => _en ? 'Color' : 'Farbe';
   String currentValue(String value) =>
       _en ? 'Value right now: $value' : 'Wert gerade: $value';
@@ -341,6 +421,25 @@ class AppStrings {
       : 'Ebenen, unterste zuerst - die Pfeile legen ein Element nach vorne '
             'oder hinten';
   String get cardHeightLabel => _en ? 'Card height' : 'Kartenhöhe';
+  String get cardHeightFixed => _en ? 'Fixed' : 'Fest';
+  String get cardHeightFlexible => _en ? 'Flexible' : 'Flexibel';
+  String get cardHeightFixedHint => _en
+      ? 'Always exactly this tall, however much or little is on it'
+      : 'Immer genau so hoch, egal wie viel oder wenig drauf ist';
+  String get cardHeightFlexibleHint => _en
+      ? 'As short as its contents allow, growing only when they need it - '
+            'between the two heights below'
+      : 'So flach wie möglich, wächst nur wenn der Inhalt es braucht - '
+            'zwischen den beiden Höhen unten';
+  String get cardMinHeightLabel => _en ? 'At least' : 'Mindestens';
+  String get cardMaxHeightLabel => _en ? 'At most' : 'Höchstens';
+  String get searchMaxHeight =>
+      _en ? 'Height of the list' : 'Höhe der Liste';
+  String get searchMaxHeightHint => _en
+      ? 'The list never grows past this - once the rows need more, it '
+            'scrolls instead of running over the rest of the card'
+      : 'Die Liste wird nie höher - reichen die Zeilen nicht, scrollt sie, '
+            'statt über den Rest der Karte zu laufen';
   String get widthShort => _en ? 'Width' : 'Breite';
   String get radiusShort => _en ? 'Corners' : 'Ecken';
   String get opacityShort => _en ? 'Opacity' : 'Deckkraft';
@@ -666,6 +765,90 @@ class AppStrings {
   String get actionSucceeded => _en ? 'Done' : 'Erledigt';
   String actionFailed(String detail) =>
       _en ? 'Failed: $detail' : 'Fehlgeschlagen: $detail';
+  // Input element - the field itself, and how other elements reach what
+  // was typed into it.
+  String get inputNameLabel => _en ? 'Field name' : 'Feldname';
+  String inputNameHint(String reference) => _en
+      ? 'Other elements read this field as $reference - put that in a text '
+            'element to display it, or in a button\'s address to send it.'
+      : 'Andere Elemente lesen dieses Feld als $reference - das in ein '
+            'Text-Element setzen zeigt es an, in die Adresse eines Buttons '
+            'gesetzt verschickt es.';
+  String get inputNameEmpty => _en
+      ? 'Without a name nothing can read this field'
+      : 'Ohne Namen kann nichts dieses Feld auslesen';
+  String get inputNameTaken => _en
+      ? 'Another field already goes by this name - both would hold the same '
+            'text'
+      : 'Ein anderes Feld heißt schon so - beide hätten denselben Inhalt';
+  String get inputHintLabel =>
+      _en ? 'Hint while empty' : 'Hinweis, solange leer';
+  String get inputKeyboardLabel => _en ? 'Keyboard' : 'Tastatur';
+  String get inputKeyboardText => _en ? 'Text' : 'Text';
+  String get inputKeyboardNumber => _en ? 'Numbers' : 'Zahlen';
+  String get inputKeyboardUrl => _en ? 'Address' : 'Adresse';
+  String get inputNotStoredHint => _en
+      ? 'What is typed here is not saved - it is gone once the launcher '
+            'restarts'
+      : 'Was hier eingetippt wird, wird nicht gespeichert - nach einem '
+            'Neustart des Launchers ist es weg';
+  String get inputRecipe => _en
+      ? 'A search box: this field, plus an action button set to "Open" with '
+            'an address like https://duckduckgo.com/?q={{input.NAME|url}}. '
+            'Several buttons on one field means several places to search.'
+      : 'Ein Suchfeld: dieses Feld, dazu ein Aktions-Button auf "Öffnen" mit '
+            'einer Adresse wie https://duckduckgo.com/?q={{eingabe.NAME|url}}. '
+            'Mehrere Buttons an einem Feld sind mehrere Ziele.';
+
+  // Action element - whether the tap sends a request or opens something.
+  String get actionKindLabel =>
+      _en ? 'What the tap does' : 'Was der Tipp macht';
+  String get actionKindHttp => _en ? 'Send request' : 'Anfrage senden';
+  String get actionKindOpen => _en ? 'Open' : 'Öffnen';
+  String get actionKindSearch => _en ? 'Search' : 'Suchen';
+  String get actionKindSearchHint => _en
+      ? 'Searches for whatever is typed in a field. Pick the field and the '
+            'engine below - there is no address to type.'
+      : 'Sucht nach dem, was in einem Feld steht. Feld und Suchmaschine '
+            'unten auswählen - eine Adresse musst du nicht eintippen.';
+  String get searchButtonNotSetUp => _en
+      ? 'This button has no field or no search engine yet'
+      : 'Diesem Button fehlt noch ein Feld oder eine Suchmaschine';
+  String get searchButtonEmptyField =>
+      _en ? 'Nothing typed yet' : 'Noch nichts eingetippt';
+  String get actionSearchPreview =>
+      _en ? 'What a tap opens right now' : 'Was ein Tipp gerade öffnet';
+  String get actionKindHttpHint => _en
+      ? 'Calls an address in the background and reports back - for a smart '
+            'home device\'s own API'
+      : 'Ruft eine Adresse im Hintergrund auf und meldet das Ergebnis - für '
+            'die eigene API eines Smart-Home-Geräts';
+  String get actionKindOpenHint => _en
+      ? 'Hands the address to the phone: https opens the browser, tel: the '
+            'dialer, geo: the map. Combined with an input field this is a '
+            'search button.'
+      : 'Gibt die Adresse ans Handy weiter: https öffnet den Browser, tel: '
+            'die Telefon-App, geo: die Karte. Zusammen mit einem Eingabefeld '
+            'ist das ein Such-Button.';
+  String get actionOpenUrlLabel =>
+      _en ? 'Address to open' : 'Adresse zum Öffnen';
+  String get actionOpenUrlHint => _en
+      ? 'Anything the phone can open. Insert an input field below - picked '
+            'here it is added URL-safe, so a space in the text cannot break '
+            'the address.'
+      : 'Alles, was das Handy öffnen kann. Eingabefeld unten einfügen - hier '
+            'wird es URL-sicher eingesetzt, damit ein Leerzeichen im Text '
+            'die Adresse nicht zerlegt.';
+  String get actionOpenNoApp => _en
+      ? 'No app on the phone opens this address'
+      : 'Keine App auf dem Handy öffnet diese Adresse';
+  String get actionOpenNotValid => _en
+      ? 'Needs a scheme in front, e.g. https://, tel: or geo:'
+      : 'Braucht ein Schema davor, z.B. https://, tel: oder geo:';
+  String get testOpenAction => _en ? 'Open now' : 'Jetzt öffnen';
+  String get actionOpened => _en ? 'Opened' : 'Geöffnet';
+  String get valueUrlSafe => _en ? 'URL-safe' : 'URL-sicher';
+
   String get actionModeLabel => _en ? 'Value' : 'Wert';
   String get actionModeFixed => _en ? 'Fixed value' : 'Fester Wert';
   String get actionModeToggle => _en ? 'Toggle' : 'Umschalten';

@@ -12,6 +12,7 @@ import 'locale_controller.dart';
 import 'location_controller.dart';
 import 'moon_phase.dart';
 import 'sun_times.dart';
+import 'widget_input_store.dart';
 
 /// One value a card can reference, ready to be offered for picking.
 class PlaceholderOption {
@@ -20,6 +21,7 @@ class PlaceholderOption {
     required this.placeholder,
     required this.preview,
     required this.sourceName,
+    this.isInput = false,
   });
 
   /// The path inside its source, or the key for a built-in value.
@@ -33,6 +35,11 @@ class PlaceholderOption {
 
   /// Which source it comes from; null for the built-in values.
   final String? sourceName;
+
+  /// Whether this is an input element's typed text rather than a fetched or
+  /// built-in value. Those are the ones worth offering `|url`-encoded when
+  /// the field being filled in is an address.
+  final bool isInput;
 }
 
 /// A JSON endpoint the widget cards read their values from. Text fields hold
@@ -321,6 +328,13 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
   /// path (`{{weather}}`) has no single value - dumping the whole response
   /// into a card's text line helps nobody, so it counts as missing.
   Object? valueOf(String key, String path) {
+    // Before the built-ins: what is typed into an input element right now.
+    // Its own name is the path, so `{{eingabe.suche}}` is field "suche".
+    // An unknown name deliberately falls through to null (printed as "-")
+    // rather than to an empty string, so a typo is visible on the card.
+    if (WidgetInputStore.isPrefix(key)) {
+      return path.isEmpty ? null : WidgetInputStore.instance.textOf(path);
+    }
     final builtIn = _builtIn(key);
     if (builtIn != null) return builtIn;
     if (path.isEmpty) return null;
@@ -524,6 +538,22 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
           sourceName: null,
         ),
     ];
+    // The card's own input fields, so a display element can be pointed at
+    // one by picking rather than by typing the name a second time.
+    final prefix = WidgetInputStore.prefixFor(
+      LocaleController.instance.value == AppLanguage.en,
+    );
+    for (final name in WidgetInputStore.instance.names) {
+      options.add(
+        PlaceholderOption(
+          label: '$prefix.$name',
+          placeholder: '{{$prefix.$name}}',
+          preview: WidgetInputStore.instance.textOf(name) ?? '',
+          sourceName: null,
+          isInput: true,
+        ),
+      );
+    }
     for (final source in value) {
       _collect(_data[source.id], '', source, options);
     }
@@ -564,13 +594,27 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
   }
 
   /// Replaces every `{{key.path}}` in [template] with its current value.
+  ///
+  /// A reference may end in `|url`, which percent-encodes the value before
+  /// it lands in the text. That is what a search address needs: without it
+  /// the first space in `{{eingabe.suche|url}}` cuts the address in half.
   String resolve(String template) {
     return template.replaceAllMapped(_placeholder, (match) {
-      final reference = match.group(1)!.trim();
+      var reference = match.group(1)!.trim();
+      var encode = false;
+      // Only a known modifier is stripped, so a `|` that is simply part of
+      // a path stays part of it.
+      final pipe = reference.lastIndexOf('|');
+      if (pipe != -1 &&
+          reference.substring(pipe + 1).trim().toLowerCase() == 'url') {
+        encode = true;
+        reference = reference.substring(0, pipe).trim();
+      }
       final dot = reference.indexOf('.');
       final key = dot == -1 ? reference : reference.substring(0, dot);
       final path = dot == -1 ? '' : reference.substring(dot + 1);
-      return _format(valueOf(key, path));
+      final text = _format(valueOf(key, path));
+      return encode ? Uri.encodeQueryComponent(text) : text;
     });
   }
 

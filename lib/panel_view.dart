@@ -25,6 +25,7 @@ import 'widget_editor_screen.dart';
 class PanelView extends StatefulWidget {
   const PanelView({
     super.key,
+    required this.onHandleDragStart,
     required this.onHandleDragUpdate,
     required this.onHandleDragEnd,
     required this.onCloseRequested,
@@ -34,6 +35,7 @@ class PanelView extends StatefulWidget {
   /// Dragging the header closes/opens the panel. Only the header does this,
   /// so dragging inside the block list scrolls it instead of fighting the
   /// panel for the same gesture.
+  final GestureDragStartCallback onHandleDragStart;
   final GestureDragUpdateCallback onHandleDragUpdate;
   final GestureDragEndCallback onHandleDragEnd;
 
@@ -240,31 +242,53 @@ class _PanelViewState extends State<PanelView> {
   Widget _header(AppStrings s) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
+      onVerticalDragStart: widget.onHandleDragStart,
       onVerticalDragUpdate: widget.onHandleDragUpdate,
       onVerticalDragEnd: widget.onHandleDragEnd,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+      // A tap anywhere on the bar closes the panel as well. Dragging is the
+      // gesture this was built around, but it asks for a 48-pixel strip to
+      // be found first - with a mouse that is a real aim, and there was
+      // nothing on screen saying the strip was there at all.
+      onTap: widget.onCloseRequested,
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: s.addBlock,
-            onPressed: () => _add(s),
-          ),
-          // Badged rather than plain: this button is the only way into the
-          // settings, so it's also the only place an available update can be
-          // announced without the panel growing a row of its own.
-          UpdateDotBadge(
-            child: IconButton(
-              icon: const Icon(Icons.settings),
-              tooltip: s.settings,
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const SettingsScreen(),
-                  ),
-                );
-              },
+          // The grab bar. Says "this edge moves" without a word, the way
+          // every sheet on the phone does.
+          Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.25),
+              borderRadius: BorderRadius.circular(2),
             ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: s.addBlock,
+                onPressed: () => _add(s),
+              ),
+              // Badged rather than plain: this button is the only way into
+              // the settings, so it's also the only place an available
+              // update can be announced without the panel growing a row of
+              // its own.
+              UpdateDotBadge(
+                child: IconButton(
+                  icon: const Icon(Icons.settings),
+                  tooltip: s.settings,
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const SettingsScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -280,6 +304,7 @@ class _PanelViewState extends State<PanelView> {
             // Nothing to scroll yet, so the empty area keeps working as a
             // drag handle for the panel.
             behavior: HitTestBehavior.opaque,
+            onVerticalDragStart: widget.onHandleDragStart,
             onVerticalDragUpdate: widget.onHandleDragUpdate,
             onVerticalDragEnd: widget.onHandleDragEnd,
             child: Center(
@@ -309,7 +334,13 @@ class _PanelViewState extends State<PanelView> {
             // long press, so ordinary dragging still scrolls the list.
             buildDefaultDragHandles: false,
             itemCount: blocks.length,
-            onReorderStart: (_) => _reordered = false,
+            onReorderStart: (_) {
+              _reordered = false;
+              // A card being carried around must not leave the keyboard up
+              // behind it, and anything the field had focused is one more
+              // thing living in the overlay the drag copy goes into.
+              FocusManager.instance.primaryFocus?.unfocus();
+            },
             onReorderItem: (oldIndex, newIndex) {
               _reordered = true;
               // onReorderItem already accounts for the item being lifted out

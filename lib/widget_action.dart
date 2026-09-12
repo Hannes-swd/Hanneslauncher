@@ -1,9 +1,11 @@
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 import 'app_strings.dart';
 import 'data_sources_controller.dart';
 import 'locale_controller.dart';
 import 'widget_element.dart';
+import 'widget_input_store.dart';
 
 class WidgetActionResult {
   const WidgetActionResult({required this.success, this.detail});
@@ -93,9 +95,19 @@ ResolvedAction resolveAction(WidgetElement element) {
 /// certificate at all, so requiring https would make this useless for
 /// exactly the thing it's for.
 Future<WidgetActionResult> runWidgetAction(WidgetElement element) async {
+  // Before resolveAction: a search button has no address of its own to
+  // resolve, and its toggle fields are meaningless.
+  if (element.actionKind == WidgetActionKind.search) {
+    return _runSearchAction(element);
+  }
+
   final resolved = resolveAction(element);
   if (resolved.error != null) {
     return WidgetActionResult(success: false, detail: resolved.error);
+  }
+
+  if (element.actionKind == WidgetActionKind.open) {
+    return openExternalUrl(resolved.url);
   }
 
   final uri = Uri.tryParse(resolved.url);
@@ -157,4 +169,60 @@ String? _originOf(String raw) {
     return null;
   }
   return uri.origin;
+}
+
+/// Searches for whatever is typed in the field the button watches. The two
+/// things that can be wrong with it are worth telling apart: a button set up
+/// without a field or an engine is broken, while an empty field just means
+/// there is nothing to search for yet.
+Future<WidgetActionResult> _runSearchAction(WidgetElement element) {
+  final s = AppStrings(LocaleController.instance.value);
+  final template = element.webSearchUrl.trim();
+  final query = WidgetInputStore.instance.textOf(element.inputName);
+
+  if (template.isEmpty || query == null) {
+    return Future.value(
+      WidgetActionResult(success: false, detail: s.searchButtonNotSetUp),
+    );
+  }
+  if (query.trim().isEmpty) {
+    return Future.value(
+      WidgetActionResult(success: false, detail: s.searchButtonEmptyField),
+    );
+  }
+  return openExternalUrl(
+    template.replaceAll(
+      webSearchQueryToken,
+      Uri.encodeQueryComponent(query.trim()),
+    ),
+  );
+}
+
+/// Hands the address to the phone and lets it decide who opens it - the
+/// browser for https, the dialer for tel:, the map app for geo:. Any scheme
+/// is allowed on purpose: which ones a phone actually answers is the
+/// phone's business, and refusing the unfamiliar ones here would only rule
+/// out the interesting half.
+///
+/// Note that a scheme the manifest's `<queries>` block doesn't cover comes
+/// back as "nothing can open this" even when something can - https and http
+/// are listed there, the rest may need adding.
+Future<WidgetActionResult> openExternalUrl(String url) async {
+  final s = AppStrings(LocaleController.instance.value);
+  final trimmed = url.trim();
+  final uri = Uri.tryParse(trimmed);
+  if (trimmed.isEmpty || uri == null || !uri.hasScheme) {
+    return WidgetActionResult(success: false, detail: s.errorInvalidAddress);
+  }
+  try {
+    final opened = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+    return opened
+        ? WidgetActionResult(success: true, detail: trimmed)
+        : WidgetActionResult(success: false, detail: s.actionOpenNoApp);
+  } catch (error) {
+    return WidgetActionResult(success: false, detail: '$error');
+  }
 }

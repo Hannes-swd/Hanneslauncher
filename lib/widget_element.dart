@@ -16,9 +16,80 @@ enum WidgetElementType {
   /// text readable again.
   box,
 
-  /// A button: tapping it fires an HTTP call (a smart home device's own
-  /// local API, typically) rather than showing anything fetched.
+  /// A button: tapping it either fires an HTTP call (a smart home device's
+  /// own local API, typically) or opens an address - see [WidgetActionKind].
   action,
+
+  /// A field the user types into. What is typed is readable everywhere a
+  /// `{{...}}` placeholder is, as `{{eingabe.<name>}}` - which is how a
+  /// text element next to it becomes its display, and an action button
+  /// next to it becomes its "go".
+  input,
+
+  /// The answers to what is in an input field: matching apps, settings,
+  /// contacts, the result of a sum, and a web search as the last row. Each
+  /// one is tappable. Which piles it looks in is a set of tick boxes, so a
+  /// working search needs no address and no placeholder typed anywhere.
+  results,
+}
+
+/// What an action element's tap does. Each kind uses a different handful of
+/// the fields below, and the editor shows only that handful - a button set
+/// to search has no business asking about an HTTP method.
+enum WidgetActionKind {
+  /// Sends the configured HTTP request and reports what came back. Uses
+  /// [WidgetElement.actionUrl], [WidgetElement.actionMethod],
+  /// [WidgetElement.actionHeaders], [WidgetElement.actionBody] and the
+  /// toggle pair.
+  http,
+
+  /// Hands [WidgetElement.actionUrl] to the phone, which opens whatever
+  /// handles it - a browser for https, the dialer for tel:, the map for
+  /// geo:. Uses nothing else.
+  open,
+
+  /// Searches for whatever is typed in the input field named by
+  /// [WidgetElement.inputName], using [WidgetElement.webSearchUrl]. Two
+  /// dropdowns and no address to type, which is the whole point of it
+  /// existing next to [open].
+  search,
+}
+
+/// What a search address writes where the typed words belong. Deliberately
+/// not one of the `{{...}}` data-source placeholders: this is filled in at
+/// the moment of the tap, and going through the general resolution would
+/// only mean it could be blanked out to "-".
+const String webSearchQueryToken = '{{suche}}';
+
+/// The search engines the editor offers, so nobody has to know what a search
+/// URL looks like. "Own address" is the escape hatch and holds whatever was
+/// typed instead of one of these.
+const Map<String, String> webSearchPresets = {
+  'DuckDuckGo': 'https://duckduckgo.com/?q=$webSearchQueryToken',
+  'Google': 'https://www.google.com/search?q=$webSearchQueryToken',
+  'Bing': 'https://www.bing.com/search?q=$webSearchQueryToken',
+  'Wikipedia':
+      'https://de.wikipedia.org/w/index.php?search=$webSearchQueryToken',
+  'YouTube': 'https://www.youtube.com/results?search_query=$webSearchQueryToken',
+  'Google Maps': 'https://www.google.com/maps/search/$webSearchQueryToken',
+};
+
+/// Which keyboard an input element brings up.
+enum WidgetInputKeyboard { text, number, url }
+
+/// Where a text element's line comes from.
+enum WidgetTextMode {
+  /// Written by hand, `{{...}}` placeholders and all. The original, and
+  /// still the only one that can mix several values into one line.
+  free,
+
+  /// Shows what is typed in the input field named by
+  /// [WidgetElement.inputName], and nothing else.
+  inputValue,
+
+  /// Shows the result of reading that field as a sum, and stays empty while
+  /// what is in it isn't one. This is the calculator's display.
+  calculation,
 }
 
 /// The HTTP method an action element's tap sends.
@@ -119,6 +190,17 @@ class WidgetElement {
     this.actionBody = '',
     this.actionValueMode = ActionValueMode.fixed,
     this.actionToggleSource = '',
+    this.actionKind = WidgetActionKind.http,
+    this.inputName = '',
+    this.inputHint = '',
+    this.inputKeyboard = WidgetInputKeyboard.text,
+    this.searchApps = true,
+    this.searchSettings = true,
+    this.searchCalculation = true,
+    this.searchContacts = false,
+    this.webSearchUrl = '',
+    this.resultLimit = 4,
+    this.textMode = WidgetTextMode.free,
   });
 
   final String id;
@@ -173,6 +255,51 @@ class WidgetElement {
   final ActionValueMode actionValueMode;
   final String actionToggleSource;
 
+  /// Action only: whether the tap sends a request or opens the address.
+  /// Everything above applies to [WidgetActionKind.http] alone - opening
+  /// needs nothing but [actionUrl].
+  final WidgetActionKind actionKind;
+
+  /// Input: the name this field is referenced by, as `{{eingabe.<name>}}`.
+  /// Results and a text element in a mode other than [WidgetTextMode.free]:
+  /// the name of the input field being watched.
+  ///
+  /// Stored the way it was typed; every lookup goes through
+  /// [WidgetInputStore.normalizeName] first, so case and stray punctuation
+  /// don't decide whether a reference finds it.
+  final String inputName;
+
+  /// Input only: what the empty field shows. May hold `{{...}}`
+  /// placeholders like any other text.
+  final String inputHint;
+
+  final WidgetInputKeyboard inputKeyboard;
+
+  /// Results only: which piles are searched. Ticked rather than typed, so a
+  /// working search needs no address and no placeholder anywhere. Contacts
+  /// starts off because it is the only one that costs a permission.
+  final bool searchApps;
+  final bool searchSettings;
+  final bool searchCalculation;
+  final bool searchContacts;
+
+  /// Results and a [WidgetActionKind.search] button: the search address,
+  /// with [webSearchQueryToken] where the typed words go. Normally one of
+  /// [webSearchPresets], picked from a dropdown. On a results element,
+  /// empty means no web row at all.
+  final String webSearchUrl;
+
+  /// Results only: how many rows each pile may contribute. The web row is
+  /// not counted - it is the one that says "nothing here matched, but this
+  /// will find something", so cutting it off would defeat it.
+  final int resultLimit;
+
+  /// Text only: whether the line is written by hand (with `{{...}}`
+  /// placeholders) or simply follows an input field. The latter two exist so
+  /// a display can be set up by picking a field from a dropdown rather than
+  /// by knowing the placeholder syntax at all.
+  final WidgetTextMode textMode;
+
   WidgetElement copyWith({
     String? template,
     double? fontSize,
@@ -193,6 +320,17 @@ class WidgetElement {
     String? actionBody,
     ActionValueMode? actionValueMode,
     String? actionToggleSource,
+    WidgetActionKind? actionKind,
+    String? inputName,
+    String? inputHint,
+    WidgetInputKeyboard? inputKeyboard,
+    bool? searchApps,
+    bool? searchSettings,
+    bool? searchCalculation,
+    bool? searchContacts,
+    String? webSearchUrl,
+    int? resultLimit,
+    WidgetTextMode? textMode,
   }) {
     return WidgetElement(
       id: id,
@@ -216,6 +354,17 @@ class WidgetElement {
       actionBody: actionBody ?? this.actionBody,
       actionValueMode: actionValueMode ?? this.actionValueMode,
       actionToggleSource: actionToggleSource ?? this.actionToggleSource,
+      actionKind: actionKind ?? this.actionKind,
+      inputName: inputName ?? this.inputName,
+      inputHint: inputHint ?? this.inputHint,
+      inputKeyboard: inputKeyboard ?? this.inputKeyboard,
+      searchApps: searchApps ?? this.searchApps,
+      searchSettings: searchSettings ?? this.searchSettings,
+      searchCalculation: searchCalculation ?? this.searchCalculation,
+      searchContacts: searchContacts ?? this.searchContacts,
+      webSearchUrl: webSearchUrl ?? this.webSearchUrl,
+      resultLimit: resultLimit ?? this.resultLimit,
+      textMode: textMode ?? this.textMode,
     );
   }
 
@@ -241,6 +390,17 @@ class WidgetElement {
     'actionBody': actionBody,
     'actionValueMode': actionValueMode.name,
     'actionToggleSource': actionToggleSource,
+    'actionKind': actionKind.name,
+    'inputName': inputName,
+    'inputHint': inputHint,
+    'inputKeyboard': inputKeyboard.name,
+    'searchApps': searchApps,
+    'searchSettings': searchSettings,
+    'searchCalculation': searchCalculation,
+    'searchContacts': searchContacts,
+    'webSearchUrl': webSearchUrl,
+    'resultLimit': resultLimit,
+    'textMode': textMode.name,
   };
 
   static WidgetElement fromJson(Map<String, dynamic> json) => WidgetElement(
@@ -278,7 +438,41 @@ class WidgetElement {
     actionBody: json['actionBody'] as String? ?? '',
     actionValueMode: _actionValueModeFromName(json['actionValueMode']),
     actionToggleSource: json['actionToggleSource'] as String? ?? '',
+    // Absent on every card built before buttons could open something, and
+    // those all sent a request - which is exactly the fallback.
+    actionKind: _actionKindFromName(json['actionKind']),
+    inputName: json['inputName'] as String? ?? '',
+    inputHint: json['inputHint'] as String? ?? '',
+    inputKeyboard: _inputKeyboardFromName(json['inputKeyboard']),
+    searchApps: json['searchApps'] as bool? ?? true,
+    searchSettings: json['searchSettings'] as bool? ?? true,
+    searchCalculation: json['searchCalculation'] as bool? ?? true,
+    searchContacts: json['searchContacts'] as bool? ?? false,
+    webSearchUrl: json['webSearchUrl'] as String? ?? '',
+    resultLimit: (json['resultLimit'] as num?)?.toInt() ?? 4,
+    textMode: _textModeFromName(json['textMode']),
   );
+
+  static WidgetTextMode _textModeFromName(Object? name) {
+    for (final mode in WidgetTextMode.values) {
+      if (mode.name == name) return mode;
+    }
+    return WidgetTextMode.free;
+  }
+
+  static WidgetActionKind _actionKindFromName(Object? name) {
+    for (final kind in WidgetActionKind.values) {
+      if (kind.name == name) return kind;
+    }
+    return WidgetActionKind.http;
+  }
+
+  static WidgetInputKeyboard _inputKeyboardFromName(Object? name) {
+    for (final keyboard in WidgetInputKeyboard.values) {
+      if (keyboard.name == name) return keyboard;
+    }
+    return WidgetInputKeyboard.text;
+  }
 
   static ActionMethod _actionMethodFromName(Object? name) {
     for (final method in ActionMethod.values) {
@@ -380,4 +574,15 @@ const Map<String, IconData> widgetIcons = {
   'unlock': Icons.lock_open,
   'plug': Icons.electrical_services,
   'fan': Icons.mode_fan_off,
+  // Useful mainly on an "open" button, where the glyph says where the tap
+  // goes rather than what it switches.
+  'search': Icons.search,
+  'open': Icons.open_in_new,
+  'send': Icons.send,
+  'globe': Icons.public,
+  'phone': Icons.call,
+  'map': Icons.map_outlined,
+  'mail': Icons.mail_outline,
+  'shop': Icons.shopping_bag_outlined,
+  'play': Icons.play_circle_outline,
 };

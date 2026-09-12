@@ -13,6 +13,13 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <!-- Reads the step counter sensor for the {{schritte}} placeholder. -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
+    <!-- Lets a widget card's search field find the phone's own contacts.
+         Asked for the first time a search element with "Kontakte" ticked is
+         actually used, not on startup - a launcher set up without that box
+         never sees the prompt. Only reading: nothing here writes a contact,
+         and calling one goes through ACTION_DIAL (which fills the dialer and
+         waits for the user) rather than placing the call itself. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS"/>
     <!-- Lets {{meistgenutzt}} read today's per-app usage time. Not grantable
          through a normal runtime prompt - the user turns it on for this app
          in the system's own "Usage access" settings screen, which

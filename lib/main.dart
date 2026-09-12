@@ -54,6 +54,11 @@ class _LauncherRootState extends State<LauncherRoot>
   // wallpaper is the only thing that rebuilds when it flips.
   final ValueNotifier<bool> _homeVisible = ValueNotifier(true);
 
+  // Whether the panel is showing at all, even part way. Its own notifier so
+  // that the back button's handler is the only thing rebuilt when it flips,
+  // rather than the whole tree once per animation frame.
+  final ValueNotifier<bool> _panelOpen = ValueNotifier(false);
+
   bool _inForeground = true;
 
   // The panel's block list. Lives up here because the panel is never torn
@@ -96,6 +101,7 @@ class _LauncherRootState extends State<LauncherRoot>
     _controller.dispose();
     _panelScroll.dispose();
     _homeVisible.dispose();
+    _panelOpen.dispose();
     super.dispose();
   }
 
@@ -128,12 +134,29 @@ class _LauncherRootState extends State<LauncherRoot>
     // The panel is a full screen sheet, so once it's all the way down there
     // is nothing left of the wallpaper worth animating.
     _homeVisible.value = _inForeground && _controller.value < 0.99;
+    _panelOpen.value = _controller.value > 0;
+  }
+
+  // How far the drag in progress has travelled, and the screen height it is
+  // measured against. Both are needed when it ends: see _onDragEnd for why
+  // the distance alone decides some of those cases.
+  double _dragTotal = 0;
+  double _dragHeight = 1;
+
+  // Every new drag starts the running total over. Doing it here rather than
+  // when the last one ended also covers a drag that was cancelled instead of
+  // finished - that one never reaches _onDragEnd, and its leftover distance
+  // would then decide the next drag.
+  void _onDragStart(DragStartDetails details) {
+    _dragTotal = 0;
   }
 
   // The panel follows the finger one to one: dragging down pulls it in,
   // dragging up pushes it back out. So it is dismissed by the reverse of the
   // gesture that opened it, never by swiping down again.
   void _onDragUpdate(DragUpdateDetails details, double height) {
+    _dragTotal += details.delta.dy;
+    _dragHeight = height;
     _controller.value += details.delta.dy / height;
   }
 
@@ -145,12 +168,25 @@ class _LauncherRootState extends State<LauncherRoot>
   void _onDragEnd(DragEndDetails details) {
     // Downwards is positive, so a flick means "keep going" either way round.
     final velocity = details.primaryVelocity ?? 0;
+    final total = _dragTotal;
+    final height = _dragHeight;
+    _dragTotal = 0;
+
     final bool open;
     if (velocity.abs() > 300) {
       // Fast flick: go with the direction of the flick.
       open = velocity > 0;
+    } else if (total.abs() >= 6 && total.abs() < height * 0.15) {
+      // Both handles sit against an edge of the screen - the panel's at the
+      // top, the home screen's strip just under it - and the panel travels
+      // with the finger. A drag away from that edge therefore runs out of
+      // screen after a few dozen pixels and can never reach the half-way
+      // mark the rule below wants, so slowly dragging the panel shut did
+      // nothing at all. A short drag goes by its direction instead.
+      open = total > 0;
     } else {
-      // Slow drag released: snap to whichever side is closer.
+      // Dragged a real distance and released: snap to whichever side is
+      // closer.
       open = _controller.value > 0.5;
     }
     _controller.animateTo(open ? 1 : 0, curve: Curves.easeOut);
@@ -225,7 +261,20 @@ class _LauncherRootState extends State<LauncherRoot>
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => _updateGestureExclusion(height),
         );
-        return Stack(
+        return ValueListenableBuilder<bool>(
+          valueListenable: _panelOpen,
+          builder: (context, panelOpen, child) => PopScope(
+            // Back closes the panel rather than doing nothing, which is what
+            // it does on a home screen otherwise - and it is the way out
+            // that needs no aiming at all. With the panel shut it goes back
+            // to doing nothing, same as any launcher.
+            canPop: !panelOpen,
+            onPopInvokedWithResult: (didPop, result) {
+              if (!didPop) _closePanel();
+            },
+            child: child!,
+          ),
+          child: Stack(
           children: [
             ValueListenableBuilder<bool>(
               valueListenable: _homeVisible,
@@ -238,6 +287,7 @@ class _LauncherRootState extends State<LauncherRoot>
                 children: [
                   GestureDetector(
                     behavior: HitTestBehavior.translucent,
+                    onVerticalDragStart: _onDragStart,
                     onVerticalDragUpdate: (details) =>
                         _onDragUpdate(details, height),
                     onVerticalDragEnd: _onDragEnd,
@@ -248,6 +298,7 @@ class _LauncherRootState extends State<LauncherRoot>
                   ),
                   Expanded(
                     child: AppListView(
+                      onPanelDragStart: _onDragStart,
                       onPanelDragUpdate: (details) =>
                           _onDragUpdate(details, height),
                       onPanelDragEnd: _onDragEnd,
@@ -287,6 +338,7 @@ class _LauncherRootState extends State<LauncherRoot>
                         color: Colors.white.withValues(alpha: 0.85),
                         child: SafeArea(
                           child: PanelView(
+                            onHandleDragStart: _onDragStart,
                             onHandleDragUpdate: (details) =>
                                 _onDragUpdate(details, height),
                             onHandleDragEnd: _onDragEnd,
@@ -300,6 +352,7 @@ class _LauncherRootState extends State<LauncherRoot>
                 ),
               ),
             ],
+          ),
         );
       },
     );

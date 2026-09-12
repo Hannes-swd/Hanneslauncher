@@ -59,59 +59,69 @@ class _WidgetCanvasEditorState extends State<WidgetCanvasEditor> {
         borderRadius: BorderRadius.circular(16),
       ),
       clipBehavior: Clip.antiAlias,
-      height: widget.block.cardHeight,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final size = Size(constraints.maxWidth, constraints.maxHeight);
-          return Stack(
-            children: [
-              for (final element in widget.block.elements)
-                Align(
-                  alignment: _alignmentOf(element),
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => widget.onTapElement(element),
-                    onPanStart: (_) => setState(() {
-                      _draggingId = element.id;
-                      _rawX = element.x;
-                      _rawY = element.y;
-                      _x = element.x;
-                      _y = element.y;
-                    }),
-                    onPanUpdate: (details) =>
-                        _drag(element, details.delta, size),
-                    onPanEnd: (_) => _commit(element),
-                    onPanCancel: () => setState(_clearDrag),
-                    child: WidgetElementView(
-                      element: element,
-                      cardWidth: size.width,
-                      // Tapping here opens the element editor (this
-                      // GestureDetector's own onTap, just above); an action
-                      // element's HTTP call must wait for the real card.
-                      interactive: false,
-                    ),
-                  ),
-                ),
-              if (_guideX != null)
-                Positioned(
-                  left: _guideX! * size.width,
-                  top: 0,
-                  bottom: 0,
-                  child: const _Guide(vertical: true),
-                ),
-              if (_guideY != null)
-                Positioned(
-                  top: _guideY! * size.height,
-                  left: 0,
-                  right: 0,
-                  child: const _Guide(vertical: false),
-                ),
-            ],
+      // The same sizing the real card uses, elements and all, so a flexible
+      // card is previewed at the height it will actually have rather than at
+      // one this screen made up.
+      child: WidgetCardStack(
+        block: widget.block,
+        // The one under the finger follows it; the rest sit where they are
+        // stored.
+        positionOf: _positionOf,
+        builder: (element, cardWidth) {
+          // The drag needs the card's own size, and inside the builder the
+          // only thing known is its width - the height comes back through
+          // _lastSize, which the overlay below records every layout.
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => widget.onTapElement(element),
+            onPanStart: (_) => setState(() {
+              _draggingId = element.id;
+              _rawX = element.x;
+              _rawY = element.y;
+              _x = element.x;
+              _y = element.y;
+            }),
+            onPanUpdate: (details) =>
+                _drag(element, details.delta, _lastSize ?? Size(cardWidth, 1)),
+            onPanEnd: (_) => _commit(element),
+            onPanCancel: () => setState(_clearDrag),
+            child: WidgetElementView(
+              element: element,
+              cardWidth: cardWidth,
+              // Tapping here opens the element editor (this
+              // GestureDetector's own onTap, just above); an action
+              // element's HTTP call must wait for the real card.
+              interactive: false,
+            ),
           );
+        },
+        overlay: (size) {
+          _lastSize = size;
+          return [
+            if (_guideX != null)
+              Positioned(
+                left: _guideX! * size.width,
+                top: 0,
+                bottom: 0,
+                child: const _Guide(vertical: true),
+              ),
+            if (_guideY != null)
+              Positioned(
+                top: _guideY! * size.height,
+                left: 0,
+                right: 0,
+                child: const _Guide(vertical: false),
+              ),
+          ];
         },
       ),
     );
   }
+
+  /// The card's size as of the last layout. A drag turns finger pixels into
+  /// the 0..1 position an element is stored at, so it needs both dimensions -
+  /// and with a flexible card the height is only known once it is laid out.
+  Size? _lastSize;
 
   void _drag(WidgetElement dragged, Offset delta, Size size) {
     final rawX = (_rawX + delta.dx / size.width).clamp(0.0, 1.0);
@@ -178,9 +188,9 @@ class _WidgetCanvasEditorState extends State<WidgetCanvasEditor> {
     return best;
   }
 
-  Alignment _alignmentOf(WidgetElement element) {
-    if (element.id != _draggingId) return element.stackAlignment;
-    return Alignment(_x * 2 - 1, _y * 2 - 1);
+  Offset _positionOf(WidgetElement element) {
+    if (element.id != _draggingId) return Offset(element.x, element.y);
+    return Offset(_x, _y);
   }
 
   void _clearDrag() {

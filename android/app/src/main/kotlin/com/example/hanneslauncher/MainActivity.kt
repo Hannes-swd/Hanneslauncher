@@ -30,6 +30,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.provider.CalendarContract
+import android.provider.ContactsContract
 import android.provider.Settings
 import android.view.WindowManager
 import androidx.core.app.ActivityCompat
@@ -51,10 +52,12 @@ class MainActivity : FlutterActivity() {
     private val browsersChannelName = "hanneslauncher/browsers"
     private val offlineModeChannelName = "hanneslauncher/offline_mode"
     private val mediaChannelName = "hanneslauncher/media"
+    private val contactsChannelName = "hanneslauncher/contacts"
     private val calendarPermissionRequestCode = 4201
     private val importFileRequestCode = 4202
     private val stepsPermissionRequestCode = 4203
     private val homeRoleRequestCode = 4204
+    private val contactsPermissionRequestCode = 4205
 
     // A plugin (device_calendar) returning every field as null on some
     // Android versions is what this replaces - reading Android's own
@@ -63,6 +66,7 @@ class MainActivity : FlutterActivity() {
     private var pendingPermissionResult: MethodChannel.Result? = null
     private var pendingImportResult: MethodChannel.Result? = null
     private var pendingStepsPermissionResult: MethodChannel.Result? = null
+    private var pendingContactsPermissionResult: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -80,6 +84,54 @@ class MainActivity : FlutterActivity() {
                                 listOf(Rect(left, top, right, bottom))
                         }
                         result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        // Searching the phone's own contacts from a widget card's search
+        // field. Read straight off ContactsContract for the same reason the
+        // calendar is: no library in between to disagree with the platform.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, contactsChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "hasPermission" -> result.success(hasContactsPermission())
+                    "requestPermission" -> {
+                        if (hasContactsPermission()) {
+                            result.success(true)
+                        } else {
+                            // A stale request must not hang forever - it
+                            // loses, the new one takes over.
+                            pendingContactsPermissionResult?.success(false)
+                            pendingContactsPermissionResult = result
+                            ActivityCompat.requestPermissions(
+                                this,
+                                arrayOf(Manifest.permission.READ_CONTACTS),
+                                contactsPermissionRequestCode,
+                            )
+                        }
+                    }
+                    "search" -> {
+                        val query = call.argument<String>("query") ?: ""
+                        val limit = call.argument<Int>("limit") ?: 5
+                        result.success(
+                            if (hasContactsPermission()) {
+                                searchContacts(query, limit)
+                            } else {
+                                emptyList<Map<String, Any?>>()
+                            },
+                        )
+                    }
+                    // ACTION_DIAL, not ACTION_CALL: it puts the number in the
+                    // dialer and lets the user press the button, which needs
+                    // no CALL_PHONE permission and can't dial by accident.
+                    "dial" -> {
+                        val number = call.argument<String>("number") ?: ""
+                        result.success(
+                            startIntentSafely(
+                                Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(number))),
+                            ),
+                        )
                     }
                     else -> result.notImplemented()
                 }
@@ -762,8 +814,85 @@ class MainActivity : FlutterActivity() {
         } else if (requestCode == stepsPermissionRequestCode) {
             pendingStepsPermissionResult?.success(granted)
             pendingStepsPermissionResult = null
+        } else if (requestCode == contactsPermissionRequestCode) {
+            pendingContactsPermissionResult?.success(granted)
+            pendingContactsPermissionResult = null
         }
     }
+
+    private fun hasContactsPermission(): Boolean =
+        ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.READ_CONTACTS,
+        ) == PackageManager.PERMISSION_GRANTED
+
+    /// Matches [query] against names and numbers alike - CONTENT_FILTER_URI
+    /// is what Android's own dialer search uses, so typing "mei" and typing
+    /// "0171" both land where the user expects.
+    ///
+    /// Only contacts that have a phone number can appear: the search goes
+    /// through the Phone table, which is also what makes a result callable
+    /// with one tap. A contact stored with nothing but an email is invisible
+    /// here.
+    private fun searchContacts(
+        query: String,
+        limit: Int,
+    ): List<Map<String, Any?>> {
+        val trimmed = query.trim()
+        if (trimmed.isEmpty()) return emptyList()
+
+        val uri =
+            Uri.withAppendedPath(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_FILTER_URI,
+                Uri.encode(trimmed),
+            )
+        val projection =
+            arrayOf(
+                ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
+                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                ContactsContract.CommonDataKinds.Phone.NUMBER,
+            )
+
+        val hits = mutableListOf<Map<String, Any?>>()
+        // One row per number, so somebody with a mobile and a landline comes
+        // back twice. The first number wins - a search result list is not
+        // the place to make the user pick which of the two it is.
+        val seen = mutableSetOf<Long>()
+        val cursor: Cursor? =
+            contentResolver.query(
+                uri,
+                projection,
+                null,
+                null,
+                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC",
+            )
+        cursor?.use {
+            while (it.moveToNext() && hits.size < limit) {
+                val id = it.getLong(0)
+                if (!seen.add(id)) continue
+                hits.add(
+                    mapOf(
+                        "id" to id,
+                        "name" to (it.getString(1) ?: ""),
+                        "number" to (it.getString(2) ?: ""),
+                    ),
+                )
+            }
+        }
+        return hits
+    }
+
+    /// Nothing on the phone may answer the intent (a tablet with no dialer,
+    /// a contacts app that has been disabled), and that throws rather than
+    /// returning false.
+    private fun startIntentSafely(intent: Intent): Boolean =
+        try {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
+            true
+        } catch (error: Exception) {
+            false
+        }
 
     private fun hasCalendarPermission(): Boolean =
         ContextCompat.checkSelfPermission(

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'app_icon.dart';
@@ -14,6 +16,8 @@ import 'widget_action.dart';
 import 'widget_canvas_editor.dart';
 import 'widget_card_view.dart';
 import 'widget_element.dart';
+import 'widget_input_store.dart';
+import 'widget_search_service.dart';
 
 /// Builds one widget card: its lines, in order, each editable on its own.
 class WidgetEditorScreen extends StatelessWidget {
@@ -101,9 +105,57 @@ class WidgetEditorScreen extends StatelessWidget {
                     ),
                   ),
                   Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Text(
+                      s.cardHeightLabel,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Wrap(
+                      spacing: 8,
+                      children: [
+                        ChoiceChip(
+                          label: Text(s.cardHeightFixed),
+                          selected: !block.cardHeightFlexible,
+                          onSelected: (_) => PanelBlocksController.instance
+                              .update(
+                                block.copyWith(cardHeightFlexible: false),
+                              ),
+                        ),
+                        ChoiceChip(
+                          label: Text(s.cardHeightFlexible),
+                          selected: block.cardHeightFlexible,
+                          onSelected: (_) => PanelBlocksController.instance
+                              .update(
+                                block.copyWith(cardHeightFlexible: true),
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                    child: Text(
+                      block.cardHeightFlexible
+                          ? s.cardHeightFlexibleHint
+                          : s.cardHeightFixedHint,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
+                  Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                     child: Text(
-                      '${s.cardHeightLabel} (${block.cardHeight.round()})',
+                      '${block.cardHeightFlexible ? s.cardMinHeightLabel : s.cardHeightLabel}'
+                      ' (${block.cardHeight.round()})',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -113,12 +165,38 @@ class WidgetEditorScreen extends StatelessWidget {
                   ),
                   Slider(
                     value: block.cardHeight,
-                    min: 80,
+                    min: 40,
                     max: 400,
-                    divisions: 32,
+                    divisions: 36,
                     onChanged: (value) => PanelBlocksController.instance
                         .update(block.copyWith(cardHeight: value)),
                   ),
+                  if (block.cardHeightFlexible) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: Text(
+                        '${s.cardMaxHeightLabel} '
+                        '(${math.max(block.cardMaxHeight, block.cardHeight).round()})',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ),
+                    Slider(
+                      // Never below the minimum - a maximum under it would
+                      // read as a contradiction, and the card would only
+                      // ever be the minimum anyway.
+                      value: math
+                          .max(block.cardMaxHeight, block.cardHeight)
+                          .clamp(block.cardHeight, 600.0),
+                      min: block.cardHeight,
+                      max: 600,
+                      onChanged: (value) => PanelBlocksController.instance
+                          .update(block.copyWith(cardMaxHeight: value)),
+                    ),
+                  ],
                   const Divider(height: 32),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -147,9 +225,7 @@ class WidgetEditorScreen extends StatelessWidget {
                     ListTile(
                       leading: Icon(_iconFor(element.type)),
                       title: Text(
-                        element.template.isEmpty
-                            ? _labelFor(element.type, s)
-                            : element.template,
+                        _summaryFor(element, s),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -194,7 +270,29 @@ class WidgetEditorScreen extends StatelessWidget {
     WidgetElementType.image => Icons.image_outlined,
     WidgetElementType.box => Icons.rectangle_outlined,
     WidgetElementType.action => Icons.touch_app_outlined,
+    WidgetElementType.input => Icons.edit_outlined,
+    WidgetElementType.results => Icons.manage_search,
   };
+
+  /// What the layer list shows for one element: whatever identifies it at
+  /// a glance. An input element has no template at all, so its own name is
+  /// the only thing that tells two of them apart.
+  static String _summaryFor(WidgetElement element, AppStrings s) {
+    if (element.type == WidgetElementType.input) {
+      final name = element.inputName.trim();
+      return name.isEmpty ? s.inputNameEmpty : name;
+    }
+    if (element.type == WidgetElementType.results ||
+        (element.type == WidgetElementType.text &&
+            element.textMode != WidgetTextMode.free)) {
+      final name = element.inputName.trim();
+      return name.isEmpty
+          ? s.searchNoFieldYet
+          : '${s.searchWatchesField}: $name';
+    }
+    if (element.template.isEmpty) return _labelFor(element.type, s);
+    return element.template;
+  }
 
   static String _labelFor(WidgetElementType type, AppStrings s) =>
       switch (type) {
@@ -203,6 +301,21 @@ class WidgetEditorScreen extends StatelessWidget {
         WidgetElementType.image => s.elementImage,
         WidgetElementType.box => s.elementBox,
         WidgetElementType.action => s.elementAction,
+        WidgetElementType.input => s.elementInput,
+        WidgetElementType.results => s.elementResults,
+      };
+
+  /// The one line under a type's name in the add dialog. Without it the
+  /// list is seven words you have to try your way through.
+  static String _describes(WidgetElementType type, AppStrings s) =>
+      switch (type) {
+        WidgetElementType.text => s.elementTextWhat,
+        WidgetElementType.icon => s.elementIconWhat,
+        WidgetElementType.image => s.elementImageWhat,
+        WidgetElementType.box => s.elementBoxWhat,
+        WidgetElementType.action => s.elementActionWhat,
+        WidgetElementType.input => s.elementInputWhat,
+        WidgetElementType.results => s.elementResultsWhat,
       };
 
   Future<void> _rename(
@@ -243,6 +356,10 @@ class WidgetEditorScreen extends StatelessWidget {
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(_iconFor(type)),
                   title: Text(_labelFor(type, s)),
+                  subtitle: Text(
+                    _describes(type, s),
+                    style: const TextStyle(fontSize: 12),
+                  ),
                 ),
               ),
           ],
@@ -301,6 +418,24 @@ class WidgetEditorScreen extends StatelessWidget {
       type: type,
       template: template,
       rules: rules,
+      // A field nothing can reference is useless, and an empty name is the
+      // one state that can't be referenced - so it starts out named.
+      inputName: switch (type) {
+        // A field nothing can reference is useless, and an empty name is
+        // the one state that can't be referenced.
+        WidgetElementType.input => _newInputName(block, s),
+        // Pointed at whatever field already exists, so a search element
+        // dropped next to a field works without being configured first.
+        WidgetElementType.results =>
+          WidgetInputStore.instance.names.firstOrNull ?? '',
+        _ => '',
+      },
+      // A search that finds nothing on the web is half a search, and
+      // picking the engine is exactly the sort of thing this should not
+      // make anybody do before it works once.
+      webSearchUrl: type == WidgetElementType.results
+          ? webSearchPresets.values.first
+          : '',
     );
     await PanelBlocksController.instance.update(
       block.copyWith(elements: [...block.elements, element]),
@@ -314,6 +449,19 @@ class WidgetEditorScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// "feld1", "feld2", ... - counting past whatever is taken, across the
+  /// whole panel rather than this card alone, since the names all share one
+  /// namespace.
+  static String _newInputName(PanelBlock block, AppStrings s) {
+    final taken = WidgetInputStore.instance.names.toSet();
+    final stem = s.language == AppLanguage.en ? 'field' : 'feld';
+    var index = 1;
+    while (taken.contains('$stem$index')) {
+      index++;
+    }
+    return '$stem$index';
   }
 
   /// Ids are the creation time; two lines added in the same microsecond
@@ -490,10 +638,117 @@ class ElementEditorScreen extends StatelessWidget {
               body: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  // A box draws nothing but itself, and an action has its
-                  // own icon picker below instead of a `{{...}}` value.
+                  // Where a text element's line comes from. First, because
+                  // it decides whether the value field below applies at all.
+                  if (element.type == WidgetElementType.text) ...[
+                    _sectionLabel(s.textModeLabel),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        for (final mode in WidgetTextMode.values)
+                          ChoiceChip(
+                            label: Text(switch (mode) {
+                              WidgetTextMode.free => s.textModeFree,
+                              WidgetTextMode.inputValue => s.textModeInputValue,
+                              WidgetTextMode.calculation =>
+                                s.textModeCalculation,
+                            }),
+                            selected: element.textMode == mode,
+                            onSelected: (_) => _update(
+                              block,
+                              element.copyWith(
+                                textMode: mode,
+                                // Pointed at a field straight away, so
+                                // switching mode shows something rather
+                                // than nothing until a field is picked.
+                                inputName: element.inputName.isEmpty
+                                    ? (WidgetInputStore
+                                              .instance
+                                              .names
+                                              .firstOrNull ??
+                                          '')
+                                    : element.inputName,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (element.textMode != WidgetTextMode.free) ...[
+                      const SizedBox(height: 12),
+                      _InputFieldPicker(
+                        element: element,
+                        s: s,
+                        onChanged: (updated) => _update(block, updated),
+                      ),
+                      if (element.textMode == WidgetTextMode.calculation)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            s.textModeCalculationHint,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ),
+                    ],
+                    const SizedBox(height: 24),
+                  ],
+
+                  if (element.type == WidgetElementType.results) ...[
+                    _ResultsSettings(
+                      element: element,
+                      s: s,
+                      onChanged: (updated) => _update(block, updated),
+                    ),
+                    const SizedBox(height: 24),
+                    _sectionLabel('${s.widthShort} '
+                        '(${element.width.round()})'),
+                    Slider(
+                      value: element.width,
+                      min: 80,
+                      max: 500,
+                      divisions: 42,
+                      onChanged: (value) => _update(
+                        block,
+                        element.copyWith(width: value),
+                      ),
+                    ),
+                    _sectionLabel('${s.searchMaxHeight} '
+                        '(${element.height.round()})'),
+                    Slider(
+                      value: element.height,
+                      min: 40,
+                      max: 500,
+                      divisions: 46,
+                      onChanged: (value) => _update(
+                        block,
+                        element.copyWith(height: value),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        s.searchMaxHeightHint,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  // A box draws nothing but itself, an action has its own
+                  // icon picker below instead of a `{{...}}` value, an input
+                  // field has no value at all, and the results list reads
+                  // its field rather than a template. A text element only
+                  // has one while it is written by hand.
                   if (element.type != WidgetElementType.box &&
-                      element.type != WidgetElementType.action) ...[
+                      element.type != WidgetElementType.action &&
+                      element.type != WidgetElementType.input &&
+                      element.type != WidgetElementType.results &&
+                      !(element.type == WidgetElementType.text &&
+                          element.textMode != WidgetTextMode.free)) ...[
                     _sectionLabel(
                       element.type == WidgetElementType.image
                           ? s.sourceUrl
@@ -511,7 +766,32 @@ class ElementEditorScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                   ],
 
-                  if (element.type == WidgetElementType.text) ...[
+                  if (element.type == WidgetElementType.input) ...[
+                    _InputSettings(
+                      key: ValueKey(element.id),
+                      block: block,
+                      element: element,
+                      s: s,
+                      onChanged: (updated) => _update(block, updated),
+                    ),
+                    const SizedBox(height: 24),
+                    _sectionLabel('${s.widthShort} '
+                        '(${element.width.round()})'),
+                    Slider(
+                      value: element.width,
+                      min: 60,
+                      max: 500,
+                      divisions: 44,
+                      onChanged: (value) => _update(
+                        block,
+                        element.copyWith(width: value),
+                      ),
+                    ),
+                  ],
+
+                  if (element.type == WidgetElementType.text ||
+                      element.type == WidgetElementType.input ||
+                      element.type == WidgetElementType.results) ...[
                     _sectionLabel('${s.textSizeShort} '
                         '(${element.fontSize.round()})'),
                     Slider(
@@ -524,6 +804,9 @@ class ElementEditorScreen extends StatelessWidget {
                         element.copyWith(fontSize: value),
                       ),
                     ),
+                  ],
+
+                  if (element.type == WidgetElementType.text) ...[
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(s.boldLabel),
@@ -616,7 +899,9 @@ class ElementEditorScreen extends StatelessWidget {
                   ],
 
                   if (element.type == WidgetElementType.text ||
-                      element.type == WidgetElementType.icon) ...[
+                      element.type == WidgetElementType.icon ||
+                      element.type == WidgetElementType.input ||
+                      element.type == WidgetElementType.results) ...[
                     const SizedBox(height: 8),
                     _sectionLabel(s.alignLabel),
                     Wrap(
@@ -873,10 +1158,21 @@ class _TemplateFieldState extends State<_TemplateField> {
 /// whatever the sources last returned - each with the value it currently
 /// holds, filterable by typing. Tapping one inserts its placeholder.
 class _ValueDropdown extends StatelessWidget {
-  const _ValueDropdown({required this.s, required this.onPick, this.onlyBoolean = false});
+  const _ValueDropdown({
+    required this.s,
+    required this.onPick,
+    this.onlyBoolean = false,
+    this.urlEncodeInputs = false,
+  });
 
   final AppStrings s;
   final ValueChanged<String> onPick;
+
+  /// Inserts an input field's placeholder with the `|url` modifier. Set
+  /// where the text being built is an address, which is the only place the
+  /// difference matters - and the one place forgetting it silently breaks
+  /// the result as soon as somebody types a space.
+  final bool urlEncodeInputs;
 
   /// Restricts the list to values that resolve to exactly "true"/"false"
   /// right now - used for the toggle action's "current value" field, where
@@ -943,7 +1239,9 @@ class _ValueDropdown extends StatelessWidget {
               ),
             for (final option in options)
               PopupMenuItem(
-                value: option.placeholder,
+                value: urlEncodeInputs && option.isInput
+                    ? option.placeholder.replaceFirst('}}', '|url}}')
+                    : option.placeholder,
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
                   dense: true,
@@ -1523,6 +1821,450 @@ class _IconPicker extends StatelessWidget {
 /// anything but GET) a body - plus a "Test" button that fires it once right
 /// away, the only way to know it actually reaches the device before relying
 /// on it from the home screen.
+/// Picks which input field an element follows, from the ones that exist.
+/// A dropdown rather than a typed name: this is the whole point of not
+/// having to know that `{{eingabe.feld1}}` is a thing.
+class _InputFieldPicker extends StatelessWidget {
+  const _InputFieldPicker({
+    required this.element,
+    required this.s,
+    required this.onChanged,
+  });
+
+  final WidgetElement element;
+  final AppStrings s;
+  final ValueChanged<WidgetElement> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: WidgetInputStore.instance,
+      builder: (context, child) {
+        final names = WidgetInputStore.instance.names;
+        if (names.isEmpty) {
+          return Text(
+            s.searchNoFieldYet,
+            style: const TextStyle(color: Colors.red, fontSize: 12),
+          );
+        }
+        final current = WidgetInputStore.normalizeName(element.inputName);
+        return DropdownButtonFormField<String>(
+          // A field that was deleted or renamed leaves the element pointing
+          // at a name that is no longer in the list, and a dropdown whose
+          // value isn't among its items throws.
+          initialValue: names.contains(current) ? current : null,
+          decoration: InputDecoration(
+            labelText: s.searchWatchesField,
+            helperText: s.searchWatchesFieldHint,
+            helperMaxLines: 3,
+          ),
+          items: [
+            for (final name in names)
+              DropdownMenuItem(value: name, child: Text(name)),
+          ],
+          onChanged: (name) {
+            if (name == null) return;
+            onChanged(element.copyWith(inputName: name));
+          },
+        );
+      },
+    );
+  }
+}
+
+/// Everything a search element does, as tick boxes and one dropdown - no
+/// address to type, no placeholder to know.
+class _ResultsSettings extends StatelessWidget {
+  const _ResultsSettings({
+    required this.element,
+    required this.s,
+    required this.onChanged,
+  });
+
+  final WidgetElement element;
+  final AppStrings s;
+  final ValueChanged<WidgetElement> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _InputFieldPicker(element: element, s: s, onChanged: onChanged),
+        const SizedBox(height: 20),
+
+        ElementEditorScreen._sectionLabel(s.searchSourcesLabel),
+        _sourceTile(
+          title: s.searchSourceApps,
+          subtitle: s.searchSourceAppsHint,
+          value: element.searchApps,
+          onChanged: (v) => onChanged(element.copyWith(searchApps: v)),
+        ),
+        _sourceTile(
+          title: s.searchSourceSettings,
+          subtitle: s.searchSourceSettingsHint,
+          value: element.searchSettings,
+          onChanged: (v) => onChanged(element.copyWith(searchSettings: v)),
+        ),
+        _sourceTile(
+          title: s.searchSourceCalculation,
+          subtitle: s.searchSourceCalculationHint,
+          value: element.searchCalculation,
+          onChanged: (v) => onChanged(element.copyWith(searchCalculation: v)),
+        ),
+        _sourceTile(
+          title: s.searchSourceContacts,
+          subtitle: s.searchSourceContactsHint,
+          value: element.searchContacts,
+          onChanged: (v) => onChanged(element.copyWith(searchContacts: v)),
+        ),
+        const SizedBox(height: 20),
+
+        ElementEditorScreen._sectionLabel(s.searchWebLabel),
+        _WebSearchPicker(
+          element: element,
+          s: s,
+          onChanged: onChanged,
+          allowNone: true,
+        ),
+        const SizedBox(height: 20),
+
+        ElementEditorScreen._sectionLabel(
+          '${s.searchResultLimit} (${element.resultLimit})',
+        ),
+        Slider(
+          value: element.resultLimit.toDouble(),
+          min: 1,
+          max: 8,
+          divisions: 7,
+          onChanged: (value) =>
+              onChanged(element.copyWith(resultLimit: value.round())),
+        ),
+      ],
+    );
+  }
+
+  Widget _sourceTile({
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return CheckboxListTile(
+      contentPadding: EdgeInsets.zero,
+      controlAffinity: ListTileControlAffinity.leading,
+      dense: true,
+      title: Text(title),
+      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+      value: value,
+      onChanged: (v) => onChanged(v ?? false),
+    );
+  }
+}
+
+/// Picks the search engine, from presets plus a hand-typed escape hatch.
+/// Shared by the search element and the search button, so the two can never
+/// offer a different list.
+class _WebSearchPicker extends StatelessWidget {
+  const _WebSearchPicker({
+    required this.element,
+    required this.s,
+    required this.onChanged,
+    required this.allowNone,
+  });
+
+  final WidgetElement element;
+  final AppStrings s;
+  final ValueChanged<WidgetElement> onChanged;
+
+  /// True on the results element, where the web row is one pile among
+  /// several and can be left out. False on a search button, where "no
+  /// engine" would leave a button that does nothing at all.
+  final bool allowNone;
+
+  static const _ownAddress = '#own';
+  static const _noWeb = '#none';
+
+  /// Which preset the stored address is, or null when it is a hand-typed
+  /// one - which is what puts the dropdown on "own address".
+  String? get _presetName {
+    for (final entry in webSearchPresets.entries) {
+      if (entry.value == element.webSearchUrl) return entry.key;
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final url = element.webSearchUrl.trim();
+    final custom = url.isNotEmpty && _presetName == null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          initialValue: url.isEmpty
+              ? (allowNone ? _noWeb : null)
+              : (_presetName ?? _ownAddress),
+          items: [
+            if (allowNone)
+              DropdownMenuItem(value: _noWeb, child: Text(s.searchWebNone)),
+            for (final name in webSearchPresets.keys)
+              DropdownMenuItem(value: name, child: Text(name)),
+            DropdownMenuItem(value: _ownAddress, child: Text(s.searchWebOwn)),
+          ],
+          onChanged: (choice) {
+            if (choice == null) return;
+            if (choice == _noWeb) {
+              onChanged(element.copyWith(webSearchUrl: ''));
+            } else if (choice == _ownAddress) {
+              // Something to edit rather than an empty field, which reads as
+              // "off" and is also the one value that means off.
+              onChanged(
+                element.copyWith(
+                  webSearchUrl: custom
+                      ? element.webSearchUrl
+                      : 'https://example.com/?q=$webSearchQueryToken',
+                ),
+              );
+            } else {
+              onChanged(
+                element.copyWith(webSearchUrl: webSearchPresets[choice]),
+              );
+            }
+          },
+        ),
+        if (custom) ...[
+          const SizedBox(height: 12),
+          _OwnSearchUrlField(
+            key: ValueKey(element.id),
+            element: element,
+            s: s,
+            onChanged: onChanged,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// The escape hatch under "own address": a search URL typed by hand, with
+/// {{suche}} where the words go.
+class _OwnSearchUrlField extends StatefulWidget {
+  const _OwnSearchUrlField({
+    super.key,
+    required this.element,
+    required this.s,
+    required this.onChanged,
+  });
+
+  final WidgetElement element;
+  final AppStrings s;
+  final ValueChanged<WidgetElement> onChanged;
+
+  @override
+  State<_OwnSearchUrlField> createState() => _OwnSearchUrlFieldState();
+}
+
+class _OwnSearchUrlFieldState extends State<_OwnSearchUrlField> {
+  late final TextEditingController _url = TextEditingController(
+    text: widget.element.webSearchUrl,
+  );
+
+  @override
+  void dispose() {
+    _url.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _url,
+      keyboardType: TextInputType.url,
+      maxLines: null,
+      decoration: InputDecoration(
+        labelText: widget.s.searchWebOwn,
+        helperText: widget.s.searchWebOwnHint,
+        helperMaxLines: 3,
+        hintText: 'https://example.com/?q=$webSearchQueryToken',
+      ),
+      // Deferred for the same reason every other field here is: saving
+      // mid-keystroke rebuilds this block and can cost it the focus.
+      onChanged: (text) => Future.microtask(
+        () => widget.onChanged(widget.element.copyWith(webSearchUrl: text)),
+      ),
+    );
+  }
+}
+
+/// The settings an input element has of its own: what it is called (which
+/// is how everything else reaches it), what it shows while empty, and which
+/// keyboard it brings up.
+class _InputSettings extends StatefulWidget {
+  const _InputSettings({
+    super.key,
+    required this.block,
+    required this.element,
+    required this.s,
+    required this.onChanged,
+  });
+
+  final PanelBlock block;
+  final WidgetElement element;
+  final AppStrings s;
+  final ValueChanged<WidgetElement> onChanged;
+
+  @override
+  State<_InputSettings> createState() => _InputSettingsState();
+}
+
+class _InputSettingsState extends State<_InputSettings> {
+  late final TextEditingController _name = TextEditingController(
+    text: widget.element.inputName,
+  );
+  late final TextEditingController _hint = TextEditingController(
+    text: widget.element.inputHint,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    // So the reference line and the two warnings below follow the typing
+    // rather than the last saved state.
+    _name.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _hint.dispose();
+    super.dispose();
+  }
+
+  // Same reasoning as in _ActionSettings: persisting straight out of
+  // onChanged rebuilds the screen mid-keystroke and can cost the field its
+  // focus, so it is deferred by one microtask.
+  void _emit() {
+    final updated = widget.element.copyWith(
+      inputName: _name.text,
+      inputHint: _hint.text,
+    );
+    Future.microtask(() => widget.onChanged(updated));
+  }
+
+  /// What other elements have to write to read this field. Always shown in
+  /// the normalised spelling, since that is what a lookup actually uses -
+  /// typing "Meine Suche" and being shown `{{eingabe.meine_suche}}` is the
+  /// only way that rule is ever visible.
+  String get _reference {
+    final english = widget.s.language == AppLanguage.en;
+    final prefix = WidgetInputStore.prefixFor(english);
+    return '{{$prefix.${WidgetInputStore.normalizeName(_name.text)}}}';
+  }
+
+  /// Whether another input element - on this card or any other - already
+  /// answers to this name. Both would then be the same slot, so typing in
+  /// one would show up in the other.
+  bool get _nameTaken {
+    final name = WidgetInputStore.normalizeName(_name.text);
+    if (name.isEmpty) return false;
+    for (final block in PanelBlocksController.instance.value) {
+      for (final element in block.elements) {
+        if (element.type != WidgetElementType.input) continue;
+        if (element.id == widget.element.id) continue;
+        if (WidgetInputStore.normalizeName(element.inputName) == name) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.s;
+    final empty = WidgetInputStore.normalizeName(_name.text).isEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ElementEditorScreen._sectionLabel(s.inputNameLabel),
+        TextField(
+          controller: _name,
+          decoration: InputDecoration(
+            labelText: s.inputNameLabel,
+            helperText: empty ? null : s.inputNameHint(_reference),
+            helperMaxLines: 4,
+            errorText: empty
+                ? s.inputNameEmpty
+                : (_nameTaken ? s.inputNameTaken : null),
+            errorMaxLines: 3,
+          ),
+          onChanged: (_) => _emit(),
+        ),
+        const SizedBox(height: 20),
+
+        TextField(
+          controller: _hint,
+          maxLines: null,
+          decoration: InputDecoration(labelText: s.inputHintLabel),
+          onChanged: (_) => _emit(),
+        ),
+        const SizedBox(height: 8),
+        _ValueDropdown(
+          s: s,
+          onPick: (placeholder) {
+            final selection = _hint.selection;
+            final text = _hint.text;
+            final at = selection.isValid ? selection.start : text.length;
+            _hint.text = text.replaceRange(
+              at,
+              selection.end.clamp(at, text.length),
+              placeholder,
+            );
+            _hint.selection = TextSelection.collapsed(
+              offset: at + placeholder.length,
+            );
+            _emit();
+          },
+        ),
+        const SizedBox(height: 20),
+
+        ElementEditorScreen._sectionLabel(s.inputKeyboardLabel),
+        Wrap(
+          spacing: 8,
+          children: [
+            for (final keyboard in WidgetInputKeyboard.values)
+              ChoiceChip(
+                label: Text(switch (keyboard) {
+                  WidgetInputKeyboard.text => s.inputKeyboardText,
+                  WidgetInputKeyboard.number => s.inputKeyboardNumber,
+                  WidgetInputKeyboard.url => s.inputKeyboardUrl,
+                }),
+                selected: widget.element.inputKeyboard == keyboard,
+                onSelected: (_) => widget.onChanged(
+                  widget.element.copyWith(inputKeyboard: keyboard),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        Text(
+          s.inputNotStoredHint,
+          style: const TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          s.inputRecipe,
+          style: const TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+      ],
+    );
+  }
+}
+
 class _ActionSettings extends StatefulWidget {
   const _ActionSettings({
     super.key,
@@ -1630,7 +2372,9 @@ class _ActionSettingsState extends State<_ActionSettings> {
     setState(() {
       _testing = false;
       _testResult = result.success
-          ? widget.s.actionSucceeded
+          ? (current.actionKind == WidgetActionKind.open
+                ? '${widget.s.actionOpened}: ${result.detail ?? ''}'
+                : widget.s.actionSucceeded)
           : (result.detail ?? '');
     });
   }
@@ -1768,7 +2512,12 @@ class _ActionSettingsState extends State<_ActionSettings> {
     }
 
     final uri = Uri.tryParse(resolved.url);
-    final valid = uri != null && (uri.scheme == 'http' || uri.scheme == 'https');
+    // Opening is not limited to the web, so anything with a scheme counts;
+    // a request really does have to be http(s).
+    final valid = uri != null &&
+        (widget.element.actionKind == WidgetActionKind.open
+            ? uri.hasScheme
+            : (uri.scheme == 'http' || uri.scheme == 'https'));
     final lines = [
       resolved.url.isEmpty ? s.actionPreviewEmpty : resolved.url,
       if (resolved.body != null && resolved.body!.isNotEmpty) resolved.body!,
@@ -1818,10 +2567,189 @@ class _ActionSettingsState extends State<_ActionSettings> {
     final s = widget.s;
     final mode = widget.element.actionValueMode;
     final showBody = widget.element.actionMethod != ActionMethod.get;
+    final kind = widget.element.actionKind;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Which kind of button this is comes first, and it is the only thing
+        // every kind has in common: each one below shows just the fields it
+        // actually uses, so a search button never asks about an HTTP method.
+        ElementEditorScreen._sectionLabel(s.actionKindLabel),
+        Wrap(
+          spacing: 8,
+          children: [
+            for (final option in WidgetActionKind.values)
+              ChoiceChip(
+                label: Text(switch (option) {
+                  WidgetActionKind.http => s.actionKindHttp,
+                  WidgetActionKind.open => s.actionKindOpen,
+                  WidgetActionKind.search => s.actionKindSearch,
+                }),
+                selected: kind == option,
+                onSelected: (_) => widget.onChanged(
+                  widget.element.copyWith(
+                    actionKind: option,
+                    // Switching to search lands on something that already
+                    // works rather than on two empty dropdowns.
+                    inputName:
+                        option == WidgetActionKind.search &&
+                            widget.element.inputName.isEmpty
+                        ? (WidgetInputStore.instance.names.firstOrNull ?? '')
+                        : widget.element.inputName,
+                    webSearchUrl:
+                        option == WidgetActionKind.search &&
+                            widget.element.webSearchUrl.isEmpty
+                        ? webSearchPresets.values.first
+                        : widget.element.webSearchUrl,
+                    // The glyph follows the kind while it is still the
+                    // default one for the kind it was - a button somebody
+                    // has already picked an icon for keeps it.
+                    template: _defaultIcons.contains(widget.element.template)
+                        ? _defaultIconFor(option)
+                        : widget.element.template,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          switch (kind) {
+            WidgetActionKind.http => s.actionKindHttpHint,
+            WidgetActionKind.open => s.actionKindOpenHint,
+            WidgetActionKind.search => s.actionKindSearchHint,
+          },
+          style: const TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+        const SizedBox(height: 20),
+
+        ...switch (kind) {
+          WidgetActionKind.http => _httpFields(s, mode, showBody),
+          WidgetActionKind.open => _openFields(s),
+          WidgetActionKind.search => _searchFields(s),
+        },
+      ],
+    );
+  }
+
+  /// The glyph each kind starts on. Kept as a set as well, so switching kind
+  /// can tell "still the default" from "the user picked this".
+  static const Map<WidgetActionKind, String> _kindIcons = {
+    WidgetActionKind.http: 'power',
+    WidgetActionKind.open: 'open',
+    WidgetActionKind.search: 'search',
+  };
+  static const Set<String> _defaultIcons = {'power', 'open', 'search'};
+  static String _defaultIconFor(WidgetActionKind kind) =>
+      _kindIcons[kind] ?? 'power';
+
+  /// Two dropdowns and a preview - no address anywhere. Everything the HTTP
+  /// kind needs is meaningless here, so none of it is shown.
+  List<Widget> _searchFields(AppStrings s) {
+    final query =
+        WidgetInputStore.instance.textOf(widget.element.inputName) ?? '';
+    final template = widget.element.webSearchUrl.trim();
+
+    return [
+      _InputFieldPicker(
+        element: widget.element,
+        s: s,
+        onChanged: widget.onChanged,
+      ),
+      const SizedBox(height: 20),
+      ElementEditorScreen._sectionLabel(s.searchWebLabel),
+      _WebSearchPicker(
+        element: widget.element,
+        s: s,
+        onChanged: widget.onChanged,
+        allowNone: false,
+      ),
+      const SizedBox(height: 16),
+      // The real address a tap would open, built by the same function the
+      // tap uses - so a hand-typed engine missing its {{suche}} shows up
+      // here as an address that never changes.
+      _previewBox(
+        s.actionSearchPreview,
+        template.isEmpty
+            ? s.searchButtonNotSetUp
+            : (query.trim().isEmpty
+                  ? s.searchButtonEmptyField
+                  : buildSearchUrl(template, query.trim())),
+        isError: template.isEmpty,
+      ),
+    ];
+  }
+
+  /// Opening needs one address and nothing else - no method, no body, no
+  /// headers, no toggle. Showing those anyway would suggest they still do
+  /// something here.
+  List<Widget> _openFields(AppStrings s) {
+    return [
+      TextField(
+        controller: _url,
+        keyboardType: TextInputType.url,
+        maxLines: null,
+        decoration: InputDecoration(
+          labelText: s.actionOpenUrlLabel,
+          helperText: s.actionOpenUrlHint,
+          helperMaxLines: 5,
+          hintText: 'https://duckduckgo.com/?q={{eingabe.feld1|url}}',
+        ),
+        onChanged: (_) => _emit(),
+      ),
+      if (_url.text.trim().isNotEmpty && !_hasScheme(_url.text))
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            s.actionOpenNotValid,
+            style: const TextStyle(color: Colors.red, fontSize: 12),
+          ),
+        ),
+      const SizedBox(height: 8),
+      // urlEncodeInputs: picked here, an input field is inserted with the
+      // `|url` modifier, so a typed space cannot cut the address in half.
+      _ValueDropdown(
+        s: s,
+        urlEncodeInputs: true,
+        onPick: (p) => _insertInto(_url, p),
+      ),
+      const SizedBox(height: 16),
+      _resolvedPreview(s),
+      const SizedBox(height: 16),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: FilledButton.tonalIcon(
+          onPressed: _testing ? null : _test,
+          icon: const Icon(Icons.open_in_new),
+          label: Text(s.testOpenAction),
+        ),
+      ),
+      if (_testResult != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              _testResult!,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+            ),
+          ),
+        ),
+    ];
+  }
+
+  /// Anything with a scheme in front counts - which ones the phone actually
+  /// answers is its business, so this only catches a bare "duckduckgo.com".
+  static bool _hasScheme(String raw) =>
+      Uri.tryParse(raw.trim())?.hasScheme ?? false;
+
+  List<Widget> _httpFields(AppStrings s, ActionValueMode mode, bool showBody) {
+    return [
         // Method and value mode come first: both change what the address
         // field below actually needs (which quick-insert row it shows, and
         // whether a body makes sense), so picking them after would mean
@@ -2000,8 +2928,7 @@ class _ActionSettingsState extends State<_ActionSettings> {
               ),
             ),
           ),
-      ],
-    );
+    ];
   }
 
   static String _methodHint(AppStrings s, ActionMethod method) => switch (method) {

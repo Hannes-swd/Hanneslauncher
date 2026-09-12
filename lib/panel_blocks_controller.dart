@@ -34,6 +34,8 @@ class PanelBlock {
     this.title = '',
     this.elements = const [],
     this.cardHeight = 160,
+    this.cardHeightFlexible = false,
+    this.cardMaxHeight = 320,
     this.daysAhead = 7,
     this.linkedKey = '',
     this.notes = const [],
@@ -62,9 +64,20 @@ class PanelBlock {
   /// is at the back, the last on top.
   final List<WidgetElement> elements;
 
-  /// Widget: how tall the card is. Elements sit at a relative position
-  /// inside it, so this is what they are placed within.
+  /// Widget: how tall the card is - the exact height while
+  /// [cardHeightFlexible] is off, the smallest it may get while it is on.
+  /// Elements sit at a relative position inside it, so this is what they
+  /// are placed within.
   final double cardHeight;
+
+  /// Widget: whether the card shrinks to whatever its elements need instead
+  /// of always being [cardHeight] tall. Off on every card built before this
+  /// existed, so none of them change size on their own.
+  final bool cardHeightFlexible;
+
+  /// Widget: how tall a flexible card may get before its contents have to
+  /// fit inside that instead. Ignored while [cardHeightFlexible] is off.
+  final double cardMaxHeight;
 
   /// Calendar: how many days ahead the agenda reaches.
   final int daysAhead;
@@ -84,6 +97,8 @@ class PanelBlock {
     String? title,
     List<WidgetElement>? elements,
     double? cardHeight,
+    bool? cardHeightFlexible,
+    double? cardMaxHeight,
     int? daysAhead,
     String? linkedKey,
     List<NoteParagraph>? notes,
@@ -97,6 +112,8 @@ class PanelBlock {
       title: title ?? this.title,
       elements: elements ?? this.elements,
       cardHeight: cardHeight ?? this.cardHeight,
+      cardHeightFlexible: cardHeightFlexible ?? this.cardHeightFlexible,
+      cardMaxHeight: cardMaxHeight ?? this.cardMaxHeight,
       daysAhead: daysAhead ?? this.daysAhead,
       linkedKey: linkedKey ?? this.linkedKey,
       notes: notes ?? this.notes,
@@ -114,6 +131,8 @@ class PanelBlock {
     'title': title,
     'elements': [for (final element in elements) element.toJson()],
     'cardHeight': cardHeight,
+    'cardHeightFlexible': cardHeightFlexible,
+    'cardMaxHeight': cardMaxHeight,
     'daysAhead': daysAhead,
     'linkedKey': linkedKey,
     'notes': [for (final paragraph in notes) paragraph.toJson()],
@@ -131,6 +150,8 @@ class PanelBlock {
     title: json['title'] as String? ?? '',
     elements: _elementsFrom(json['elements']),
     cardHeight: (json['cardHeight'] as num?)?.toDouble() ?? 160,
+    cardHeightFlexible: json['cardHeightFlexible'] as bool? ?? false,
+    cardMaxHeight: (json['cardMaxHeight'] as num?)?.toDouble() ?? 320,
     daysAhead: json['daysAhead'] as int? ?? 7,
     linkedKey: json['linkedKey'] as String? ?? '',
     notes: _notesFrom(json['notes']),

@@ -15,6 +15,11 @@ import 'update_screen.dart';
 import 'wallpaper_controller.dart';
 import 'web_apps_controller.dart';
 
+/// The same catalog, for a search element on a widget card - so searching
+/// "Hintergrund" from the home screen finds the very same rows the settings
+/// screen lists, without a second list to keep in step with this one.
+List<SettingsEntry> currentSettingsCatalog(AppStrings s) => _catalog(s);
+
 /// Builds the full catalog from whatever the controllers currently hold.
 /// Shared by the overview and the section pages so both always show the same
 /// entries, counts and conditional rows.
