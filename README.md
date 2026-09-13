@@ -83,6 +83,8 @@ The panel is made of **blocks**, which can be reordered freely:
 | **App row** | 0 - 6 icons per line |
 | **Widget** | A card you built yourself (see below) |
 | **Calendar** | Events for the next few days, from the calendars already synced on the device. Tapping one opens it in the calendar app. |
+| **Notes** | A written note with formatting |
+| **Code** | A card you write yourself in HTML, CSS and JavaScript (see below) |
 
 Data sources, the calendar and the update check are only refreshed **when
 the panel is opened**, a panel nobody pulls down costs no data at all.
@@ -124,6 +126,32 @@ been tested successfully, every value in it is reachable by its path:
 
 The full list is in **[PLACEHOLDERS.md](PLACEHOLDERS.md)**, and live in the
 app under *Edit widget → tap an element → "Insert value"*.
+
+---
+
+## Code widgets
+
+Where a widget card is assembled from elements, a **code widget** is written:
+HTML, CSS and JavaScript of your own, running inside the card. That is what
+makes your own buttons and input fields, a canvas, a small game or a picture
+shown only under some condition possible at all.
+
+Each one gets its own folder on the device, so uploaded pictures and data
+files are referenced by their plain name (`<img src="bild.png">`), and one
+`launcher` object reaches the rest of the app:
+
+```js
+launcher.get('wetter.current.temperature_2m')  // a value from a data source
+launcher.fetch(url, {useSource: 'wetter'})     // your own API call, no CORS
+launcher.store('score', 12)                    // survives a restart
+launcher.open('com.example.app')               // opens an app
+```
+
+Written under *Settings → Panel & data → Code widgets*, with a full-screen
+preview that shows errors and `console.log` underneath it.
+
+The whole thing - the API in full, examples, and what to watch out for - is
+in **[CODE_WIDGETS.md](CODE_WIDGETS.md)**.
 
 ---
 
@@ -197,9 +225,15 @@ calendar, device sensors, excluding the screen edge from the system
 gestures, runs through method channels in
 `android/app/src/main/kotlin/.../MainActivity.kt`.
 
+Code widgets are the one part that doesn't live in `SharedPreferences`: each
+one keeps its HTML, CSS, JavaScript and uploaded files in its own folder
+under the app's documents directory, and runs in a WebView that reaches the
+app only through a named channel (`code_widget_bridge.dart`).
+
 | File | Contents |
 |---|---|
 | [PLACEHOLDERS.md](PLACEHOLDERS.md) | Every widget placeholder |
+| [CODE_WIDGETS.md](CODE_WIDGETS.md) | Writing a widget in HTML, CSS and JavaScript |
 | [RELEASE.md](RELEASE.md) | Bump the version, build, publish on GitHub |
 
 ---

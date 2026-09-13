@@ -255,6 +255,130 @@ class AppStrings {
   String get blockNotes => _en ? 'Notes' : 'Notizen';
   String get blockNotesTitle =>
       _en ? 'A written note with formatting' : 'Eine Notiz mit Formatierung';
+
+  // Code widgets: a block written in HTML, CSS and JavaScript instead of
+  // assembled from elements.
+  String get blockCode => 'Code';
+  String get blockCodeTitle => _en
+      ? 'Your own widget in HTML, CSS and JavaScript'
+      : 'Eigenes Widget aus HTML, CSS und JavaScript';
+  String get codeWidgets => _en ? 'Code widgets' : 'Code-Widgets';
+  String codeWidgetsSubtitle(int count) => count == 0
+      ? (_en ? 'None yet' : 'Noch keine')
+      : (_en
+            ? '$count ${count == 1 ? 'widget' : 'widgets'}'
+            : '$count Widget${count == 1 ? '' : 's'}');
+  String get codeWidgetName => _en ? 'Name' : 'Name';
+  String get addCodeWidget => _en ? 'New code widget' : 'Neues Code-Widget';
+  String get emptyCodeWidget => _en
+      ? 'Empty code widget - open it in the settings to write in it'
+      : 'Leeres Code-Widget - in den Einstellungen zum Schreiben öffnen';
+  String get noCodeWidgets => _en
+      ? 'No code widgets yet. The "+" on the panel creates one, and so does '
+            'the button below.'
+      : 'Noch keine Code-Widgets. Das "+" im Panel legt eines an, der Knopf '
+            'unten auch.';
+
+  String get codeTemplate => _en ? 'Starting point' : 'Vorlage';
+  String get codeTemplateEmpty => _en ? 'Empty' : 'Leer';
+  String get codeTemplateEmptyHint =>
+      _en ? 'A heading and a line of text' : 'Eine Überschrift und eine Zeile';
+  String get codeTemplateButton => _en ? 'Buttons' : 'Knöpfe';
+  String get codeTemplateButtonHint => _en
+      ? 'A counter that survives a restart'
+      : 'Ein Zähler, der den Neustart übersteht';
+  String get codeTemplateData => _en ? 'Data source' : 'Datenquelle';
+  String get codeTemplateDataHint => _en
+      ? 'Shows a value and keeps it current'
+      : 'Zeigt einen Wert an und hält ihn aktuell';
+  String get codeTemplateGallery => _en ? 'Pictures' : 'Bilder';
+  String get codeTemplateGalleryHint => _en
+      ? 'Tap through uploaded pictures'
+      : 'Hochgeladene Bilder durchtippen';
+  String get codeTemplateGame => _en ? 'Small game' : 'Kleines Spiel';
+  String get codeTemplateGameHint =>
+      _en ? 'Hit the dot, on a canvas' : 'Triff den Punkt, auf einem Canvas';
+
+  String get codeFiles => _en ? 'Files' : 'Dateien';
+  String get codeCard => _en ? 'Card' : 'Karte';
+  String get codeConsole => _en ? 'Output' : 'Ausgabe';
+  String get codeConsoleEmpty => _en
+      ? 'Errors and console.log appear here'
+      : 'Fehler und console.log erscheinen hier';
+  String get codeUploadImage => _en ? 'Upload picture' : 'Bild hochladen';
+  String get codeNewTextFile => _en ? 'New text file' : 'Textdatei anlegen';
+  String get codeFileName => _en ? 'File name' : 'Dateiname';
+  String get codeNoFiles => _en
+      ? 'No files yet. Uploaded files sit next to the code and are '
+            'referenced by their plain name.'
+      : 'Noch keine Dateien. Hochgeladene Dateien liegen neben dem Code und '
+            'werden einfach über ihren Namen angesprochen.';
+  String get codeInsertFile => _en ? 'Insert into HTML' : 'Ins HTML einfügen';
+  String get codeRenameFile => _en ? 'Rename' : 'Umbenennen';
+  String get codeEditFile => _en ? 'Edit' : 'Bearbeiten';
+  String get codeFileRenamed => _en
+      ? 'Renamed - references to the old name no longer find it'
+      : 'Umbenannt - Verweise auf den alten Namen finden sie nicht mehr';
+  String get codeFileInserted =>
+      _en ? 'Inserted into the HTML' : 'Ins HTML eingefügt';
+  String get codeFileTooBigForBackup => _en
+      ? 'Too big for the backup'
+      : 'Zu groß fürs Backup';
+  String get codeFileInBackup => _en ? 'In the backup' : 'Im Backup';
+  String get codeTransparent =>
+      _en ? 'Draw without a card' : 'Ohne Karte zeichnen';
+  String get codeTransparentHint => _en
+      ? 'The page paints the whole area itself - for a game or a picture '
+            'that should reach the edges.'
+      : 'Die Seite malt die ganze Fläche selbst - für ein Spiel oder ein '
+            'Bild, das bis an den Rand gehen soll.';
+  String get codeScrollHint => _en
+      ? 'The page itself does not scroll: a drag on the card scrolls the '
+            'panel. Set the card to grow if the contents need more room.'
+      : 'Die Seite selbst scrollt nicht: Ein Wisch auf der Karte scrollt das '
+            'Panel. Für mehr Inhalt die Karte mitwachsen lassen.';
+  String get codeHelp => _en ? 'What launcher can do' : 'Was launcher kann';
+  String get codeHelpBody => _en
+      ? 'launcher.get("weather.current.temperature_2m") reads a value from '
+            'your data sources, launcher.data("weather") hands over the whole '
+            'response, and launcher.fill("{{time}}") fills in placeholders '
+            'the way the widget cards do.\n\n'
+            'In the HTML, <span data-value="battery"></span> shows a value '
+            'and keeps it current without a line of JavaScript.\n\n'
+            'launcher.fetch(url, {useSource: "weather"}) makes your own API '
+            'call through the launcher - no CORS, plain http allowed, and '
+            'the API key stays in the data source instead of in the code.\n\n'
+            'launcher.store(name, value) and launcher.load(name) remember '
+            'something across a restart. launcher.open("com.example.app") '
+            'opens an app, launcher.openUrl(address) hands an address to the '
+            'phone, launcher.toast(text) says something briefly.\n\n'
+            'launcher.onUpdate(fn) runs whenever new data has arrived.\n\n'
+            'The whole thing, with examples, is in CODE_WIDGETS.md in the '
+            'project.'
+      : 'launcher.get("wetter.current.temperature_2m") liest einen Wert aus '
+            'deinen Datenquellen, launcher.data("wetter") gibt die ganze '
+            'Antwort her, und launcher.fill("{{zeit}}") setzt Platzhalter ein '
+            'wie auf den Widget-Karten.\n\n'
+            'Im HTML zeigt <span data-value="akku"></span> einen Wert an und '
+            'hält ihn aktuell, ganz ohne JavaScript.\n\n'
+            'launcher.fetch(adresse, {useSource: "wetter"}) macht einen '
+            'eigenen API-Aufruf über den Launcher - kein CORS, einfaches '
+            'http erlaubt, und der API-Schlüssel bleibt in der Datenquelle '
+            'statt im Code.\n\n'
+            'launcher.store(name, wert) und launcher.load(name) merken sich '
+            'etwas über den Neustart hinweg. launcher.open("com.beispiel.app") '
+            'öffnet eine App, launcher.openUrl(adresse) gibt eine Adresse ans '
+            'Handy weiter, launcher.toast(text) sagt kurz Bescheid.\n\n'
+            'launcher.onUpdate(fn) läuft, sobald neue Daten da sind.\n\n'
+            'Alles ausführlich, mit Beispielen, steht in CODE_WIDGETS.md im '
+            'Projekt.';
+  String get codeLinkHint => _en
+      ? 'A code widget has no "open on tap": the card is the page, so a tap '
+            'belongs to it. launcher.open("com.example.app") on a button of '
+            'your own does the same thing.'
+      : 'Ein Code-Widget hat kein "Beim Antippen öffnen": Die Karte ist die '
+            'Seite, ein Tipp gehört also ihr. launcher.open("com.beispiel.app") '
+            'auf einem eigenen Knopf macht dasselbe.';
   String get noteName => _en ? 'Note name' : 'Notiz-Name';
   String get openNote => _en ? 'Open note' : 'Notiz öffnen';
   String get emptyNote =>
@@ -604,12 +728,16 @@ class AppStrings {
   String get backupHint => _en
       ? 'Exports the clock, widgets, panel, pinned apps, folders, web apps, '
             'data sources, device data packages, custom colors, app '
-            'renames and language into one file. Custom pictures '
+            'renames and language into one file. The code widgets come '
+            'along with their HTML, CSS and JavaScript, and with the files '
+            'uploaded into them up to 512 KB each. Custom pictures '
             '(wallpaper, replaced icons) aren\'t included - their '
             'files stay behind on this install.'
       : 'Exportiert Uhr, Widgets, Panel, angepinnte Apps, Ordner, Web-Apps, '
             'Datenquellen, Gerätedaten-Pakete, eigene Farben, '
-            'App-Umbenennungen und Sprache in eine Datei. '
+            'App-Umbenennungen und Sprache in eine Datei. Die Code-Widgets '
+            'kommen mit ihrem HTML, CSS und JavaScript mit, und mit den '
+            'hochgeladenen Dateien bis 512 KB pro Stück. '
             'Eigene Bilder (Hintergrund, ersetzte Icons) sind nicht '
             'enthalten - deren Dateien bleiben auf diesem Gerät.';
   String get backupExport => _en ? 'Export' : 'Exportieren';

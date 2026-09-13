@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'code_widget_store.dart';
 import 'note_document.dart';
 import 'widget_element.dart';
 
@@ -21,6 +22,12 @@ enum PanelBlockType {
   /// A written note, named by [PanelBlock.title] and held line by line in
   /// [PanelBlock.notes].
   notes,
+
+  /// A widget written as HTML, CSS and JavaScript, kept in its own folder
+  /// on the device rather than in the block - see [CodeWidgetStore]. The
+  /// block holds only what the card around it needs: the name, the height
+  /// and whether it is drawn on a card at all.
+  code,
 }
 
 /// One entry on the panel. The blocks are shown in list order.
@@ -39,6 +46,7 @@ class PanelBlock {
     this.daysAhead = 7,
     this.linkedKey = '',
     this.notes = const [],
+    this.transparentBackground = false,
   });
 
   final String id;
@@ -90,6 +98,11 @@ class PanelBlock {
   /// Notes: the note itself, one entry per line.
   final List<NoteParagraph> notes;
 
+  /// Code: whether the block is drawn without the usual card behind it, so
+  /// the page paints the whole area itself. A game or a full-bleed picture
+  /// wants this; a page of text does not.
+  final bool transparentBackground;
+
   PanelBlock copyWith({
     List<String>? itemKeys,
     int? columns,
@@ -102,6 +115,7 @@ class PanelBlock {
     int? daysAhead,
     String? linkedKey,
     List<NoteParagraph>? notes,
+    bool? transparentBackground,
   }) {
     return PanelBlock(
       id: id,
@@ -117,6 +131,8 @@ class PanelBlock {
       daysAhead: daysAhead ?? this.daysAhead,
       linkedKey: linkedKey ?? this.linkedKey,
       notes: notes ?? this.notes,
+      transparentBackground:
+          transparentBackground ?? this.transparentBackground,
     );
   }
 
@@ -136,6 +152,7 @@ class PanelBlock {
     'daysAhead': daysAhead,
     'linkedKey': linkedKey,
     'notes': [for (final paragraph in notes) paragraph.toJson()],
+    'transparentBackground': transparentBackground,
   };
 
   static PanelBlock fromJson(Map<String, dynamic> json) => PanelBlock(
@@ -155,6 +172,7 @@ class PanelBlock {
     daysAhead: json['daysAhead'] as int? ?? 7,
     linkedKey: json['linkedKey'] as String? ?? '',
     notes: _notesFrom(json['notes']),
+    transparentBackground: json['transparentBackground'] as bool? ?? false,
   );
 
   /// Same reasoning as the elements below: one unreadable line is dropped
@@ -296,6 +314,19 @@ class PanelBlocksController extends ValueNotifier<List<PanelBlock>> {
     return block;
   }
 
+  /// A code widget. Its files are written separately by whoever picked the
+  /// template - the block itself only carries the name and the size.
+  Future<PanelBlock> addCode(String title) async {
+    final block = PanelBlock(
+      id: _newId(),
+      type: PanelBlockType.code,
+      title: title.trim(),
+      cardHeight: 180,
+    );
+    await _save([...value, block]);
+    return block;
+  }
+
   /// Replaces the block carrying the same id, keeping its position.
   Future<void> update(PanelBlock block) async {
     await _save([
@@ -305,6 +336,11 @@ class PanelBlocksController extends ValueNotifier<List<PanelBlock>> {
   }
 
   Future<void> remove(String id) async {
+    // A code widget owns a folder of files; removing only the block would
+    // leave its pictures on the phone with nothing left pointing at them.
+    if (byId(id)?.type == PanelBlockType.code) {
+      await CodeWidgetStore.instance.deleteFolder(id);
+    }
     await _save([
       for (final block in value)
         if (block.id != id) block,

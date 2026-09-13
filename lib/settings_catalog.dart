@@ -4,6 +4,7 @@ import 'app_customize_screen.dart';
 import 'app_list_settings_screen.dart';
 import 'app_strings.dart';
 import 'clock_settings_screen.dart';
+import 'code_widgets_settings_screen.dart';
 import 'data_sources_settings_screen.dart';
 import 'default_launcher_controller.dart';
 import 'default_launcher_screen.dart';
@@ -105,6 +106,7 @@ List<SettingsEntry> buildSettingsCatalog({
   required int pinnedCount,
   required int pinnedMax,
   required int dataSourceCount,
+  required int codeWidgetCount,
   required bool deviceDataEnabled,
   required AppLanguage language,
   required UpdateState update,
@@ -279,6 +281,19 @@ List<SettingsEntry> buildSettingsCatalog({
         'intervall', 'widget', 'widgets',
       ],
       onTap: (context) => _push(context, const DataSourcesSettingsScreen()),
+    ),
+    SettingsEntry(
+      icon: Icons.code,
+      title: s.codeWidgets,
+      section: SettingsSection.panelData,
+      subtitle: s.codeWidgetsSubtitle(codeWidgetCount),
+      keywords: const [
+        'code', 'html', 'css', 'javascript', 'js', 'skript', 'script',
+        'programmieren', 'programming', 'eigenes widget', 'own widget',
+        'custom', 'spiel', 'game', 'canvas', 'seite', 'page', 'editor',
+        'api', 'launcher.get', 'widget', 'widgets',
+      ],
+      onTap: (context) => _push(context, const CodeWidgetsSettingsScreen()),
     ),
     // Only once the package has actually been added - before that it lives
     // behind the "+" on the data sources screen, and a row leading to an

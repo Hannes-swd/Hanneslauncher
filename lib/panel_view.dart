@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'app_row_settings_screen.dart';
 import 'app_strings.dart';
 import 'calendar_block_settings_screen.dart';
+import 'code_widget_editor_screen.dart';
 import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
 import 'device_stats_controller.dart';
@@ -161,6 +162,15 @@ class _PanelViewState extends State<PanelView> {
                 subtitle: Text(s.blockCalendarTitle),
               ),
             ),
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(context).pop(PanelBlockType.code),
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.code),
+                title: Text(s.blockCode),
+                subtitle: Text(s.blockCodeTitle),
+              ),
+            ),
           ],
         );
       },
@@ -206,6 +216,13 @@ class _PanelViewState extends State<PanelView> {
             builder: (context) => NoteEditorScreen(blockId: block.id),
           ),
         );
+      case PanelBlockType.code:
+        // The template picker creates the block, so nothing is added here
+        // when it is dismissed - an empty code widget on the panel would be
+        // a blank card with no hint where the code goes.
+        final block = await createCodeWidget(context, s);
+        if (block == null || !mounted) return;
+        await _edit(block);
     }
   }
 
@@ -219,6 +236,8 @@ class _PanelViewState extends State<PanelView> {
           CalendarBlockSettingsScreen(blockId: block.id),
       PanelBlockType.notes => (context) =>
           NoteBlockSettingsScreen(blockId: block.id),
+      PanelBlockType.code => (context) =>
+          CodeWidgetEditorScreen(blockId: block.id),
     };
     await Navigator.of(context).push(MaterialPageRoute(builder: builder));
   }

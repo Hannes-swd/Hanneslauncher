@@ -8,6 +8,7 @@ import 'default_launcher_screen.dart';
 import 'folders_controller.dart';
 import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
+import 'panel_blocks_controller.dart';
 import 'pinned_apps_controller.dart';
 import 'settings_catalog.dart';
 import 'update_controller.dart';
@@ -33,6 +34,10 @@ List<SettingsEntry> _catalog(AppStrings s) {
     pinnedCount: PinnedAppsController.instance.value.length,
     pinnedMax: PinnedAppsController.maxPinned,
     dataSourceCount: DataSourcesController.instance.value.length,
+    codeWidgetCount: [
+      for (final block in PanelBlocksController.instance.value)
+        if (block.type == PanelBlockType.code) block,
+    ].length,
     deviceDataEnabled: DeviceDataController.instance.value,
     language: LocaleController.instance.value,
     update: UpdateController.instance.value,
@@ -51,6 +56,10 @@ Listenable _settingsSources() => Listenable.merge([
   PinnedAppsController.instance,
   DataSourcesController.instance,
   DeviceDataController.instance,
+  // The code widget count is read off the blocks, so the row has to follow
+  // them - a widget added from the panel would otherwise leave the settings
+  // still saying "none yet".
+  PanelBlocksController.instance,
   UpdateController.instance,
   DefaultLauncherController.instance,
 ]);

@@ -55,6 +55,10 @@ dependencies:
   geolocator: ^13.0.2
   # Turns those coordinates into a town name for {{ort}}.
   geocoding: ^3.0.0
+  # Runs the code widgets: their HTML/CSS/JS is loaded from the block's own
+  # folder into a WebView, which is what keeps one widget's code from
+  # reaching anything outside it.
+  webview_flutter: ^4.10.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

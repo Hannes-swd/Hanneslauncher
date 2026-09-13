@@ -5,6 +5,7 @@ import 'package:flutter/material.dart' show Color;
 import 'app_list_settings_controller.dart';
 import 'app_overrides_controller.dart';
 import 'clock_settings_controller.dart';
+import 'code_widget_store.dart';
 import 'custom_colors_controller.dart';
 import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
@@ -21,6 +22,9 @@ import 'web_apps_controller.dart';
 /// positions, the panel's widgets and calendar/app blocks, pinned apps,
 /// folders, web apps, data sources, app renames, clock and offline mode
 /// style, and language.
+///
+/// The code widgets are the one part that isn't held by a block: their
+/// files are written alongside the document by [buildWithFiles].
 ///
 /// Custom pictures (the wallpaper, replaced app icons, web app icons) are
 /// left out on purpose - their files live in this install's own private
@@ -131,6 +135,29 @@ class SettingsBackupService {
 
   static String exportJson() =>
       const JsonEncoder.withIndent('  ').convert(build());
+
+  /// [build] plus the code widgets' own files, which is what the export
+  /// actually writes.
+  ///
+  /// They need their own pass because they are the one thing a block does
+  /// not carry: a code widget's HTML, CSS and JavaScript live in a folder on
+  /// the device, so a backup built from the blocks alone would restore a row
+  /// of empty cards. Uploaded pictures come along too, up to
+  /// [CodeWidgetStore.maxBackedUpFileBytes] each - past that the file would
+  /// do more harm to the backup's size than good.
+  static Future<Map<String, dynamic>> buildWithFiles() async {
+    final document = build();
+    final widgets = <String, dynamic>{};
+    for (final block in PanelBlocksController.instance.value) {
+      if (block.type != PanelBlockType.code) continue;
+      widgets[block.id] = await CodeWidgetStore.instance.exportBlock(block.id);
+    }
+    if (widgets.isNotEmpty) document['codeWidgets'] = widgets;
+    return document;
+  }
+
+  static Future<String> exportJsonWithFiles() async =>
+      const JsonEncoder.withIndent('  ').convert(await buildWithFiles());
 
   /// Applies a previously exported document. Throws a [FormatException]
   /// (safe to show the user directly) if [jsonText] isn't one of ours -
@@ -278,6 +305,22 @@ class SettingsBackupService {
         }
       }
       await PanelBlocksController.instance.replaceAll(blocks);
+    }
+
+    // After the blocks: these write into the folders the restored code
+    // blocks name, so the blocks have to exist first.
+    final codeWidgetsJson = decoded['codeWidgets'] as Map<String, dynamic>?;
+    if (codeWidgetsJson != null) {
+      for (final entry in codeWidgetsJson.entries) {
+        final files = entry.value;
+        if (files is! Map<String, dynamic>) continue;
+        try {
+          await CodeWidgetStore.instance.importBlock(entry.key, files);
+        } catch (_) {
+          // One widget that won't write shouldn't cost the rest of the
+          // restore - the block is there either way, just empty.
+        }
+      }
     }
 
     final foldersJson = decoded['folders'] as List<dynamic>?;

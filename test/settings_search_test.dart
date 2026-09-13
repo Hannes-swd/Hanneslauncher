@@ -22,6 +22,7 @@ List<SettingsEntry> catalog({
     pinnedCount: 0,
     pinnedMax: 6,
     dataSourceCount: 0,
+    codeWidgetCount: 0,
     deviceDataEnabled: deviceDataEnabled,
     language: language,
     update: update,

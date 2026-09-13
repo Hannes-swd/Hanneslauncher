@@ -7,6 +7,10 @@ enthalten. Diese Datei listet alle eingebauten - für eigene Datenquellen
 Die Liste erscheint auch live in der App: Widget bearbeiten → Element
 antippen → "Wert einfügen".
 
+In einem **Code-Widget** heißen dieselben Werte genauso, nur ohne die
+geschweiften Klammern: `launcher.get('wetter.current.temperature_2m')`.
+Siehe **[CODE_WIDGETS.md](CODE_WIDGETS.md)**.
+
 ## Immer verfügbar
 
 Kein Schalter nötig, funktionieren sofort.

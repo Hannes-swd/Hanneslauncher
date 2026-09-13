@@ -34,7 +34,7 @@ class _SettingsBackupScreenState extends State<SettingsBackupScreen> {
 
   Future<void> _export(AppStrings s) async {
     setState(() => _busy = true);
-    final json = SettingsBackupService.exportJson();
+    final json = await SettingsBackupService.exportJsonWithFiles();
     final ok = await BackupFileBridge.export(json);
     if (!mounted) return;
     setState(() => _busy = false);

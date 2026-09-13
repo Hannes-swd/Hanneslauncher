@@ -12,6 +12,7 @@ import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
 import 'offline_mode_controller.dart';
 import 'panel_view.dart';
+import 'panel_visibility.dart';
 import 'system_gesture_exclusion.dart';
 import 'update_controller.dart';
 import 'wallpaper_controller.dart';
@@ -161,6 +162,9 @@ class _LauncherRootState extends State<LauncherRoot>
     // is nothing left of the wallpaper worth animating.
     _homeVisible.value = _inForeground && _controller.value < 0.99;
     _panelOpen.value = _controller.value > 0;
+    // Mirrored out of this state so the blocks can read it too: a code
+    // widget holds off starting its page until the panel has been down once.
+    PanelVisibility.instance.value = _panelOpen.value;
   }
 
   // How far the drag in progress has travelled, and the screen height it is

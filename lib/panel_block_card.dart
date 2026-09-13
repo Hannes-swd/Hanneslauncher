@@ -5,6 +5,7 @@ import 'app_icon.dart';
 import 'app_strings.dart';
 import 'builtin_entries.dart';
 import 'calendar_block_view.dart';
+import 'code_block_view.dart';
 import 'folder_sheet.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
@@ -22,6 +23,24 @@ class PanelBlockCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A code widget paints its own page edge to edge, so it gets the card
+    // without the usual padding - and none of the card at all when it was
+    // set to draw its own background.
+    if (block.type == PanelBlockType.code) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: ColoredBox(
+            color: block.transparentBackground
+                ? Colors.transparent
+                : Colors.white.withValues(alpha: 0.6),
+            child: CodeBlockView(block: block, s: s),
+          ),
+        ),
+      );
+    }
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),
       color: Colors.white.withValues(alpha: 0.6),
@@ -36,6 +55,8 @@ class PanelBlockCard extends StatelessWidget {
           PanelBlockType.widget => WidgetCardView(block: block, s: s),
           PanelBlockType.calendar => CalendarBlockView(block: block, s: s),
           PanelBlockType.notes => NotesBlockView(block: block, s: s),
+          // Handled above, before the card is built.
+          PanelBlockType.code => const SizedBox.shrink(),
         },
       ),
     );
