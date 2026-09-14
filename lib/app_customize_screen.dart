@@ -8,6 +8,7 @@ import 'app_strings.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
+import 'secret_folder_screen.dart';
 import 'text_prompt_dialog.dart';
 import 'web_apps_controller.dart';
 
@@ -220,9 +221,13 @@ class _AppCustomizeScreenState extends State<AppCustomizeScreen>
               }
               final entries = _entries();
               return ListView.builder(
-                itemCount: entries.length,
+                // One extra row for the secret folder, which sits above the
+                // apps rather than among them - it isn't an app, and it has
+                // to be reachable without scrolling past hundreds of them.
+                itemCount: entries.length + 1,
                 itemBuilder: (context, index) {
-                  final entry = entries[index];
+                  if (index == 0) return _secretFolderTile(s);
+                  final entry = entries[index - 1];
                   return ListTile(
                     leading: AppIcon(entry: entry, size: 36),
                     title: Text(entry.name),
@@ -237,6 +242,18 @@ class _AppCustomizeScreenState extends State<AppCustomizeScreen>
           ),
         );
       },
+    );
+  }
+
+  /// The way into the secret folder. No count in the subtitle on purpose: how
+  /// many apps are in there is part of what the password keeps to itself, and
+  /// a subtitle would show it here and in the settings search.
+  Widget _secretFolderTile(AppStrings s) {
+    return ListTile(
+      leading: const Icon(Icons.lock_outline, size: 36),
+      title: Text(s.secretFolder),
+      subtitle: Text(s.secretFolderLocked),
+      onTap: () => openSecretFolder(context),
     );
   }
 

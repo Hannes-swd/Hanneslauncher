@@ -175,7 +175,18 @@ if ($DryRun) {
     exit 0
 }
 
-# --- 4. Version setzen und bauen -------------------------------------------
+# --- 4. Tests, Version setzen und bauen ------------------------------------
+
+# Vor dem Versionssprung: unter den Tests sind Waechter, die anschlagen, wenn
+# eine neue Stelle Apps auflisten kann, ohne die geheimen auszunehmen (siehe
+# test/secret_apps_guard_test.dart). Die duerfen nicht erst nach dem Upload
+# auffallen.
+Write-Step 'Tests laufen lassen'
+flutter test
+if ($LASTEXITCODE -ne 0) {
+    Write-Problem 'Tests fehlgeschlagen. Es wurde nichts geaendert, gebaut oder hochgeladen.'
+    exit 1
+}
 
 Write-Step "Version in pubspec.yaml auf $Version+$newBuild setzen"
 $updated = $pubspec -replace '(?m)^version:[ \t]*\d+\.\d+\.\d+\+\d+[ \t]*(?=\r?$)', "version: $Version+$newBuild"

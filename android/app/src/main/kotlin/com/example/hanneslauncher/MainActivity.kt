@@ -728,7 +728,9 @@ class MainActivity : FlutterActivity() {
         return mode == AppOpsManager.MODE_ALLOWED
     }
 
-    private fun mostUsedAppToday(): String? {
+    // Returns the package alongside the label: the Dart side hides apps that
+    // are in the secret folder, and it can only match those by package name.
+    private fun mostUsedAppToday(): Map<String, Any?>? {
         if (!hasUsageAccess()) return null
         val usm = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val end = System.currentTimeMillis()
@@ -744,12 +746,17 @@ class MainActivity : FlutterActivity() {
                 ?.filter { it.totalTimeInForeground > 0 && it.packageName != packageName }
                 ?.maxByOrNull { it.totalTimeInForeground }
                 ?: return null
-        return try {
-            val appInfo = packageManager.getApplicationInfo(top.packageName, 0)
-            packageManager.getApplicationLabel(appInfo).toString()
-        } catch (e: Exception) {
-            top.packageName
-        }
+        val label =
+            try {
+                val appInfo = packageManager.getApplicationInfo(top.packageName, 0)
+                packageManager.getApplicationLabel(appInfo).toString()
+            } catch (e: Exception) {
+                top.packageName
+            }
+        return mapOf(
+            "package" to top.packageName,
+            "name" to label,
+        )
     }
 
     private fun exportAndShare(json: String): Boolean {

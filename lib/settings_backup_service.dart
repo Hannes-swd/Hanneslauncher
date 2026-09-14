@@ -16,12 +16,13 @@ import 'locale_controller.dart';
 import 'offline_mode_controller.dart';
 import 'panel_blocks_controller.dart';
 import 'pinned_apps_controller.dart';
+import 'secret_apps_controller.dart';
 import 'web_apps_controller.dart';
 
 /// Everything the user has configured, as one JSON document: colors,
 /// positions, the panel's widgets and calendar/app blocks, pinned apps,
-/// folders, web apps, data sources, app renames, clock and offline mode
-/// style, and language.
+/// folders, web apps, data sources, app renames, the secret folder, clock
+/// and offline mode style, and language.
 ///
 /// The code widgets are the one part that isn't held by a block: their
 /// files are written alongside the document by [buildWithFiles].
@@ -117,6 +118,20 @@ class SettingsBackupService {
         for (final entry in AppOverridesController.instance.value.entries)
           if (entry.value.name != null) entry.key: entry.value.name,
       },
+      // The secret folder, password and recovery code included - without
+      // those hashes a restored list could never be opened again. A backup
+      // file is plain text, so it does show which apps are in there; the
+      // alternative (leaving them out) would silently un-hide them on the next
+      // restore, which is worse. The hashes themselves give nothing away.
+      'secretApps': SecretAppsController.instance.value.toList(),
+      if (SecretAppsController.instance.passwordHash != null)
+        'secretPasswordHash': SecretAppsController.instance.passwordHash,
+      if (SecretAppsController.instance.passwordSalt != null)
+        'secretPasswordSalt': SecretAppsController.instance.passwordSalt,
+      if (SecretAppsController.instance.recoveryHash != null)
+        'secretRecoveryHash': SecretAppsController.instance.recoveryHash,
+      if (SecretAppsController.instance.recoverySalt != null)
+        'secretRecoverySalt': SecretAppsController.instance.recoverySalt,
       'dataSources': [
         for (final source in DataSourcesController.instance.value)
           source.toJson(),
@@ -368,6 +383,20 @@ class SettingsBackupService {
       });
     }
 
+    // Before the pinned apps below: those are pruned against the entry list,
+    // which a restored secret app is not part of - so a key that is in both
+    // lists loses its pin, exactly as it would when hiding the app by hand.
+    final secretAppsJson = decoded['secretApps'] as List<dynamic>?;
+    if (secretAppsJson != null) {
+      await SecretAppsController.instance.restore(
+        keys: [for (final key in secretAppsJson) key as String],
+        hash: decoded['secretPasswordHash'] as String?,
+        salt: decoded['secretPasswordSalt'] as String?,
+        recoveryHash: decoded['secretRecoveryHash'] as String?,
+        recoverySalt: decoded['secretRecoverySalt'] as String?,
+      );
+    }
+
     final dataSourcesJson = decoded['dataSources'] as List<dynamic>?;
     if (dataSourcesJson != null) {
       final sources = <DataSource>[];
@@ -393,7 +422,7 @@ class SettingsBackupService {
       // A backup made on another phone can name apps this one never had -
       // keeping those would occupy pinned slots forever with something that
       // can never be shown, blocking real apps from being pinned in their
-      // place. installedApps only gets read once on demand, so a restore
+      // place. The installed apps only get read once on demand, so a restore
       // straight after a fresh install (before the app drawer was ever
       // opened) would otherwise see none of them and drop everything.
       if (!LauncherEntriesController.instance.isLoaded) {

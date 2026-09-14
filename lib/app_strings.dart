@@ -205,6 +205,74 @@ class AppStrings {
   String get save => _en ? 'Save' : 'Speichern';
   String get nameLabel => _en ? 'Name' : 'Name';
 
+  // The secret folder. Deliberately without a count anywhere: a subtitle
+  // saying "3 apps" would give away in the settings list - and in the
+  // settings search - what the password is there to keep to itself.
+  String get secretFolder => _en ? 'Secret folder' : 'Geheimer Ordner';
+  String get secretFolderLocked =>
+      _en ? 'Password protected' : 'Mit Passwort geschützt';
+  String get secretFolderWarning => _en
+      ? 'Hidden in this launcher only. The apps stay installed and visible in '
+            "Android's settings, the recents switcher and the share sheet."
+      : 'Nur in diesem Launcher versteckt. Die Apps bleiben installiert und '
+            'in den Android-Einstellungen, im App-Wechsler und im '
+            'Teilen-Menü sichtbar.';
+  String get secretFolderNoRecovery => _en
+      ? 'Right after this you get a recovery code. Without the password and '
+            'without that code there is no way back in.'
+      : 'Gleich danach bekommst du einen Wiederherstellungscode. Ohne '
+            'Passwort und ohne diesen Code gibt es keinen Weg zurück.';
+  String get setPassword => _en ? 'Set password' : 'Passwort festlegen';
+  String get setNewPassword =>
+      _en ? 'Set a new password' : 'Neues Passwort festlegen';
+
+  // The recovery code. Shown exactly once, because only its hash is kept -
+  // there is deliberately no way to look it up again later.
+  String get recoveryCode => _en ? 'Recovery code' : 'Wiederherstellungscode';
+  String get recoveryCodeIntro => _en
+      ? 'Write this down somewhere that is not this phone. It is the only way '
+            'into the folder if you forget the password, and it is shown this '
+            'once - afterwards only a new code can be made.'
+      : 'Schreib ihn auf, am besten nicht auf diesem Handy. Er ist der '
+            'einzige Weg in den Ordner, wenn du das Passwort vergisst, und er '
+            'wird nur dieses eine Mal angezeigt - danach kann man nur einen '
+            'neuen erzeugen.';
+  String get copyCode => _en ? 'Copy' : 'Kopieren';
+  String get codeCopied => _en ? 'Copied' : 'Kopiert';
+  String get savedTheCode => _en ? 'I saved it' : 'Habe ich gespeichert';
+  String get newRecoveryCode =>
+      _en ? 'New recovery code' : 'Neuen Code erzeugen';
+  String get newRecoveryCodeNote => _en
+      ? 'The code you had until now stops working.'
+      : 'Der bisherige Code funktioniert danach nicht mehr.';
+  String get forgotPassword =>
+      _en ? 'Forgot password?' : 'Passwort vergessen?';
+  String get enterRecoveryCode => _en
+      ? 'Enter recovery code'
+      : 'Wiederherstellungscode eingeben';
+  String get wrongRecoveryCode =>
+      _en ? 'This code does not match' : 'Dieser Code passt nicht';
+  String get enterPassword => _en ? 'Enter password' : 'Passwort eingeben';
+  String get changePassword => _en ? 'Change password' : 'Passwort ändern';
+  String get passwordChanged => _en ? 'Password changed' : 'Passwort geändert';
+  String get passwordLabel => _en ? 'Password' : 'Passwort';
+  String get passwordRepeatLabel =>
+      _en ? 'Repeat password' : 'Passwort wiederholen';
+  String get passwordsDiffer => _en
+      ? 'The two entries are not the same'
+      : 'Die beiden Eingaben sind nicht gleich';
+  String get wrongPassword => _en ? 'Wrong password' : 'Falsches Passwort';
+  String get secretFolderEmpty =>
+      _en ? 'No app in here yet' : 'Noch keine App hier drin';
+  String get addToSecretFolder => _en ? 'Add app' : 'App hinzufügen';
+  String get whichApp => _en ? 'Which app?' : 'Welche App?';
+  String get removeFromSecretFolder =>
+      _en ? 'Show normally again' : 'Wieder normal anzeigen';
+  String get secretAppUnpinned => _en
+      ? 'Also removed from the home screen'
+      : 'Auch vom Homescreen entfernt';
+  String get openApp => _en ? 'Open' : 'Öffnen';
+
   String get webApps => _en ? 'Web apps' : 'Web-Apps';
   String webAppsSubtitle(int count) => _en
       ? 'Websites and PWAs in the app list ($count)'

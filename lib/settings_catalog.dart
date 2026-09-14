@@ -262,10 +262,14 @@ List<SettingsEntry> buildSettingsCatalog({
       title: s.customizeApps,
       section: SettingsSection.apps,
       subtitle: s.customizeAppsSubtitle,
+      // The secret folder lives at the top of that screen, so searching for
+      // it has to land here. Only the way there is findable, never what is in
+      // it - see [AppStrings.secretFolder].
       keywords: const [
         'anpassen', 'customize', 'umbenennen', 'rename', 'name', 'namen',
         'icon', 'symbol', 'ändern', 'aendern', 'change', 'deinstallieren',
-        'uninstall', 'entfernen',
+        'uninstall', 'entfernen', 'geheim', 'verstecken', 'versteckt',
+        'secret', 'hide', 'hidden', 'passwort', 'password', 'ordner',
       ],
       onTap: (context) => _push(context, const AppCustomizeScreen()),
     ),

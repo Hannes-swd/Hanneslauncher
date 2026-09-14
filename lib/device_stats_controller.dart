@@ -2,6 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'launcher_entries_controller.dart';
+import 'secret_apps_controller.dart';
+
 /// Battery, storage, connection type, steps and today's most-used app -
 /// read from Android through `MainActivity.kt`'s "hanneslauncher/device_stats"
 /// channel and cached here as plain synchronous fields, the same way
@@ -29,7 +32,27 @@ class DeviceStatsController extends ChangeNotifier {
   String connectionType = 'none';
 
   int? stepsToday;
-  String? mostUsedApp;
+
+  // Package and label of today's most-used app, kept raw and private so the
+  // only way out is the filtered [mostUsedApp] below.
+  String? _mostUsedAppPackage;
+  String? _mostUsedAppLabel;
+
+  /// Today's most-used app, or null when there is none, the permission is
+  /// missing - or it is in the secret folder.
+  ///
+  /// Android's usage statistics are a second way to learn an app's name, next
+  /// to the app list, so the filter sits here rather than at the `{{...}}`
+  /// placeholder that shows this: anything reading it later is covered too.
+  /// The launcher's own rename wins over the system label, the same way the
+  /// app list shows it.
+  String? get mostUsedApp {
+    final package = _mostUsedAppPackage;
+    if (package == null) return null;
+    if (SecretAppsController.instance.contains(package)) return null;
+    return LauncherEntriesController.instance.byKey(package)?.name ??
+        _mostUsedAppLabel;
+  }
 
   bool stepsPermissionGranted = false;
   bool usageAccessGranted = false;
@@ -174,14 +197,27 @@ class DeviceStatsController extends ChangeNotifier {
   }
 
   Future<void> _refreshMostUsedApp() async {
+    // Before the value exists at all: pulling the panel down during a cold
+    // start would otherwise read a value while the secret list is still being
+    // loaded, and [mostUsedApp] would have nothing to filter against.
+    await SecretAppsController.instance.load();
     if (!await hasUsageAccess()) {
-      mostUsedApp = null;
+      _mostUsedAppPackage = null;
+      _mostUsedAppLabel = null;
       return;
     }
     try {
-      mostUsedApp = await _channel.invokeMethod<String>('mostUsedApp');
+      // Package and label, not just the label: the package is what the secret
+      // folder is keyed by, and the label alone could not be matched against
+      // it.
+      final raw = await _channel.invokeMapMethod<String, Object?>(
+        'mostUsedApp',
+      );
+      _mostUsedAppPackage = raw?['package'] as String?;
+      _mostUsedAppLabel = raw?['name'] as String?;
     } catch (_) {
-      mostUsedApp = null;
+      _mostUsedAppPackage = null;
+      _mostUsedAppLabel = null;
     }
   }
 }

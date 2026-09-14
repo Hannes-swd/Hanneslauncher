@@ -18,6 +18,42 @@ import 'launcher_entry.dart';
 import 'locale_controller.dart';
 import 'pinned_apps_controller.dart';
 import 'pinned_quick_actions.dart';
+import 'secret_apps_controller.dart';
+
+/// What the search lists: every visible entry whose name contains [query],
+/// plus the [secret] ones - which are empty until the folder's password has
+/// been typed into the search field.
+///
+/// A top-level function so the one part of the search with rules of its own is
+/// testable without driving the drag gesture that opens it.
+List<LauncherEntry> searchResults({
+  required String query,
+  required List<LauncherEntry> visible,
+  required List<LauncherEntry> secret,
+  required AppListSortMode sortMode,
+}) {
+  final needle = query.trim().toLowerCase();
+  // Straight after the password (the field is cleared then) the hidden apps
+  // are the answer on their own: mixing them into all several hundred
+  // installed ones would mean hunting for them.
+  final results = secret.isNotEmpty && needle.isEmpty
+      ? [...secret]
+      : [
+          for (final entry in [...visible, ...secret])
+            if (needle.isEmpty || entry.name.toLowerCase().contains(needle))
+              entry,
+        ];
+
+  if (sortMode == AppListSortMode.newestFirst) {
+    results.sort((a, b) => b.addedAt.compareTo(a.addedAt));
+  } else if (secret.isNotEmpty) {
+    // Each list is alphabetical on its own, but stuck together they aren't.
+    results.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+  }
+  return results;
+}
 
 /// Full app list for the home screen with an A-Z index bar on the right.
 /// All present letters are shown at all times; hovering/dragging over one
@@ -81,6 +117,12 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
   bool _searchMode = false;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+
+  /// Set once the secret folder's password has been typed into the search,
+  /// which lists the hidden apps for as long as that search stays open. Null
+  /// the rest of the time, and dropped again by [_closeSearch] and by the
+  /// launcher going to the background.
+  SecretUnlock? _searchUnlock;
 
   // Scrolls the current letter's apps in single-column mode. Driven only by
   // the drag on the alphabet bar (the list itself is never touched directly,
@@ -162,6 +204,12 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       LauncherEntriesController.instance.load();
     }
+    // Starting a secret app from the search is itself a trip to the
+    // background, so this is what keeps the hidden apps from still being
+    // listed when the launcher comes back.
+    if (state == AppLifecycleState.paused) {
+      _lockSecretApps();
+    }
   }
 
   /// Buckets the entries (apps, web apps and folders) by the displayed -
@@ -222,9 +270,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
 
     // draggedOut counts away from the bar, so which list edge it starts from
     // depends on the side the bar is on.
-    final x = _leftHanded
-        ? draggedOut
-        : _listSize!.width - draggedOut;
+    final x = _leftHanded ? draggedOut : _listSize!.width - draggedOut;
     final column = (x / grid.columnWidth).floor();
     if (column < 0 || column >= grid.columnCount) return null;
 
@@ -418,8 +464,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
                               left: settings.alignment == ClockAlignment.left
                                   ? settings.sidePadding
                                   : 0,
-                              right:
-                                  settings.alignment == ClockAlignment.right
+                              right: settings.alignment == ClockAlignment.right
                                   ? settings.sidePadding
                                   : 0,
                             ),
@@ -470,9 +515,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
               // Fades in and out over the same 180ms the letters use, so a
               // strong blur never snaps on mid-scrub.
               tween: Tween<double>(
-                end: _isDragging || _searchMode
-                    ? _settings.backgroundBlur
-                    : 0,
+                end: _isDragging || _searchMode ? _settings.backgroundBlur : 0,
               ),
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
@@ -627,8 +670,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
                       for (
                         var row = 0;
                         row < grid.rowsPerColumn &&
-                            col * grid.rowsPerColumn + row <
-                                appsInGroup.length;
+                            col * grid.rowsPerColumn + row < appsInGroup.length;
                         row++
                       )
                         _buildAppRow(
@@ -682,16 +724,17 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
   Widget _buildSearchView() {
     final s = AppStrings(LocaleController.instance.value);
     final query = _searchController.text.trim().toLowerCase();
-    final allEntries = LauncherEntriesController.instance.entries;
-    final results = [
-      for (final entry in allEntries)
-        if (query.isEmpty || entry.name.toLowerCase().contains(query)) entry,
-    ];
-    // The controller's own list is already alphabetical - only "newest
-    // first" needs a resort here.
-    if (_settings.sortMode == AppListSortMode.newestFirst) {
-      results.sort((a, b) => b.addedAt.compareTo(a.addedAt));
-    }
+    final unlock = _searchUnlock;
+    final results = searchResults(
+      query: query,
+      visible: LauncherEntriesController.instance.entries,
+      // Empty unless the password was typed - and empty again if the folder
+      // was locked meanwhile, since the token then no longer counts.
+      secret: unlock == null
+          ? const []
+          : LauncherEntriesController.instance.secretEntries(unlock),
+      sortMode: _settings.sortMode,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -700,9 +743,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
           height: _headerHeight,
           // Mirrored too: the buttons stay on the side the hand comes from.
           child: Row(
-            textDirection: _leftHanded
-                ? TextDirection.rtl
-                : TextDirection.ltr,
+            textDirection: _leftHanded ? TextDirection.rtl : TextDirection.ltr,
             children: [
               Expanded(
                 child: Padding(
@@ -714,12 +755,18 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
                     textAlign: _leftHanded ? TextAlign.right : TextAlign.left,
                     controller: _searchController,
                     focusNode: _searchFocusNode,
+                    // The folder's password gets typed in here, and a keyboard
+                    // that learns what it is would offer it as a suggestion in
+                    // every other app. App names aren't dictionary words
+                    // anyway, so nothing is lost for the search itself.
+                    autocorrect: false,
+                    enableSuggestions: false,
                     decoration: InputDecoration(
                       isDense: true,
                       border: InputBorder.none,
                       hintText: s.searchApps,
                     ),
-                    onChanged: (_) => setState(() {}),
+                    onChanged: _onSearchChanged,
                   ),
                 ),
               ),
@@ -727,19 +774,18 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
                 icon: const Icon(Icons.sort),
                 tooltip: s.sortBy,
                 initialValue: _settings.sortMode,
-                onSelected: (mode) => AppListSettingsController.instance
-                    .update(_settings.copyWith(sortMode: mode)),
+                onSelected: (mode) => AppListSettingsController.instance.update(
+                  _settings.copyWith(sortMode: mode),
+                ),
                 itemBuilder: (context) => [
                   CheckedPopupMenuItem(
                     value: AppListSortMode.alphabetical,
-                    checked: _settings.sortMode ==
-                        AppListSortMode.alphabetical,
+                    checked: _settings.sortMode == AppListSortMode.alphabetical,
                     child: Text(s.sortAlphabetical),
                   ),
                   CheckedPopupMenuItem(
                     value: AppListSortMode.newestFirst,
-                    checked:
-                        _settings.sortMode == AppListSortMode.newestFirst,
+                    checked: _settings.sortMode == AppListSortMode.newestFirst,
                     child: Text(s.sortNewestFirst),
                   ),
                 ],
@@ -777,12 +823,38 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     );
   }
 
+  /// What's typed is tried as the secret folder's password on every keystroke.
+  /// Getting it right lists the hidden apps; anything else is simply a search,
+  /// which is what keeps this invisible to someone who doesn't know the
+  /// password - there is no button and no hint that it exists.
+  void _onSearchChanged(String value) {
+    if (_searchUnlock == null) {
+      final unlock = SecretAppsController.instance.unlock(value.trim());
+      if (unlock != null) {
+        _searchUnlock = unlock;
+        // Cleared straight away: this field is not obscured, so the password
+        // must not stay standing in it.
+        _searchController.clear();
+      }
+    }
+    setState(() {});
+  }
+
   void _closeSearch() {
     _searchFocusNode.unfocus();
+    // Closing the search closes the folder with it - the next search starts
+    // locked again.
+    _lockSecretApps();
     setState(() {
       _searchMode = false;
       _searchController.clear();
     });
+  }
+
+  void _lockSecretApps() {
+    if (_searchUnlock == null) return;
+    _searchUnlock = null;
+    SecretAppsController.instance.lock();
   }
 
   Widget _buildPinnedApps() {
@@ -878,11 +950,8 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
 /// so leftwards or rightwards depending on the side the bar is on - the
 /// finger has dragged (used to detect when it's over the list, targeting a
 /// row).
-typedef ScrubCallback = void Function(
-  String letter,
-  double localDy,
-  double draggedOut,
-);
+typedef ScrubCallback =
+    void Function(String letter, double localDy, double draggedOut);
 
 class _AlphabetBar extends StatefulWidget {
   const _AlphabetBar({
@@ -968,9 +1037,10 @@ class _AlphabetBarState extends State<_AlphabetBar> {
     final letters = widget.letters;
     final blockHeight = _rowCount * _rowHeight;
     final blockTop = (height - blockHeight) * _AlphabetBar._verticalBias;
-    final index = ((localPosition.dy - blockTop) / _rowHeight)
-        .floor()
-        .clamp(0, _rowCount - 1);
+    final index = ((localPosition.dy - blockTop) / _rowHeight).floor().clamp(
+      0,
+      _rowCount - 1,
+    );
     // localPosition.dx is 0 at the bar's left edge, so it goes negative once
     // the finger has moved left of it (e.g. over the app list) - and past
     // the bar's width once it has moved right of it, which is where the list
@@ -1047,16 +1117,12 @@ class _AlphabetBarState extends State<_AlphabetBar> {
             child: AnimatedOpacity(
               // _hoveredIndex is set on pan start and cleared on release, so
               // it doubles as "a finger is on the bar right now".
-              opacity: widget.hideUntilTouched && _hoveredIndex == null
-                  ? 0
-                  : 1,
+              opacity: widget.hideUntilTouched && _hoveredIndex == null ? 0 : 1,
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (var i = 0; i < _rowCount; i++) _buildRow(i),
-                ],
+                children: [for (var i = 0; i < _rowCount; i++) _buildRow(i)],
               ),
             ),
           ),
