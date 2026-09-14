@@ -17,6 +17,7 @@ import 'system_gesture_exclusion.dart';
 import 'update_controller.dart';
 import 'wallpaper_controller.dart';
 import 'wallpaper_view.dart';
+import 'widget_input_store.dart';
 
 void main() {
   runApp(const MyApp());
@@ -142,6 +143,11 @@ class _LauncherRootState extends State<LauncherRoot>
     if (_panelScroll.hasClients && _panelScroll.offset != 0) {
       _panelScroll.jumpTo(0);
     }
+    // Anything typed into a field on a card goes with it. What was typed
+    // belonged to the moment it was typed in - a search box still holding
+    // the last query on the next pull-down just has to be emptied by hand
+    // before anything new can go in.
+    WidgetInputStore.instance.clearAll();
     // And nothing in the panel may keep the keyboard up once the panel is
     // gone. The panel is never torn down - it is only moved off-screen - so
     // a text field on one of its cards holds on to the focus, and the

@@ -73,6 +73,27 @@ class WidgetInputStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Empties a single field - what a search element does once one of its
+  /// rows has been tapped: the question has been answered, so the words
+  /// that asked it have done their job.
+  ///
+  /// A name no field goes by is left alone rather than created empty, so a
+  /// results element pointing at nothing stays pointing at nothing.
+  void clear(String name) {
+    if (!knows(name)) return;
+    setText(name, '');
+  }
+
+  /// Empties every field. Runs when the panel shuts, for the same reason
+  /// the values are memory-only in the first place: what was typed belongs
+  /// to the moment it was typed in, and finding it still there on the next
+  /// pull-down only means deleting it before anything new can be typed.
+  void clearAll() {
+    if (_values.isEmpty) return;
+    _values.clear();
+    notifyListeners();
+  }
+
   Set<String> _namesOnCards() {
     final found = <String>{};
     for (final block in PanelBlocksController.instance.value) {

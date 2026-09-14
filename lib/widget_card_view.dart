@@ -461,6 +461,25 @@ class _InputFieldState extends State<_InputField> {
   );
 
   @override
+  void initState() {
+    super.initState();
+    WidgetInputStore.instance.addListener(_followStore);
+  }
+
+  /// The store can be emptied from outside this field - the panel closing,
+  /// a search result being tapped - and the box on screen has to follow, or
+  /// it goes on showing words that nothing else still holds.
+  ///
+  /// Typing arrives here too and finds the two already in agreement, so it
+  /// costs nothing and never fights the cursor.
+  void _followStore() {
+    final text =
+        WidgetInputStore.instance.textOf(widget.element.inputName) ?? '';
+    if (_controller.text == text) return;
+    _controller.text = text;
+  }
+
+  @override
   void didUpdateWidget(_InputField oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Renaming the field in the editor points it at a different slot, and
@@ -475,6 +494,7 @@ class _InputFieldState extends State<_InputField> {
 
   @override
   void dispose() {
+    WidgetInputStore.instance.removeListener(_followStore);
     _controller.dispose();
     super.dispose();
   }
@@ -780,6 +800,18 @@ class _ResultsListState extends State<_ResultsList> {
     ),
   );
 
+  /// Opens what was tapped and empties the field behind it.
+  ///
+  /// The words were a question, and it has just been answered - leaving
+  /// them there only means deleting them by hand before the next one can
+  /// be asked. The answer to a sum is the exception: that row goes nowhere,
+  /// so clearing it would wipe out the very thing that was being looked at.
+  void _tap(SearchHit hit) {
+    hit.onTap(context);
+    if (hit.kind == SearchHitKind.calculation) return;
+    WidgetInputStore.instance.clear(widget.element.inputName);
+  }
+
   Widget _row(SearchHit hit) {
     final iconSize = widget.element.fontSize * 1.3;
     final row = Padding(
@@ -842,7 +874,7 @@ class _ResultsListState extends State<_ResultsList> {
     if (!widget.interactive) return row;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () => hit.onTap(context),
+      onTap: () => _tap(hit),
       child: row,
     );
   }

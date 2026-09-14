@@ -109,6 +109,30 @@ void main() {
     expect(inputs.textOf('frage'), '');
   });
 
+  test('emptying puts every field back to blank, not to unknown', () async {
+    await cardWithInput('suche');
+    inputs.setText('suche', 'kaffee');
+
+    // What the panel closing does. The field itself is still there, so it
+    // reads as empty rather than as a name nothing goes by.
+    inputs.clearAll();
+    expect(inputs.textOf('suche'), '');
+    expect(sources.resolve('[{{eingabe.suche}}]'), '[]');
+  });
+
+  test('a single field can be emptied on its own', () async {
+    await cardWithInput('suche');
+    inputs.setText('suche', 'kaffee');
+
+    inputs.clear('Suche');
+    expect(inputs.textOf('suche'), '');
+
+    // A name no field goes by is left alone rather than quietly created,
+    // which would make the typo check above start passing wrongly.
+    inputs.clear('gibtsnicht');
+    expect(inputs.textOf('gibtsnicht'), isNull);
+  });
+
   test('a field is offered for picking, spelled in the app language', () async {
     await cardWithInput('suche');
     inputs.setText('suche', 'jetzt');
