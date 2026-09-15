@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_strings.dart';
 import 'default_launcher_controller.dart';
+import 'design_tokens.dart';
 import 'locale_controller.dart';
 
 /// Explains how to make this the app the home button opens, and offers the
@@ -72,7 +73,7 @@ class _DefaultLauncherScreenState extends State<DefaultLauncherScreen>
                     const SizedBox(height: 16),
                     Text(
                       s.defaultLauncherManual,
-                      style: const TextStyle(color: Colors.black54),
+                      style: TextStyle(color: context.design.textSecondary),
                     ),
                   ],
                 ],
@@ -98,7 +99,7 @@ class _DefaultLauncherScreenState extends State<DefaultLauncherScreen>
       state.otherName == null
           ? s.defaultLauncherNone
           : s.defaultLauncherCurrently(state.otherName!),
-      style: const TextStyle(color: Colors.black54),
+      style: TextStyle(color: context.design.textSecondary),
     );
   }
 }

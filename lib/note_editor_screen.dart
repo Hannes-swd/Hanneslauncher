@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'app_strings.dart';
+import 'design_tokens.dart';
 import 'locale_controller.dart';
 import 'note_document.dart';
 import 'note_format_panel.dart';
@@ -387,7 +388,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
 
   Widget _buildLine(int index, AppStrings s) {
     final line = _lines[index];
-    final base = noteBaseStyle(line.style);
+    final base = noteBaseStyle(line.style, design: context.design);
     return Padding(
       key: line.key,
       padding: EdgeInsets.only(
@@ -409,9 +410,12 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
                 maxLines: null,
                 textAlign: noteTextAlign(line.align),
                 style: base,
-                cursorColor: Colors.black87,
+                cursorColor: context.design.textPrimary,
                 decoration: InputDecoration(
                   isDense: true,
+                  // The line is the note, not a field in a form - a fill
+                  // behind it would draw a box around every paragraph.
+                  filled: false,
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(vertical: 4),
                   hintText: index == 0 && _lines.length == 1

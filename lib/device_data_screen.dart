@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_strings.dart';
 import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
+import 'design_tokens.dart';
 import 'device_stats_controller.dart';
 import 'locale_controller.dart';
 
@@ -86,7 +87,7 @@ class _DeviceDataScreenState extends State<DeviceDataScreen>
                 children: [
                   Text(
                     s.devicePackagesHint,
-                    style: const TextStyle(color: Colors.black54),
+                    style: TextStyle(color: context.design.textSecondary),
                   ),
                   const SizedBox(height: 8),
                   _valueTile(

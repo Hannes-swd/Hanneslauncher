@@ -50,6 +50,10 @@ void main() {
       'sortieren': 'App-Liste',
       'zeilenabstand': 'App-Liste',
       'römisch': 'Uhr',
+      'rundung': 'Design',
+      'schatten': 'Design',
+      'dunkel': 'Design',
+      'deckkraft': 'Design',
       'klapptafel': 'Uhr',
       'umbenennen': 'Apps anpassen',
       'pwa': 'Web-Apps',
@@ -75,6 +79,8 @@ void main() {
     expect(search('wallpaper'), contains('Hintergrund'));
     expect(search('font'), contains('App-Liste'));
     expect(search('backup'), contains('Sicherung'));
+    expect(search('dark mode'), contains('Design'));
+    expect(search('rounding'), contains('Design'));
   });
 
   test('the update row is findable by what people call it', () {

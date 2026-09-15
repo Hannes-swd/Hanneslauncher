@@ -5,6 +5,8 @@ import 'clock_font_picker.dart';
 import 'clock_settings_controller.dart';
 import 'clock_widget.dart';
 import 'color_swatch_picker.dart';
+import 'design_tokens.dart';
+import 'design_widgets.dart';
 import 'locale_controller.dart';
 import 'media_session.dart';
 import 'offline_mode_controller.dart';
@@ -67,11 +69,11 @@ class _OfflineModeSettingsScreenState extends State<OfflineModeSettingsScreen>
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                     child: Text(
                       s.offlineModeExplanation,
-                      style: const TextStyle(color: Colors.black54),
+                      style: TextStyle(color: context.design.textSecondary),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: context.design.pagePadding,
                     child: FilledButton.icon(
                       icon: const Icon(Icons.bedtime_outlined),
                       label: Text(s.startOfflineMode),
@@ -79,12 +81,12 @@ class _OfflineModeSettingsScreenState extends State<OfflineModeSettingsScreen>
                     ),
                   ),
                   const Divider(height: 32),
-                  _heading(s.style),
+                  SettingsHeading(s.style),
                   _StyleGrid(settings: settings),
                   if (settings.style == ClockStyle.digital) ...[
-                    _heading(s.font),
+                    SettingsHeading(s.font),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: context.design.pagePadding,
                       child: ClockFontPicker(
                         s: s,
                         selected: settings.digitalFontFamily,
@@ -95,9 +97,9 @@ class _OfflineModeSettingsScreenState extends State<OfflineModeSettingsScreen>
                       ),
                     ),
                   ],
-                  _heading(s.colorLabel),
+                  SettingsHeading(s.colorLabel),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: context.design.pagePadding,
                     child: ColorSwatchPicker(
                       s: s,
                       selectedIndex: settings.colorIndex,
@@ -163,20 +165,6 @@ class _OfflineModeSettingsScreenState extends State<OfflineModeSettingsScreen>
       },
     );
   }
-
-  Widget _heading(String text) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: Colors.black54,
-        ),
-      ),
-    );
-  }
 }
 
 /// The clock faces as tiles, each drawn the way the offline mode would
@@ -204,17 +192,19 @@ class _StyleGrid extends StatelessWidget {
           ClockStyle.orbit: s.orbit,
           ClockStyle.vertical: s.vertical,
         };
+        final design = context.design;
         return GridView(
           // Inside the settings list, so it neither scrolls on its own nor
           // guesses a height - the page it sits in does the scrolling.
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          padding: design.pagePadding,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            mainAxisExtent: 128,
+            mainAxisSpacing: design.spaceSm,
+            crossAxisSpacing: design.spaceSm,
+            mainAxisExtent:
+                design.surfaceStyle(SurfaceLevel.compact).minHeight * 1.28,
           ),
           children: [
             for (final style in ClockStyle.values)
@@ -248,65 +238,33 @@ class _StyleOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    final design = context.design;
+    return OptionTile(
+      title: title,
+      selected: selected,
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? Colors.black : Colors.black26,
-            width: selected ? 2 : 1,
+      preview: ClipRRect(
+        borderRadius: BorderRadius.circular(design.radiusSmall),
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          // Black regardless of the theme: this is what the offline screen
+          // actually looks like, and a tile drawn on the theme's background
+          // would be showing something the mode never does.
+          color: Colors.black,
+          padding: EdgeInsets.all(design.spaceXs),
+          // Scaled down rather than cropped: the faces are real clocks of
+          // quite different sizes (a whole letter grid next to four digits),
+          // and half a word clock says nothing about what it looks like.
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: clockFace(
+              settings.style,
+              settings: settings.toClockSettings(),
+              showDate: false,
+              digitalWeight: offlineDigitalWeight,
+            ),
           ),
-        ),
-        child: Column(
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  width: double.infinity,
-                  color: Colors.black,
-                  padding: const EdgeInsets.all(4),
-                  // Scaled down rather than cropped: the faces are real
-                  // clocks of quite different sizes (a whole letter grid
-                  // next to four digits), and half a word clock says
-                  // nothing about what it looks like.
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: clockFace(
-                      settings.style,
-                      settings: settings.toClockSettings(),
-                      showDate: false,
-                      digitalWeight: offlineDigitalWeight,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (selected) ...[
-                  const Icon(Icons.check_circle, size: 14),
-                  const SizedBox(width: 4),
-                ],
-                Flexible(
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
         ),
       ),
     );

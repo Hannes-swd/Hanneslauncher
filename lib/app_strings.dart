@@ -700,6 +700,114 @@ class AppStrings {
       ? 'Hold to move, hold and release to edit'
       : 'Halten zum Verschieben, halten und loslassen zum Bearbeiten';
 
+  // The design: one theme for everything the launcher draws itself - the
+  // panel, the settings, the dialogs. The clock, the app list and the
+  // wallpaper are left out on purpose and keep their own colors, because
+  // they sit on top of the picture rather than on anything this theme paints.
+  String get design => 'Design';
+  String get designSubtitle => _en
+      ? 'Theme, corners, shadows, spacing, text size'
+      : 'Thema, Rundung, Schatten, Abstände, Schriftgröße';
+  String get designScopeHint => _en
+      ? 'Applies to the panel, the settings and dialogs. Clock, app list and '
+            'wallpaper keep their own colors.'
+      : 'Gilt für das Panel, die Einstellungen und Dialoge. Uhr, App-Liste '
+            'und Hintergrundbild behalten ihre eigenen Farben.';
+
+  String get designThemeLabel => _en ? 'Color theme' : 'Farbthema';
+  String get designThemeGrey => _en ? 'Grey' : 'Grau';
+  String get designThemeRose => _en ? 'Rose' : 'Rosa';
+  String get designThemeGreen => _en ? 'Green' : 'Grün';
+  String get designThemeBlue => _en ? 'Blue' : 'Blau';
+  String get designThemeDark => _en ? 'Dark' : 'Dunkel';
+
+  String get designColors => _en ? 'Colors' : 'Farben';
+  String get designColorsHint => _en
+      ? 'Tap a color to set it yourself. Picking a theme above puts all six '
+            'back.'
+      : 'Auf eine Farbe tippen, um sie selbst zu setzen. Ein Thema oben setzt '
+            'alle sechs wieder zurück.';
+  String get designRoleBackground => _en ? 'Ground' : 'Untergrund';
+  String get designRoleSurface => _en ? 'Cards' : 'Karten';
+  String get designRoleTextPrimary => _en ? 'Text' : 'Text';
+  String get designRoleTextSecondary =>
+      _en ? 'Text, quieter' : 'Text, leiser';
+  String get designRoleAccent => _en ? 'Accent' : 'Akzent';
+  String get designRoleBorder => _en ? 'Lines' : 'Linien';
+  String get designResetColors =>
+      _en ? 'Colors back to the theme' : 'Farben zurück auf das Thema';
+
+  String get designFieldStyle => _en ? 'Input fields' : 'Eingabefelder';
+  String get designFieldLine => _en ? 'Line' : 'Linie';
+  String get designFieldBox => _en ? 'Box' : 'Rahmen';
+  String get designFieldPlain => _en ? 'Tinted' : 'Fläche';
+  String get designFieldHint => _en
+      ? 'Applies to every text field in the app - search, names, addresses, '
+            'the code editor.'
+      : 'Gilt für jedes Eingabefeld der App - Suche, Namen, Adressen, den '
+            'Code-Editor.';
+  String get designFieldSample => _en ? 'Type here' : 'Hier tippen';
+
+  String get designShape => _en ? 'Shape & spacing' : 'Form & Abstand';
+  String designRounding(int pixels) =>
+      _en ? 'Rounding ($pixels px)' : 'Rundung ($pixels px)';
+  String get designRoundingHint => _en
+      ? 'Sets the roundest surfaces; smaller cards and controls follow at a '
+            'half and a quarter of it, so the order between them holds.'
+      : 'Gilt für die rundesten Flächen; kleinere Karten und Bedienelemente '
+            'folgen mit der Hälfte und einem Viertel davon, damit die '
+            'Abstufung bleibt.';
+  String designShadow(String strength) =>
+      _en ? 'Shadows ($strength)' : 'Schatten ($strength)';
+  String get designShadowOff => _en ? 'off' : 'aus';
+  String get designShadowSubtle => _en ? 'subtle' : 'dezent';
+  String get designShadowNormal => _en ? 'normal' : 'normal';
+  String get designShadowStrong => _en ? 'strong' : 'stark';
+  String designSpacing(int percent) =>
+      _en ? 'Spacing ($percent%)' : 'Abstände ($percent%)';
+  String designCardSize(int percent) =>
+      _en ? 'Card height ($percent%)' : 'Kartenhöhe ($percent%)';
+  String designFontSize(int percent) =>
+      _en ? 'Text size ($percent%)' : 'Schriftgröße ($percent%)';
+  String designPanelOpacity(int percent) =>
+      _en ? 'Panel opacity ($percent%)' : 'Deckkraft des Panels ($percent%)';
+  String get designPanelOpacityHint => _en
+      ? 'How much of the wallpaper shows through the panel and its cards.'
+      : 'Wie viel vom Hintergrundbild durch das Panel und seine Karten '
+            'scheint.';
+
+  String designMotion(String speed) =>
+      _en ? 'Motion ($speed)' : 'Bewegung ($speed)';
+  String get designMotionOff => _en ? 'off' : 'aus';
+  String get designMotionBrisk => _en ? 'brisk' : 'flott';
+  String get designMotionNormal => _en ? 'normal' : 'normal';
+  String get designMotionCalm => _en ? 'calm' : 'ruhig';
+  String get designMotionHint => _en
+      ? 'How long a theme change, a page or a card takes to move. Off makes '
+            'everything switch at once.'
+      : 'Wie lange ein Themenwechsel, eine Seite oder eine Karte zum Bewegen '
+            'braucht. Aus schaltet alles sofort um.';
+
+  String get designTypography => _en ? 'Type' : 'Schrift';
+  String get designTypeSample =>
+      _en ? 'The clock on the home screen' : 'Die Uhr auf dem Homescreen';
+  String get designDepth => _en ? 'Shape & depth' : 'Form & Tiefe';
+  String get designSpaceGroup => _en ? 'Spacing & size' : 'Abstand & Größe';
+  String get designMotionLabel => _en ? 'Motion' : 'Bewegung';
+  String get designMotionDemo => _en ? 'Tap me' : 'Antippen';
+
+  String get designPreview => _en ? 'Preview' : 'Vorschau';
+  String get designPreviewHero => _en ? 'Large' : 'Groß';
+  String get designPreviewNormal => _en ? 'Normal' : 'Normal';
+  String get designPreviewCompact => _en ? 'Small' : 'Klein';
+  String get designPreviewBody => _en
+      ? 'Three sizes of surface, so what matters reads as bigger without '
+            'anything having to be hidden.'
+      : 'Drei Flächengrößen - damit Wichtiges größer wirkt, ohne dass etwas '
+            'verschwinden muss.';
+  String get designPreviewSelected => _en ? 'Selected' : 'Ausgewählt';
+  String get designReset => _en ? 'Reset the design' : 'Design zurücksetzen';
+
   String get iconTheme => _en ? 'Icon design' : 'Icon-Design';
   String get iconThemeSubtitle =>
       _en ? 'All icons in one color' : 'Alle Icons in einer Farbe';
@@ -894,6 +1002,11 @@ class AppStrings {
       _en ? 'Couldn\'t open the link' : 'Link konnte nicht geöffnet werden';
 
   String get addColor => _en ? 'Add color' : 'Farbe hinzufügen';
+  String get pickColor => _en ? 'Pick a color' : 'Farbe wählen';
+  String colorBrightness(int percent) =>
+      _en ? 'Brightness ($percent%)' : 'Helligkeit ($percent%)';
+  String colorOpacity(int percent) =>
+      _en ? 'Opacity ($percent%)' : 'Deckkraft ($percent%)';
 
   // The single device-data package, added from the "+" picker on the data
   // sources screen exactly like a source (see

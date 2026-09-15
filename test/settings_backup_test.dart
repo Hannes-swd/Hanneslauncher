@@ -7,6 +7,8 @@ import 'package:hanneslauncher/app_overrides_controller.dart';
 import 'package:hanneslauncher/clock_settings_controller.dart';
 import 'package:hanneslauncher/custom_colors_controller.dart';
 import 'package:hanneslauncher/data_sources_controller.dart';
+import 'package:hanneslauncher/design_controller.dart';
+import 'package:hanneslauncher/design_tokens.dart';
 import 'package:hanneslauncher/folders_controller.dart';
 import 'package:hanneslauncher/icon_theme_controller.dart';
 import 'package:hanneslauncher/launcher_entries_controller.dart';
@@ -64,6 +66,20 @@ void main() {
     );
     await IconThemeController.instance.update(
       const IconThemeSettings(enabled: true, colorIndex: 2),
+    );
+    await DesignController.instance.update(
+      DesignSettings(
+        preset: DesignThemePreset.blue,
+        fieldStyle: InputFieldStyle.box,
+        overrides: {DesignColorRole.accent: const Color(0xFF00FF88)},
+        radius: 10,
+        shadow: 0.2,
+        spacing: 1.2,
+        cardSize: 0.9,
+        font: 1.1,
+        opacity: 0.6,
+        motion: 0.5,
+      ),
     );
     await PanelBlocksController.instance.replaceAll([
       const PanelBlock(
@@ -127,6 +143,7 @@ void main() {
     await OfflineModeController.instance.update(const OfflineModeSettings());
     await AppListSettingsController.instance.update(const AppListSettings());
     await IconThemeController.instance.update(const IconThemeSettings());
+    await DesignController.instance.update(DesignSettings());
     await PanelBlocksController.instance.replaceAll([]);
     await FoldersController.instance.replaceAll([]);
     await WebAppsController.instance.replaceAll([]);
@@ -168,6 +185,18 @@ void main() {
     final iconTheme = IconThemeController.instance.value;
     expect(iconTheme.enabled, true);
     expect(iconTheme.colorIndex, 2);
+
+    final design = DesignController.instance.value;
+    expect(design.preset, DesignThemePreset.blue);
+    expect(design.fieldStyle, InputFieldStyle.box);
+    expect(design.color(DesignColorRole.accent), const Color(0xFF00FF88));
+    expect(design.radius, 10);
+    expect(design.shadow, 0.2);
+    expect(design.spacing, 1.2);
+    expect(design.cardSize, 0.9);
+    expect(design.font, 1.1);
+    expect(design.opacity, 0.6);
+    expect(design.motion, 0.5);
 
     expect(PanelBlocksController.instance.value.single.id, 'b1');
     expect(PanelBlocksController.instance.value.single.itemKeys, [

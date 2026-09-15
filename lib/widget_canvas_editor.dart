@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'design_tokens.dart';
 import 'panel_blocks_controller.dart';
 import 'widget_card_view.dart';
 import 'widget_element.dart';
@@ -55,8 +56,8 @@ class _WidgetCanvasEditorState extends State<WidgetCanvasEditor> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
+        color: context.design.fillSubtle,
+        borderRadius: BorderRadius.circular(context.design.radiusMedium),
       ),
       clipBehavior: Clip.antiAlias,
       // The same sizing the real card uses, elements and all, so a flexible

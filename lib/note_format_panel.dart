@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_strings.dart';
 import 'color_swatch_picker.dart';
+import 'design_tokens.dart';
 import 'note_document.dart';
 
 /// The panel that slides in at the bottom of the note editor once the
@@ -43,7 +44,7 @@ class NoteFormatPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: context.design.surface,
       elevation: 8,
       child: SafeArea(
         top: false,
@@ -57,10 +58,10 @@ class NoteFormatPanel extends StatelessWidget {
                 children: [
                   Text(
                     s.formatLabel,
-                    style: const TextStyle(
-                      fontSize: 13,
+                    style: TextStyle(
+                      fontSize: context.design.typeLabel,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black54,
+                      color: context.design.textSecondary,
                     ),
                   ),
                   const Spacer(),
@@ -107,7 +108,8 @@ class NoteFormatPanel extends StatelessWidget {
                       tooltip: s.boldLabel,
                       active: format.bold,
                       onTap: () => onInline(
-                        (f) => f.copyWith(bold: !format.bold, clearWeight: true),
+                        (f) =>
+                            f.copyWith(bold: !format.bold, clearWeight: true),
                       ),
                     ),
                     _Toggle(
@@ -325,7 +327,7 @@ class _Separator extends StatelessWidget {
       width: 1,
       height: 24,
       margin: const EdgeInsets.symmetric(horizontal: 6),
-      color: Colors.black12,
+      color: context.design.fillSubtle,
     );
   }
 }
@@ -354,13 +356,15 @@ class _Toggle extends StatelessWidget {
           height: 40,
           margin: const EdgeInsets.symmetric(horizontal: 2),
           decoration: BoxDecoration(
-            color: active ? Colors.black12 : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            color: active ? context.design.fillSubtle : Colors.transparent,
+            borderRadius: BorderRadius.circular(context.design.radiusSmall),
           ),
           child: Icon(
             icon,
             size: 20,
-            color: active ? Colors.black : Colors.black54,
+            color: active
+                ? context.design.accent
+                : context.design.textSecondary,
           ),
         ),
       ),
@@ -429,7 +433,7 @@ class _ColorButton extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 18, color: Colors.black54),
+              Icon(icon, size: 18, color: context.design.textSecondary),
               const SizedBox(height: 3),
               Container(
                 width: 20,
@@ -438,7 +442,9 @@ class _ColorButton extends StatelessWidget {
                   color: color ?? Colors.transparent,
                   borderRadius: BorderRadius.circular(2),
                   border: Border.all(
-                    color: color == null ? Colors.black26 : Colors.black12,
+                    color: color == null
+                        ? context.design.border
+                        : context.design.fillSubtle,
                   ),
                 ),
               ),
@@ -472,7 +478,10 @@ class _Choice<T> extends StatelessWidget {
       children: [
         Text(
           hint,
-          style: const TextStyle(fontSize: 12, color: Colors.black54),
+          style: TextStyle(
+            fontSize: context.design.typeCaption,
+            color: context.design.textSecondary,
+          ),
         ),
         const SizedBox(width: 4),
         DropdownButton<T?>(

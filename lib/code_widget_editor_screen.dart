@@ -9,6 +9,7 @@ import 'code_widget_bridge.dart';
 import 'code_widget_store.dart';
 import 'code_widget_templates.dart';
 import 'data_sources_controller.dart';
+import 'design_tokens.dart';
 import 'locale_controller.dart';
 import 'panel_blocks_controller.dart';
 import 'text_prompt_dialog.dart';
@@ -16,10 +17,7 @@ import 'text_prompt_dialog.dart';
 /// Asks which starting point a new code widget should have, creates the
 /// block and writes the template into its folder. Shared by the panel's "+"
 /// and the settings list, so both land in exactly the same place.
-Future<PanelBlock?> createCodeWidget(
-  BuildContext context,
-  AppStrings s,
-) async {
+Future<PanelBlock?> createCodeWidget(BuildContext context, AppStrings s) async {
   final template = await showDialog<CodeWidgetTemplate>(
     context: context,
     builder: (context) => SimpleDialog(
@@ -279,7 +277,7 @@ class _CodeWidgetEditorScreenState extends State<CodeWidgetEditorScreen>
         content: SingleChildScrollView(
           child: SelectableText(
             s.codeHelpBody,
-            style: const TextStyle(fontSize: 13, height: 1.4),
+            style: TextStyle(fontSize: context.design.typeLabel, height: 1.4),
           ),
         ),
         actions: [
@@ -345,13 +343,12 @@ class _CodeField extends StatelessWidget {
               keyboardType: TextInputType.multiline,
               smartDashesType: SmartDashesType.disabled,
               smartQuotesType: SmartQuotesType.disabled,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'monospace',
-                fontSize: 13,
+                fontSize: context.design.typeLabel,
                 height: 1.35,
               ),
               decoration: const InputDecoration(
-                border: OutlineInputBorder(),
                 isDense: true,
                 contentPadding: EdgeInsets.all(10),
               ),
@@ -421,7 +418,6 @@ class _ValuePickerSheetState extends State<_ValuePickerSheet> {
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.search),
-                  border: const OutlineInputBorder(),
                   isDense: true,
                   hintText: widget.s.availableValues,
                 ),
@@ -441,9 +437,9 @@ class _ValuePickerSheetState extends State<_ValuePickerSheet> {
                           dense: true,
                           title: Text(
                             reference,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'monospace',
-                              fontSize: 13,
+                              fontSize: context.design.typeLabel,
                             ),
                           ),
                           subtitle: Text(
@@ -536,7 +532,7 @@ class _FilesTabState extends State<_FilesTab> {
                   padding: const EdgeInsets.all(24),
                   child: Text(
                     s.codeNoFiles,
-                    style: const TextStyle(color: Colors.black54),
+                    style: TextStyle(color: context.design.textSecondary),
                   ),
                 );
               }
@@ -552,9 +548,9 @@ class _FilesTabState extends State<_FilesTab> {
                     ),
                     title: Text(
                       asset.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'monospace',
-                        fontSize: 13,
+                        fontSize: context.design.typeLabel,
                       ),
                     ),
                     subtitle: Text(
@@ -729,13 +725,12 @@ class _TextFileScreenState extends State<_TextFileScreen> {
           keyboardType: TextInputType.multiline,
           smartDashesType: SmartDashesType.disabled,
           smartQuotesType: SmartQuotesType.disabled,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'monospace',
-            fontSize: 13,
+            fontSize: context.design.typeLabel,
             height: 1.35,
           ),
           decoration: const InputDecoration(
-            border: OutlineInputBorder(),
             isDense: true,
             contentPadding: EdgeInsets.all(10),
           ),
@@ -781,10 +776,10 @@ class _CardTab extends StatelessWidget {
         const Divider(height: 24),
         Text(
           s.cardHeightLabel,
-          style: const TextStyle(
-            fontSize: 14,
+          style: TextStyle(
+            fontSize: context.design.typeLabel,
             fontWeight: FontWeight.bold,
-            color: Colors.black54,
+            color: context.design.textSecondary,
           ),
         ),
         const SizedBox(height: 8),
@@ -810,16 +805,19 @@ class _CardTab extends StatelessWidget {
           block.cardHeightFlexible
               ? s.cardHeightFlexibleHint
               : s.cardHeightFixedHint,
-          style: const TextStyle(fontSize: 12, color: Colors.black54),
+          style: TextStyle(
+            fontSize: context.design.typeCaption,
+            color: context.design.textSecondary,
+          ),
         ),
         const SizedBox(height: 16),
         Text(
           '${block.cardHeightFlexible ? s.cardMinHeightLabel : s.cardHeightLabel}'
           ' (${block.cardHeight.round()})',
-          style: const TextStyle(
-            fontSize: 14,
+          style: TextStyle(
+            fontSize: context.design.typeLabel,
             fontWeight: FontWeight.bold,
-            color: Colors.black54,
+            color: context.design.textSecondary,
           ),
         ),
         Slider(
@@ -834,10 +832,10 @@ class _CardTab extends StatelessWidget {
           Text(
             '${s.cardMaxHeightLabel} '
             '(${math.max(block.cardMaxHeight, block.cardHeight).round()})',
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: context.design.typeLabel,
               fontWeight: FontWeight.bold,
-              color: Colors.black54,
+              color: context.design.textSecondary,
             ),
           ),
           Slider(
@@ -862,12 +860,18 @@ class _CardTab extends StatelessWidget {
         const Divider(height: 24),
         Text(
           s.codeScrollHint,
-          style: const TextStyle(fontSize: 12, color: Colors.black54),
+          style: TextStyle(
+            fontSize: context.design.typeCaption,
+            color: context.design.textSecondary,
+          ),
         ),
         const SizedBox(height: 12),
         Text(
           s.codeLinkHint,
-          style: const TextStyle(fontSize: 12, color: Colors.black54),
+          style: TextStyle(
+            fontSize: context.design.typeCaption,
+            color: context.design.textSecondary,
+          ),
         ),
       ],
     );
@@ -978,9 +982,9 @@ class _CodeWidgetPreviewScreenState extends State<CodeWidgetPreviewScreen> {
                   child: _log.isEmpty
                       ? Text(
                           s.codeConsoleEmpty,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white38,
-                            fontSize: 12,
+                            fontSize: context.design.typeCaption,
                           ),
                         )
                       : ListView.builder(
@@ -988,10 +992,10 @@ class _CodeWidgetPreviewScreenState extends State<CodeWidgetPreviewScreen> {
                           itemCount: _log.length,
                           itemBuilder: (context, index) => Text(
                             _log[_log.length - 1 - index],
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Color(0xFFE0E0E0),
                               fontFamily: 'monospace',
-                              fontSize: 11,
+                              fontSize: context.design.typeCaption,
                             ),
                           ),
                         ),

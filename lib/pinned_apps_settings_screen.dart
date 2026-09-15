@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_icon.dart';
 import 'app_strings.dart';
+import 'design_tokens.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
@@ -52,9 +53,9 @@ class PinnedAppsSettingsScreen extends StatelessWidget {
                             pinned.length,
                             PinnedAppsController.maxPinned,
                           ),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.black54,
+                          style: TextStyle(
+                            fontSize: context.design.typeLabel,
+                            color: context.design.textSecondary,
                           ),
                         ),
                       ),
@@ -136,10 +137,10 @@ class _LeftMarginSlider extends StatelessWidget {
             children: [
               Text(
                 s.pinnedAppsLeftMargin(margin.round()),
-                style: const TextStyle(
-                  fontSize: 14,
+                style: TextStyle(
+                  fontSize: context.design.typeLabel,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black54,
+                  color: context.design.textSecondary,
                 ),
               ),
               Slider(

@@ -7,6 +7,7 @@ import 'app_icon.dart';
 import 'app_list_settings_controller.dart' show appListColorPalette;
 import 'app_strings.dart';
 import 'data_sources_controller.dart';
+import 'design_tokens.dart';
 import 'device_stats_controller.dart';
 import 'expression_calculator.dart';
 import 'folder_sheet.dart';
@@ -47,12 +48,12 @@ class WidgetCardView extends StatelessWidget {
             height: 72,
             child: Row(
               children: [
-                const Icon(Icons.widgets_outlined, color: Colors.black45),
+                Icon(Icons.widgets_outlined, color: context.design.textMuted),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     block.title.isEmpty ? s.emptyWidget : block.title,
-                    style: const TextStyle(color: Colors.black54),
+                    style: TextStyle(color: context.design.textSecondary),
                   ),
                 ),
               ],
@@ -77,9 +78,9 @@ class WidgetCardView extends StatelessWidget {
   }
 
   Future<void> _openLink(BuildContext context) async {
-    final entries = LauncherEntriesController.instance.resolve(
-      [block.linkedKey],
-    );
+    final entries = LauncherEntriesController.instance.resolve([
+      block.linkedKey,
+    ]);
     if (entries.isEmpty) return;
     final entry = entries.first;
     if (entry.isFolder) {
@@ -374,14 +375,14 @@ class WidgetElementView extends StatelessWidget {
             height: element.height,
             width: math.min(element.width, cardWidth),
             child: Uri.tryParse(url)?.hasScheme != true
-                ? const ColoredBox(color: Colors.black12)
+                ? ColoredBox(color: context.design.fillSubtle)
                 : Image.network(
                     url,
                     fit: BoxFit.cover,
                     // A broken or unreachable picture must not tear a hole
                     // in the panel, so it degrades to an empty tile.
                     errorBuilder: (context, error, stack) =>
-                        const ColoredBox(color: Colors.black12),
+                        ColoredBox(color: context.design.fillSubtle),
                   ),
           ),
         );
@@ -596,9 +597,9 @@ class _ActionButtonState extends State<_ActionButton> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          result.success ? s.actionSucceeded : s.actionFailed(
-            result.detail ?? '',
-          ),
+          result.success
+              ? s.actionSucceeded
+              : s.actionFailed(result.detail ?? ''),
         ),
       ),
     );
@@ -606,7 +607,8 @@ class _ActionButtonState extends State<_ActionButton> {
 
   @override
   Widget build(BuildContext context) {
-    final icon = widgetIcons[widget.element.template] ??
+    final icon =
+        widgetIcons[widget.element.template] ??
         switch (widget.element.actionKind) {
           WidgetActionKind.open => Icons.open_in_new,
           WidgetActionKind.search => Icons.search,

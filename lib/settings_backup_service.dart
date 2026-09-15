@@ -9,6 +9,8 @@ import 'code_widget_store.dart';
 import 'custom_colors_controller.dart';
 import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
+import 'design_controller.dart';
+import 'design_tokens.dart';
 import 'folders_controller.dart';
 import 'icon_theme_controller.dart';
 import 'launcher_entries_controller.dart';
@@ -22,7 +24,7 @@ import 'web_apps_controller.dart';
 /// Everything the user has configured, as one JSON document: colors,
 /// positions, the panel's widgets and calendar/app blocks, pinned apps,
 /// folders, web apps, data sources, app renames, the secret folder, clock
-/// and offline mode style, and language.
+/// and offline mode style, the design, and language.
 ///
 /// The code widgets are the one part that isn't held by a block: their
 /// files are written alongside the document by [buildWithFiles].
@@ -40,6 +42,7 @@ class SettingsBackupService {
     final offline = OfflineModeController.instance.value;
     final appList = AppListSettingsController.instance.value;
     final iconTheme = IconThemeController.instance.value;
+    final design = DesignController.instance.value;
 
     return {
       'formatVersion': _formatVersion,
@@ -94,6 +97,24 @@ class SettingsBackupService {
       'iconTheme': {
         'enabled': iconTheme.enabled,
         'colorIndex': iconTheme.colorIndex,
+      },
+      // Raw ARGB rather than an index into the shared palette: these six are
+      // the theme's own colors, and putting them in the palette would add six
+      // near-greys to every color picker in the app.
+      'design': {
+        'preset': design.preset.name,
+        'fieldStyle': design.fieldStyle.name,
+        'colors': {
+          for (final entry in design.overrides.entries)
+            entry.key.name: entry.value.toARGB32(),
+        },
+        'radius': design.radius,
+        'shadow': design.shadow,
+        'spacing': design.spacing,
+        'cardSize': design.cardSize,
+        'font': design.font,
+        'opacity': design.opacity,
+        'motion': design.motion,
       },
       'pinnedApps': PinnedAppsController.instance.value,
       'pinnedAppsLeftMargin': PinnedAppsLayoutController.instance.value,
@@ -295,6 +316,40 @@ class SettingsBackupService {
           hideAlphabet: appListJson['hideAlphabet'] as bool? ?? false,
           backgroundBlur:
               (appListJson['backgroundBlur'] as num?)?.toDouble() ?? 14,
+        ),
+      );
+    }
+
+    final designJson = decoded['design'] as Map<String, dynamic>?;
+    if (designJson != null) {
+      final colorsJson = designJson['colors'] as Map<String, dynamic>?;
+      // Every number below is clamped by DesignSettings itself, so a file
+      // naming a radius of 400 restores as the largest one the sliders can
+      // reach rather than as a screen full of circles.
+      await DesignController.instance.update(
+        DesignSettings(
+          preset: _enumOr(
+            DesignThemePreset.values,
+            designJson['preset'],
+            DesignThemePreset.grey,
+          ),
+          fieldStyle: _enumOr(
+            InputFieldStyle.values,
+            designJson['fieldStyle'],
+            InputFieldStyle.line,
+          ),
+          overrides: {
+            for (final role in DesignColorRole.values)
+              if (colorsJson?[role.name] is int)
+                role: Color(colorsJson![role.name] as int),
+          },
+          radius: (designJson['radius'] as num?)?.toDouble(),
+          shadow: (designJson['shadow'] as num?)?.toDouble(),
+          spacing: (designJson['spacing'] as num?)?.toDouble(),
+          cardSize: (designJson['cardSize'] as num?)?.toDouble(),
+          font: (designJson['font'] as num?)?.toDouble(),
+          opacity: (designJson['opacity'] as num?)?.toDouble(),
+          motion: (designJson['motion'] as num?)?.toDouble(),
         ),
       );
     }

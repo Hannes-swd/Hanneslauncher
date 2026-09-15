@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_icon.dart';
 import 'app_strings.dart';
 import 'builtin_entries.dart';
+import 'design_tokens.dart';
 import 'folders_controller.dart';
 import 'folders_settings_screen.dart' show FolderContentsPicker;
 import 'launcher_entries_controller.dart';
@@ -16,7 +17,7 @@ import 'text_prompt_dialog.dart';
 Future<void> showFolderSheet(BuildContext context, LauncherFolder folder) {
   return showDialog<void>(
     context: context,
-    barrierColor: Colors.black54,
+    barrierColor: context.design.scrim,
     builder: (context) => _FolderSheet(folderId: folder.id),
   );
 }
@@ -44,19 +45,26 @@ class _FolderSheet extends StatelessWidget {
               folder.itemKeys,
             );
 
+            final design = context.design;
+            // The folder keeps its own color - that is a per-folder setting,
+            // not part of the theme - but everything around it (how round it
+            // is, how far it stands off the screen, how big its name is)
+            // comes from the design like every other surface.
             final onColor = folder.color.computeLuminance() > 0.5
-                ? Colors.black87
+                ? design.textPrimary
                 : Colors.white;
+            final style = design.surfaceStyle(SurfaceLevel.hero);
 
             return Dialog(
               backgroundColor: Colors.transparent,
-              insetPadding: const EdgeInsets.all(24),
+              insetPadding: EdgeInsets.all(design.spaceLg),
               child: Container(
                 decoration: BoxDecoration(
                   color: folder.color,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: style.borderRadius,
+                  boxShadow: style.shadow,
                 ),
-                padding: const EdgeInsets.all(20),
+                padding: style.insets,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,8 +78,8 @@ class _FolderSheet extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: onColor,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                              fontSize: style.titleSize,
+                              fontWeight: DesignTokens.weightBold,
                             ),
                           ),
                         ),
@@ -96,10 +104,10 @@ class _FolderSheet extends StatelessWidget {
                         child: GridView.builder(
                           shrinkWrap: true,
                           gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
+                              SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 4,
-                                mainAxisSpacing: 12,
-                                crossAxisSpacing: 12,
+                                mainAxisSpacing: design.spaceSm,
+                                crossAxisSpacing: design.spaceSm,
                                 childAspectRatio: 0.8,
                               ),
                           itemCount: items.length,
@@ -224,7 +232,10 @@ class _FolderItem extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: TextStyle(color: labelColor, fontSize: 12),
+            style: TextStyle(
+              color: labelColor,
+              fontSize: context.design.typeCaption,
+            ),
           ),
         ],
       ),

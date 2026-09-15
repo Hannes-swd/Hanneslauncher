@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_icon.dart';
 import 'app_strings.dart';
 import 'color_swatch_picker.dart';
+import 'design_tokens.dart';
 import 'icon_theme_controller.dart';
 import 'launcher_entries_controller.dart';
 import 'locale_controller.dart';
@@ -27,23 +28,24 @@ class IconThemeSettingsScreen extends StatelessWidget {
                     title: Text(s.iconThemeEnabled),
                     subtitle: Text(s.iconThemeHint),
                     value: iconTheme.enabled,
-                    onChanged: (enabled) => IconThemeController.instance
-                        .update(iconTheme.copyWith(enabled: enabled)),
+                    onChanged: (enabled) => IconThemeController.instance.update(
+                      iconTheme.copyWith(enabled: enabled),
+                    ),
                   ),
                   const Divider(),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                     child: Text(
                       s.textColor,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: context.design.typeLabel,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black54,
+                        color: context.design.textSecondary,
                       ),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: context.design.pagePadding,
                     child: ColorSwatchPicker(
                       s: s,
                       swatchSize: 40,
@@ -84,7 +86,7 @@ class _Preview extends StatelessWidget {
         ].take(8).toList();
         if (entries.isEmpty) return const SizedBox.shrink();
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: context.design.pagePadding,
           child: Wrap(
             spacing: 16,
             runSpacing: 16,

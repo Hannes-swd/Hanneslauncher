@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_icon.dart';
 import 'app_strings.dart';
 import 'color_swatch_picker.dart';
+import 'design_tokens.dart';
 import 'folders_controller.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
@@ -34,7 +35,7 @@ class FoldersSettingsScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(24),
                       child: Text(
                         s.noFolders,
-                        style: const TextStyle(color: Colors.black54),
+                        style: TextStyle(color: context.design.textSecondary),
                       ),
                     )
                   : ListView.builder(
@@ -160,15 +161,15 @@ class FolderEditScreen extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                     child: Text(
                       s.folderColor,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: context.design.typeLabel,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black54,
+                        color: context.design.textSecondary,
                       ),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: context.design.pagePadding,
                     child: ColorSwatchPicker(
                       s: s,
                       selectedIndex: folder.colorIndex,
@@ -180,19 +181,19 @@ class FolderEditScreen extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
                     child: Text(
                       s.folderContents,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: context.design.typeLabel,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black54,
+                        color: context.design.textSecondary,
                       ),
                     ),
                   ),
                   if (items.isEmpty)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: context.design.pagePadding,
                       child: Text(
                         s.emptyFolder,
-                        style: const TextStyle(color: Colors.black54),
+                        style: TextStyle(color: context.design.textSecondary),
                       ),
                     ),
                   for (final entry in items)
@@ -261,10 +262,7 @@ class FolderContentsPicker extends StatelessWidget {
             final entries = [
               for (final entry in all)
                 if (entry.isFolder &&
-                    FoldersController.instance.canContain(
-                      folder.id,
-                      entry.key,
-                    ))
+                    FoldersController.instance.canContain(folder.id, entry.key))
                   entry,
               for (final entry in all)
                 if (!entry.isFolder) entry,

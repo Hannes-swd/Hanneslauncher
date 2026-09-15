@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_strings.dart';
 import 'data_packages_controller.dart';
+import 'design_tokens.dart';
 import 'locale_controller.dart';
 
 /// One entry in the searchable picker below - a ready-made source or the
@@ -77,8 +78,7 @@ class _AddDataSourceScreenState extends State<AddDataSourceScreen> {
                 ? presets
                 : [
                     for (final preset in presets)
-                      if (preset.title.toLowerCase().contains(query))
-                        preset,
+                      if (preset.title.toLowerCase().contains(query)) preset,
                   ];
 
             return Scaffold(
@@ -102,9 +102,6 @@ class _AddDataSourceScreenState extends State<AddDataSourceScreen> {
                         isDense: true,
                         prefixIcon: const Icon(Icons.search),
                         hintText: s.searchDataSources,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
                       ),
                       onChanged: (_) => setState(() {}),
                     ),
@@ -114,7 +111,9 @@ class _AddDataSourceScreenState extends State<AddDataSourceScreen> {
                         ? Center(
                             child: Text(
                               s.noSearchResults,
-                              style: const TextStyle(color: Colors.black54),
+                              style: TextStyle(
+                                color: context.design.textSecondary,
+                              ),
                             ),
                           )
                         : ListView(

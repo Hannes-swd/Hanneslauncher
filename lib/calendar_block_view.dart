@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'app_strings.dart';
 import 'calendar_controller.dart';
+import 'design_tokens.dart';
 import 'locale_controller.dart';
 import 'panel_blocks_controller.dart';
 import 'system_app_launcher.dart';
@@ -69,7 +70,7 @@ class _CalendarBlockViewState extends State<CalendarBlockView> {
         height: 88,
         child: Row(
           children: [
-            const Icon(Icons.calendar_month, color: Colors.black45),
+            Icon(Icons.calendar_month, color: context.design.textMuted),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -78,7 +79,7 @@ class _CalendarBlockViewState extends State<CalendarBlockView> {
                 children: [
                   Text(
                     widget.s.calendarPermissionNeeded,
-                    style: const TextStyle(color: Colors.black54),
+                    style: TextStyle(color: context.design.textSecondary),
                   ),
                   const SizedBox(height: 4),
                   Align(
@@ -116,7 +117,7 @@ class _CalendarBlockViewState extends State<CalendarBlockView> {
           child: Center(
             child: Text(
               widget.s.noUpcomingEvents,
-              style: const TextStyle(color: Colors.black54),
+              style: TextStyle(color: context.design.textSecondary),
             ),
           ),
         ),
@@ -136,7 +137,11 @@ class _CalendarBlockViewState extends State<CalendarBlockView> {
     final widgets = <Widget>[];
     DateTime? lastDay;
     for (final event in events) {
-      final day = DateTime(event.start.year, event.start.month, event.start.day);
+      final day = DateTime(
+        event.start.year,
+        event.start.month,
+        event.start.day,
+      );
       if (lastDay == null || day != lastDay) {
         widgets.add(
           GestureDetector(
@@ -146,10 +151,10 @@ class _CalendarBlockViewState extends State<CalendarBlockView> {
               padding: EdgeInsets.fromLTRB(4, lastDay == null ? 0 : 12, 4, 4),
               child: Text(
                 _dayLabel(day, s),
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: context.design.typeCaption,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black54,
+                  color: context.design.textSecondary,
                 ),
               ),
             ),
@@ -205,7 +210,7 @@ class _EventRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = event.calendarColor == null
-        ? Colors.black38
+        ? context.design.textMuted
         : Color(event.calendarColor!);
     final time = event.allDay
         ? null
@@ -229,9 +234,9 @@ class _EventRow extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 10),
                 child: Text(
                   time,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.black54,
+                  style: TextStyle(
+                    fontSize: context.design.typeLabel,
+                    color: context.design.textSecondary,
                   ),
                 ),
               ),
@@ -240,7 +245,7 @@ class _EventRow extends StatelessWidget {
                 event.title.isEmpty ? '—' : event.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 14),
+                style: TextStyle(fontSize: context.design.typeLabel),
               ),
             ),
           ],

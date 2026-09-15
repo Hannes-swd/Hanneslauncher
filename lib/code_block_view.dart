@@ -8,6 +8,7 @@ import 'builtin_entries.dart';
 import 'code_widget_bridge.dart';
 import 'code_widget_store.dart';
 import 'data_sources_controller.dart';
+import 'design_tokens.dart';
 import 'device_stats_controller.dart';
 import 'folder_sheet.dart';
 import 'launcher_entries_controller.dart';
@@ -245,14 +246,14 @@ class _CodeBlockViewState extends State<CodeBlockView> {
       padding: const EdgeInsets.all(12),
       child: Row(
         children: [
-          const Icon(Icons.code, color: Colors.black45),
+          Icon(Icons.code, color: context.design.textMuted),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               widget.block.title.isEmpty
                   ? widget.s.emptyCodeWidget
                   : '${widget.block.title} - ${widget.s.emptyCodeWidget}',
-              style: const TextStyle(color: Colors.black54),
+              style: TextStyle(color: context.design.textSecondary),
             ),
           ),
         ],

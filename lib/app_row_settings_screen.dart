@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_icon.dart';
 import 'app_strings.dart';
+import 'design_tokens.dart';
 import 'launcher_entries_controller.dart';
 import 'locale_controller.dart';
 import 'panel_blocks_controller.dart';
@@ -46,15 +47,15 @@ class AppRowSettingsScreen extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                     child: Text(
                       s.columnsLabel,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: context.design.typeLabel,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black54,
+                        color: context.design.textSecondary,
                       ),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: context.design.pagePadding,
                     child: Wrap(
                       spacing: 8,
                       children: [
@@ -71,18 +72,19 @@ class AppRowSettingsScreen extends StatelessWidget {
                   SwitchListTile(
                     title: Text(s.showLabelsLabel),
                     value: block.showLabels,
-                    onChanged: (value) => PanelBlocksController.instance
-                        .update(block.copyWith(showLabels: value)),
+                    onChanged: (value) => PanelBlocksController.instance.update(
+                      block.copyWith(showLabels: value),
+                    ),
                   ),
                   const Divider(),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                     child: Text(
                       s.chooseApps,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: context.design.typeLabel,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black54,
+                        color: context.design.textSecondary,
                       ),
                     ),
                   ),

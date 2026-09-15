@@ -763,6 +763,10 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
                     enableSuggestions: false,
                     decoration: InputDecoration(
                       isDense: true,
+                      // No fill: this field sits on the wallpaper, not on
+                      // anything the design painted, so the theme's card
+                      // color would put a solid slab over the picture.
+                      filled: false,
                       border: InputBorder.none,
                       hintText: s.searchApps,
                     ),

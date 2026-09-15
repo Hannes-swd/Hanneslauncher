@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_strings.dart';
 import 'calendar_block_view.dart';
 import 'calendar_controller.dart';
+import 'design_tokens.dart';
 import 'locale_controller.dart';
 import 'panel_blocks_controller.dart';
 
@@ -35,9 +36,7 @@ class _CalendarBlockSettingsScreenState
         return ValueListenableBuilder<List<PanelBlock>>(
           valueListenable: PanelBlocksController.instance,
           builder: (context, blocks, child) {
-            final block = PanelBlocksController.instance.byId(
-              widget.blockId,
-            );
+            final block = PanelBlocksController.instance.byId(widget.blockId);
             // Deleted from this very screen.
             if (block == null) return const Scaffold();
 
@@ -73,10 +72,10 @@ class _CalendarBlockSettingsScreenState
                         Text(
                           '${s.daysAheadLabel} '
                           '(${s.days(block.daysAhead)})',
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: context.design.typeLabel,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black54,
+                            color: context.design.textSecondary,
                           ),
                         ),
                         Slider(
@@ -84,19 +83,17 @@ class _CalendarBlockSettingsScreenState
                           min: 1,
                           max: 30,
                           divisions: 29,
-                          onChanged: (value) =>
-                              PanelBlocksController.instance.update(
-                                block.copyWith(daysAhead: value.round()),
-                              ),
+                          onChanged: (value) => PanelBlocksController.instance
+                              .update(block.copyWith(daysAhead: value.round())),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           '${s.cardHeightLabel} '
                           '(${block.cardHeight.round()})',
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: context.design.typeLabel,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black54,
+                            color: context.design.textSecondary,
                           ),
                         ),
                         Slider(
@@ -104,18 +101,16 @@ class _CalendarBlockSettingsScreenState
                           min: 100,
                           max: 800,
                           divisions: 70,
-                          onChanged: (value) =>
-                              PanelBlocksController.instance.update(
-                                block.copyWith(cardHeight: value),
-                              ),
+                          onChanged: (value) => PanelBlocksController.instance
+                              .update(block.copyWith(cardHeight: value)),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           s.calendarsLabel,
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: context.design.typeLabel,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black54,
+                            color: context.design.textSecondary,
                           ),
                         ),
                         if (controller.calendars.isEmpty)
@@ -123,7 +118,9 @@ class _CalendarBlockSettingsScreenState
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             child: Text(
                               s.noCalendarsFound,
-                              style: const TextStyle(color: Colors.black54),
+                              style: TextStyle(
+                                color: context.design.textSecondary,
+                              ),
                             ),
                           )
                         else
@@ -143,7 +140,7 @@ class _CalendarBlockSettingsScreenState
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: calendar.color == null
-                                    ? Colors.black38
+                                    ? context.design.textMuted
                                     : Color(calendar.color!),
                               ),
                             ),
@@ -155,7 +152,8 @@ class _CalendarBlockSettingsScreenState
                             subtitle: calendar.accountName == null
                                 ? null
                                 : Text(calendar.accountName!),
-                            value: block.itemKeys.isEmpty ||
+                            value:
+                                block.itemKeys.isEmpty ||
                                 block.itemKeys.contains(calendar.id),
                             onChanged: (_) {
                               // Starting from "all", ticking one specific
@@ -163,10 +161,7 @@ class _CalendarBlockSettingsScreenState
                               // not everything minus this one forever, so
                               // the explicit list starts from the full set.
                               final current = block.itemKeys.isEmpty
-                                  ? [
-                                      for (final c in controller.calendars)
-                                        c.id,
-                                    ]
+                                  ? [for (final c in controller.calendars) c.id]
                                   : List<String>.from(block.itemKeys);
                               final wasChecked = current.remove(calendar.id);
                               if (!wasChecked) {
@@ -201,18 +196,20 @@ class _CalendarBlockSettingsScreenState
                         const Divider(height: 32),
                         Text(
                           s.preview,
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: context.design.typeLabel,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black54,
+                            color: context.design.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(16),
+                            color: context.design.fillSubtle,
+                            borderRadius: BorderRadius.circular(
+                              context.design.radiusMedium,
+                            ),
                           ),
                           child: CalendarBlockView(block: block, s: s),
                         ),

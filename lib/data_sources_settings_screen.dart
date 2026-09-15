@@ -4,6 +4,7 @@ import 'add_data_source_screen.dart';
 import 'app_strings.dart';
 import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
+import 'design_tokens.dart';
 import 'device_data_screen.dart';
 import 'header_text_format.dart';
 import 'locale_controller.dart';
@@ -38,9 +39,9 @@ Future<void> addDataSource(BuildContext context, AppStrings s) async {
     // straight to on instead of an empty form.
     await DeviceDataController.instance.setEnabled(true);
     if (!context.mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const DeviceDataScreen()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const DeviceDataScreen()));
     return;
   }
 
@@ -105,7 +106,9 @@ class DataSourcesSettingsScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(24),
                           child: Text(
                             s.dataSourcesSubtitle(0),
-                            style: const TextStyle(color: Colors.black54),
+                            style: TextStyle(
+                              color: context.design.textSecondary,
+                            ),
                           ),
                         )
                       : ListView(
@@ -133,9 +136,7 @@ class DataSourcesSettingsScreen extends StatelessWidget {
                               ),
                             if (deviceDataEnabled)
                               ListTile(
-                                leading: const Icon(
-                                  Icons.smartphone_outlined,
-                                ),
+                                leading: const Icon(Icons.smartphone_outlined),
                                 title: Text(s.devicePackages),
                                 subtitle: Text(s.devicePackagesHint),
                                 onTap: () {
@@ -266,9 +267,7 @@ class _DataSourceEditScreenState extends State<DataSourceEditScreen> {
                 icon: const Icon(Icons.delete_outline),
                 tooltip: s.deleteBlock,
                 onPressed: () async {
-                  await DataSourcesController.instance.remove(
-                    widget.sourceId,
-                  );
+                  await DataSourcesController.instance.remove(widget.sourceId);
                   if (context.mounted) Navigator.of(context).pop();
                 },
               ),
@@ -313,10 +312,10 @@ class _DataSourceEditScreenState extends State<DataSourceEditScreen> {
               const SizedBox(height: 24),
               Text(
                 s.refreshEvery(_refreshMinutes),
-                style: const TextStyle(
-                  fontSize: 14,
+                style: TextStyle(
+                  fontSize: context.design.typeLabel,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black54,
+                  color: context.design.textSecondary,
                 ),
               ),
               Slider(
@@ -347,14 +346,16 @@ class _DataSourceEditScreenState extends State<DataSourceEditScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(12),
+                      color: context.design.fillSubtle,
+                      borderRadius: BorderRadius.circular(
+                        context.design.radiusMedium,
+                      ),
                     ),
                     child: Text(
                       _testResult!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'monospace',
-                        fontSize: 12,
+                        fontSize: context.design.typeCaption,
                       ),
                     ),
                   ),

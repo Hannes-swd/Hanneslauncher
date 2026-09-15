@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_strings.dart';
 import 'code_widget_editor_screen.dart';
+import 'design_tokens.dart';
 import 'locale_controller.dart';
 import 'panel_blocks_controller.dart';
 
@@ -35,7 +36,7 @@ class CodeWidgetsSettingsScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(24),
                       child: Text(
                         s.noCodeWidgets,
-                        style: const TextStyle(color: Colors.black54),
+                        style: TextStyle(color: context.design.textSecondary),
                       ),
                     )
                   : ListView.builder(

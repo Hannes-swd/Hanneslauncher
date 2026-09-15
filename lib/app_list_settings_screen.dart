@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_list_settings_controller.dart';
 import 'app_strings.dart';
 import 'color_swatch_picker.dart';
+import 'design_tokens.dart';
 import 'locale_controller.dart';
 
 class AppListSettingsScreen extends StatelessWidget {
@@ -29,9 +30,9 @@ class AppListSettingsScreen extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     s.appListLayoutHint,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.black54,
+                    style: TextStyle(
+                      fontSize: context.design.typeCaption,
+                      color: context.design.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -40,9 +41,9 @@ class AppListSettingsScreen extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     s.appListHandHint,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.black54,
+                    style: TextStyle(
+                      fontSize: context.design.typeCaption,
+                      color: context.design.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -51,9 +52,9 @@ class AppListSettingsScreen extends StatelessWidget {
                     title: Text(s.hideAlphabet),
                     subtitle: Text(
                       s.hideAlphabetHint,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black54,
+                      style: TextStyle(
+                        fontSize: context.design.typeCaption,
+                        color: context.design.textSecondary,
                       ),
                     ),
                     value: settings.hideAlphabet,
@@ -83,9 +84,9 @@ class AppListSettingsScreen extends StatelessWidget {
                   ),
                   Text(
                     s.backgroundBlurHint,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.black54,
+                    style: TextStyle(
+                      fontSize: context.design.typeCaption,
+                      color: context.design.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -147,10 +148,10 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
-        fontSize: 14,
+      style: TextStyle(
+        fontSize: context.design.typeLabel,
         fontWeight: FontWeight.bold,
-        color: Colors.black54,
+        color: context.design.textSecondary,
       ),
     );
   }
@@ -168,12 +169,12 @@ class _PreviewRow extends StatelessWidget {
       height: settings.rowHeight,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
+        color: context.design.fillSubtle,
+        borderRadius: BorderRadius.circular(context.design.radiusMedium),
       ),
       child: Row(
         children: [
-          const Icon(Icons.apps, color: Colors.black45),
+          Icon(Icons.apps, color: context.design.textMuted),
           const SizedBox(width: 16),
           Text(
             s.exampleApp,

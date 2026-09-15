@@ -6,6 +6,8 @@ import 'app_icon.dart';
 import 'app_strings.dart';
 import 'color_swatch_picker.dart';
 import 'data_sources_controller.dart';
+import 'design_tokens.dart';
+import 'design_widgets.dart';
 import 'data_sources_settings_screen.dart';
 import 'header_text_format.dart';
 import 'launcher_entries_controller.dart';
@@ -71,10 +73,10 @@ class WidgetEditorScreen extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                     child: Text(
                       s.preview,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: context.design.typeLabel,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black54,
+                        color: context.design.textSecondary,
                       ),
                     ),
                   ),
@@ -82,14 +84,14 @@ class WidgetEditorScreen extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                     child: Text(
                       s.canvasHint,
-                      style: const TextStyle(
-                        color: Colors.black54,
-                        fontSize: 12,
+                      style: TextStyle(
+                        color: context.design.textSecondary,
+                        fontSize: context.design.typeCaption,
                       ),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: context.design.pagePadding,
                     child: WidgetCanvasEditor(
                       block: block,
                       onTapElement: (element) {
@@ -108,15 +110,15 @@ class WidgetEditorScreen extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                     child: Text(
                       s.cardHeightLabel,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: context.design.typeLabel,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black54,
+                        color: context.design.textSecondary,
                       ),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: context.design.pagePadding,
                     child: Wrap(
                       spacing: 8,
                       children: [
@@ -145,9 +147,9 @@ class WidgetEditorScreen extends StatelessWidget {
                       block.cardHeightFlexible
                           ? s.cardHeightFlexibleHint
                           : s.cardHeightFixedHint,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black54,
+                      style: TextStyle(
+                        fontSize: context.design.typeCaption,
+                        color: context.design.textSecondary,
                       ),
                     ),
                   ),
@@ -156,10 +158,10 @@ class WidgetEditorScreen extends StatelessWidget {
                     child: Text(
                       '${block.cardHeightFlexible ? s.cardMinHeightLabel : s.cardHeightLabel}'
                       ' (${block.cardHeight.round()})',
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: context.design.typeLabel,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black54,
+                        color: context.design.textSecondary,
                       ),
                     ),
                   ),
@@ -177,10 +179,10 @@ class WidgetEditorScreen extends StatelessWidget {
                       child: Text(
                         '${s.cardMaxHeightLabel} '
                         '(${math.max(block.cardMaxHeight, block.cardHeight).round()})',
-                        style: const TextStyle(
-                          fontSize: 14,
+                        style: TextStyle(
+                          fontSize: context.design.typeLabel,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black54,
+                          color: context.design.textSecondary,
                         ),
                       ),
                     ),
@@ -202,10 +204,10 @@ class WidgetEditorScreen extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                     child: Text(
                       s.openOnTap,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: context.design.typeLabel,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black54,
+                        color: context.design.textSecondary,
                       ),
                     ),
                   ),
@@ -215,9 +217,9 @@ class WidgetEditorScreen extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                     child: Text(
                       s.layersHint,
-                      style: const TextStyle(
-                        color: Colors.black54,
-                        fontSize: 12,
+                      style: TextStyle(
+                        color: context.design.textSecondary,
+                        fontSize: context.design.typeCaption,
                       ),
                     ),
                   ),
@@ -358,7 +360,7 @@ class WidgetEditorScreen extends StatelessWidget {
                   title: Text(_labelFor(type, s)),
                   subtitle: Text(
                     _describes(type, s),
-                    style: const TextStyle(fontSize: 12),
+                    style: TextStyle(fontSize: context.design.typeCaption),
                   ),
                 ),
               ),
@@ -504,9 +506,9 @@ class _LinkedEntryTile extends StatelessWidget {
             .resolve([block.linkedKey])
             .firstOrNull;
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          contentPadding: context.design.pagePadding,
           leading: entry == null
-              ? const Icon(Icons.touch_app_outlined, color: Colors.black45)
+              ? Icon(Icons.touch_app_outlined, color: context.design.textMuted)
               : AppIcon(entry: entry, size: 36),
           title: Text(entry?.name ?? s.openOnTapNone),
           trailing: const Icon(Icons.chevron_right),
@@ -562,7 +564,7 @@ class _LinkedEntryPicker extends StatelessWidget {
           body: ListView(
             children: [
               ListTile(
-                leading: const Icon(Icons.block, color: Colors.black45),
+                leading: Icon(Icons.block, color: context.design.textMuted),
                 title: Text(s.openOnTapNone),
                 onTap: () => Navigator.of(context).pop(''),
               ),
@@ -641,7 +643,7 @@ class ElementEditorScreen extends StatelessWidget {
                   // Where a text element's line comes from. First, because
                   // it decides whether the value field below applies at all.
                   if (element.type == WidgetElementType.text) ...[
-                    _sectionLabel(s.textModeLabel),
+                    FieldLabel(s.textModeLabel),
                     Wrap(
                       spacing: 8,
                       children: [
@@ -685,9 +687,9 @@ class ElementEditorScreen extends StatelessWidget {
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
                             s.textModeCalculationHint,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.black54,
+                            style: TextStyle(
+                              fontSize: context.design.typeCaption,
+                              color: context.design.textSecondary,
                             ),
                           ),
                         ),
@@ -702,7 +704,7 @@ class ElementEditorScreen extends StatelessWidget {
                       onChanged: (updated) => _update(block, updated),
                     ),
                     const SizedBox(height: 24),
-                    _sectionLabel('${s.widthShort} '
+                    FieldLabel('${s.widthShort} '
                         '(${element.width.round()})'),
                     Slider(
                       value: element.width,
@@ -714,7 +716,7 @@ class ElementEditorScreen extends StatelessWidget {
                         element.copyWith(width: value),
                       ),
                     ),
-                    _sectionLabel('${s.searchMaxHeight} '
+                    FieldLabel('${s.searchMaxHeight} '
                         '(${element.height.round()})'),
                     Slider(
                       value: element.height,
@@ -730,9 +732,9 @@ class ElementEditorScreen extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Text(
                         s.searchMaxHeightHint,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.black54,
+                        style: TextStyle(
+                          fontSize: context.design.typeCaption,
+                          color: context.design.textSecondary,
                         ),
                       ),
                     ),
@@ -749,7 +751,7 @@ class ElementEditorScreen extends StatelessWidget {
                       element.type != WidgetElementType.results &&
                       !(element.type == WidgetElementType.text &&
                           element.textMode != WidgetTextMode.free)) ...[
-                    _sectionLabel(
+                    FieldLabel(
                       element.type == WidgetElementType.image
                           ? s.sourceUrl
                           : s.elementValue,
@@ -775,7 +777,7 @@ class ElementEditorScreen extends StatelessWidget {
                       onChanged: (updated) => _update(block, updated),
                     ),
                     const SizedBox(height: 24),
-                    _sectionLabel('${s.widthShort} '
+                    FieldLabel('${s.widthShort} '
                         '(${element.width.round()})'),
                     Slider(
                       value: element.width,
@@ -792,7 +794,7 @@ class ElementEditorScreen extends StatelessWidget {
                   if (element.type == WidgetElementType.text ||
                       element.type == WidgetElementType.input ||
                       element.type == WidgetElementType.results) ...[
-                    _sectionLabel('${s.textSizeShort} '
+                    FieldLabel('${s.textSizeShort} '
                         '(${element.fontSize.round()})'),
                     Slider(
                       value: element.fontSize,
@@ -820,7 +822,7 @@ class ElementEditorScreen extends StatelessWidget {
 
                   if (element.type == WidgetElementType.icon ||
                       element.type == WidgetElementType.action) ...[
-                    _sectionLabel('${s.iconSizeShort} '
+                    FieldLabel('${s.iconSizeShort} '
                         '(${element.iconSize.round()})'),
                     Slider(
                       value: element.iconSize,
@@ -836,7 +838,7 @@ class ElementEditorScreen extends StatelessWidget {
 
                   if (element.type == WidgetElementType.image ||
                       element.type == WidgetElementType.box) ...[
-                    _sectionLabel('${s.heightShort} '
+                    FieldLabel('${s.heightShort} '
                         '(${element.height.round()})'),
                     Slider(
                       value: element.height,
@@ -848,7 +850,7 @@ class ElementEditorScreen extends StatelessWidget {
                         element.copyWith(height: value),
                       ),
                     ),
-                    _sectionLabel('${s.widthShort} '
+                    FieldLabel('${s.widthShort} '
                         '(${element.width.round()})'),
                     Slider(
                       value: element.width,
@@ -860,7 +862,7 @@ class ElementEditorScreen extends StatelessWidget {
                         element.copyWith(width: value),
                       ),
                     ),
-                    _sectionLabel('${s.radiusShort} '
+                    FieldLabel('${s.radiusShort} '
                         '(${element.radius.round()})'),
                     Slider(
                       value: element.radius,
@@ -875,7 +877,7 @@ class ElementEditorScreen extends StatelessWidget {
                   ],
 
                   if (element.type == WidgetElementType.box) ...[
-                    _sectionLabel('${s.opacityShort} '
+                    FieldLabel('${s.opacityShort} '
                         '(${(element.opacity * 100).round()}%)'),
                     Slider(
                       value: element.opacity,
@@ -887,7 +889,7 @@ class ElementEditorScreen extends StatelessWidget {
                         element.copyWith(opacity: value),
                       ),
                     ),
-                    _sectionLabel(s.colorLabel),
+                    FieldLabel(s.colorLabel),
                     ColorSwatchPicker(
                       s: s,
                       selectedIndex: element.colorIndex,
@@ -903,7 +905,7 @@ class ElementEditorScreen extends StatelessWidget {
                       element.type == WidgetElementType.input ||
                       element.type == WidgetElementType.results) ...[
                     const SizedBox(height: 8),
-                    _sectionLabel(s.alignLabel),
+                    FieldLabel(s.alignLabel),
                     Wrap(
                       spacing: 8,
                       children: [
@@ -928,7 +930,7 @@ class ElementEditorScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    _sectionLabel(s.colorLabel),
+                    FieldLabel(s.colorLabel),
                     ColorSwatchPicker(
                       s: s,
                       selectedIndex: element.colorIndex,
@@ -940,7 +942,7 @@ class ElementEditorScreen extends StatelessWidget {
                   ],
 
                   if (element.type == WidgetElementType.action) ...[
-                    _sectionLabel(s.iconLabel),
+                    FieldLabel(s.iconLabel),
                     _IconPicker(
                       selected: element.template,
                       onSelected: (iconName) => _update(
@@ -949,7 +951,7 @@ class ElementEditorScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    _sectionLabel(s.colorLabel),
+                    FieldLabel(s.colorLabel),
                     ColorSwatchPicker(
                       s: s,
                       selectedIndex: element.colorIndex,
@@ -976,12 +978,14 @@ class ElementEditorScreen extends StatelessWidget {
                     ),
 
                   const SizedBox(height: 24),
-                  _sectionLabel(s.preview),
+                  FieldLabel(s.preview),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(16),
+                      color: context.design.fillSubtle,
+                      borderRadius: BorderRadius.circular(
+                        context.design.radiusMedium,
+                      ),
                     ),
                     child: LayoutBuilder(
                       builder: (context, constraints) => WidgetElementView(
@@ -999,18 +1003,6 @@ class ElementEditorScreen extends StatelessWidget {
       },
     );
   }
-
-  static Widget _sectionLabel(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Text(
-      text,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.bold,
-        color: Colors.black54,
-      ),
-    ),
-  );
 
   Future<void> _update(PanelBlock block, WidgetElement element) {
     return _save(block, [
@@ -1133,7 +1125,6 @@ class _TemplateFieldState extends State<_TemplateField> {
           controller: _field,
           maxLines: null,
           decoration: InputDecoration(
-            border: const OutlineInputBorder(),
             hintText: widget.element.type == WidgetElementType.image
                 ? 'https://…'
                 : '{{${DataSourcesController.displayKey('zeit')}}} · '
@@ -1233,7 +1224,7 @@ class _ValueDropdown extends StatelessWidget {
                   dense: true,
                   title: Text(
                     s.actionToggleSourceNoneYet,
-                    style: const TextStyle(fontSize: 12),
+                    style: TextStyle(fontSize: context.design.typeCaption),
                   ),
                 ),
               ),
@@ -1259,19 +1250,19 @@ class _ValueDropdown extends StatelessWidget {
               ),
           ],
           child: InputDecorator(
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
+            decoration: const InputDecoration(isDense: true),
             child: Row(
               children: [
                 Expanded(
                   child: Text(
                     s.availableValues,
-                    style: const TextStyle(color: Colors.black54),
+                    style: TextStyle(color: context.design.textSecondary),
                   ),
                 ),
-                const Icon(Icons.arrow_drop_down, color: Colors.black54),
+                Icon(
+                  Icons.arrow_drop_down,
+                  color: context.design.textSecondary,
+                ),
               ],
             ),
           ),
@@ -1338,8 +1329,8 @@ class _RuleDiagnosisState extends State<_RuleDiagnosis> {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
+              color: context.design.fillSubtle,
+              borderRadius: BorderRadius.circular(context.design.radiusMedium),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1354,7 +1345,9 @@ class _RuleDiagnosisState extends State<_RuleDiagnosis> {
                           : widgetIcons[matches.first.iconName] ??
                                 Icons.help_outline,
                       size: 18,
-                      color: matches.isEmpty ? Colors.orange : Colors.black54,
+                      color: matches.isEmpty
+                          ? Colors.orange
+                          : context.design.textSecondary,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -1364,7 +1357,7 @@ class _RuleDiagnosisState extends State<_RuleDiagnosis> {
                             : missing
                             ? s.valueMissing
                             : s.noRuleMatches,
-                        style: const TextStyle(color: Colors.black54),
+                        style: TextStyle(color: context.design.textSecondary),
                       ),
                     ),
                   ],
@@ -1375,7 +1368,6 @@ class _RuleDiagnosisState extends State<_RuleDiagnosis> {
                   decoration: InputDecoration(
                     isDense: true,
                     labelText: s.testAnotherValue,
-                    border: const OutlineInputBorder(),
                   ),
                   onChanged: (_) => setState(() {}),
                 ),
@@ -1422,7 +1414,7 @@ class _Rules extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 24),
-        ElementEditorScreen._sectionLabel(s.rulesLabel),
+        FieldLabel(s.rulesLabel),
         for (var i = 0; i < element.rules.length; i++)
           Builder(
             builder: (context) {
@@ -1547,7 +1539,7 @@ class _RuleRow extends StatelessWidget {
             Icon(
               effective ? Icons.check_circle : Icons.check_circle_outline,
               size: 18,
-              color: effective ? Colors.green : Colors.black26,
+              color: effective ? Colors.green : context.design.border,
             ),
           IconButton(
             icon: const Icon(Icons.remove_circle_outline),
@@ -1676,13 +1668,13 @@ class _RuleDialogState extends State<_RuleDialog> {
                     Icon(
                       matches ? Icons.check_circle : Icons.cancel_outlined,
                       size: 18,
-                      color: matches ? Colors.green : Colors.black38,
+                      color: matches ? Colors.green : context.design.textMuted,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         s.currentValue(widget.testValue),
-                        style: const TextStyle(color: Colors.black54),
+                        style: TextStyle(color: context.design.textSecondary),
                       ),
                     ),
                   ],
@@ -1713,7 +1705,10 @@ class _RuleDialogState extends State<_RuleDialog> {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     s.rangeInverted,
-                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontSize: context.design.typeCaption,
+                    ),
                   ),
                 ),
               const SizedBox(height: 8),
@@ -1750,11 +1745,13 @@ class _RuleDialogState extends State<_RuleDialog> {
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(
+                          context.design.radiusSmall,
+                        ),
                         border: Border.all(
                           color: entry.key == _iconName
-                              ? Colors.black
-                              : Colors.black26,
+                              ? context.design.accent
+                              : context.design.border,
                           width: entry.key == _iconName ? 2 : 1,
                         ),
                       ),
@@ -1801,11 +1798,11 @@ class _IconPicker extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(context.design.radiusSmall),
                 border: Border.all(
                   color: entry.key == selected
-                      ? Colors.black
-                      : Colors.black26,
+                      ? context.design.accent
+                      : context.design.border,
                   width: entry.key == selected ? 2 : 1,
                 ),
               ),
@@ -1844,7 +1841,10 @@ class _InputFieldPicker extends StatelessWidget {
         if (names.isEmpty) {
           return Text(
             s.searchNoFieldYet,
-            style: const TextStyle(color: Colors.red, fontSize: 12),
+            style: TextStyle(
+              color: Colors.red,
+              fontSize: context.design.typeCaption,
+            ),
           );
         }
         final current = WidgetInputStore.normalizeName(element.inputName);
@@ -1893,7 +1893,7 @@ class _ResultsSettings extends StatelessWidget {
         _InputFieldPicker(element: element, s: s, onChanged: onChanged),
         const SizedBox(height: 20),
 
-        ElementEditorScreen._sectionLabel(s.searchSourcesLabel),
+        FieldLabel(s.searchSourcesLabel),
         _sourceTile(
           title: s.searchSourceApps,
           subtitle: s.searchSourceAppsHint,
@@ -1920,7 +1920,7 @@ class _ResultsSettings extends StatelessWidget {
         ),
         const SizedBox(height: 20),
 
-        ElementEditorScreen._sectionLabel(s.searchWebLabel),
+        FieldLabel(s.searchWebLabel),
         _WebSearchPicker(
           element: element,
           s: s,
@@ -1929,7 +1929,7 @@ class _ResultsSettings extends StatelessWidget {
         ),
         const SizedBox(height: 20),
 
-        ElementEditorScreen._sectionLabel(
+        FieldLabel(
           '${s.searchResultLimit} (${element.resultLimit})',
         ),
         Slider(
@@ -1955,7 +1955,12 @@ class _ResultsSettings extends StatelessWidget {
       controlAffinity: ListTileControlAffinity.leading,
       dense: true,
       title: Text(title),
-      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+      subtitle: Builder(
+        builder: (context) => Text(
+          subtitle,
+          style: TextStyle(fontSize: context.design.typeCaption),
+        ),
+      ),
       value: value,
       onChanged: (v) => onChanged(v ?? false),
     );
@@ -2189,7 +2194,7 @@ class _InputSettingsState extends State<_InputSettings> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ElementEditorScreen._sectionLabel(s.inputNameLabel),
+        FieldLabel(s.inputNameLabel),
         TextField(
           controller: _name,
           decoration: InputDecoration(
@@ -2231,7 +2236,7 @@ class _InputSettingsState extends State<_InputSettings> {
         ),
         const SizedBox(height: 20),
 
-        ElementEditorScreen._sectionLabel(s.inputKeyboardLabel),
+        FieldLabel(s.inputKeyboardLabel),
         Wrap(
           spacing: 8,
           children: [
@@ -2253,12 +2258,18 @@ class _InputSettingsState extends State<_InputSettings> {
 
         Text(
           s.inputNotStoredHint,
-          style: const TextStyle(fontSize: 12, color: Colors.black54),
+          style: TextStyle(
+            fontSize: context.design.typeCaption,
+            color: context.design.textSecondary,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           s.inputRecipe,
-          style: const TextStyle(fontSize: 12, color: Colors.black54),
+          style: TextStyle(
+            fontSize: context.design.typeCaption,
+            color: context.design.textSecondary,
+          ),
         ),
       ],
     );
@@ -2414,7 +2425,10 @@ class _ActionSettingsState extends State<_ActionSettings> {
             children: [
               Text(
                 s.actionHostFromSource,
-                style: const TextStyle(fontSize: 12, color: Colors.black54),
+                style: TextStyle(
+                  fontSize: context.design.typeCaption,
+                  color: context.design.textSecondary,
+                ),
               ),
               const SizedBox(height: 6),
               Wrap(
@@ -2447,7 +2461,10 @@ class _ActionSettingsState extends State<_ActionSettings> {
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
                     s.actionHostPathReminder,
-                    style: const TextStyle(fontSize: 12, color: Colors.orange),
+                    style: TextStyle(
+                      fontSize: context.design.typeCaption,
+                      color: Colors.orange,
+                    ),
                   ),
                 ),
             ],
@@ -2534,8 +2551,10 @@ class _ActionSettingsState extends State<_ActionSettings> {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: (isError ? Colors.red : Colors.black).withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(12),
+        color: isError
+            ? Theme.of(context).colorScheme.error.withValues(alpha: 0.12)
+            : context.design.fillSubtle,
+        borderRadius: BorderRadius.circular(context.design.radiusMedium),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2543,9 +2562,9 @@ class _ActionSettingsState extends State<_ActionSettings> {
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: context.design.typeCaption,
               fontWeight: FontWeight.bold,
-              color: isError ? Colors.red : Colors.black54,
+              color: isError ? Colors.red : context.design.textSecondary,
             ),
           ),
           const SizedBox(height: 4),
@@ -2553,8 +2572,8 @@ class _ActionSettingsState extends State<_ActionSettings> {
             value,
             style: TextStyle(
               fontFamily: 'monospace',
-              fontSize: 12,
-              color: isError ? Colors.red : Colors.black87,
+              fontSize: context.design.typeCaption,
+              color: isError ? Colors.red : context.design.textPrimary,
             ),
           ),
         ],
@@ -2575,7 +2594,7 @@ class _ActionSettingsState extends State<_ActionSettings> {
         // Which kind of button this is comes first, and it is the only thing
         // every kind has in common: each one below shows just the fields it
         // actually uses, so a search button never asks about an HTTP method.
-        ElementEditorScreen._sectionLabel(s.actionKindLabel),
+        FieldLabel(s.actionKindLabel),
         Wrap(
           spacing: 8,
           children: [
@@ -2620,7 +2639,10 @@ class _ActionSettingsState extends State<_ActionSettings> {
             WidgetActionKind.open => s.actionKindOpenHint,
             WidgetActionKind.search => s.actionKindSearchHint,
           },
-          style: const TextStyle(fontSize: 12, color: Colors.black54),
+          style: TextStyle(
+            fontSize: context.design.typeCaption,
+            color: context.design.textSecondary,
+          ),
         ),
         const SizedBox(height: 20),
 
@@ -2658,7 +2680,7 @@ class _ActionSettingsState extends State<_ActionSettings> {
         onChanged: widget.onChanged,
       ),
       const SizedBox(height: 20),
-      ElementEditorScreen._sectionLabel(s.searchWebLabel),
+      FieldLabel(s.searchWebLabel),
       _WebSearchPicker(
         element: widget.element,
         s: s,
@@ -2703,7 +2725,10 @@ class _ActionSettingsState extends State<_ActionSettings> {
           padding: const EdgeInsets.only(top: 4),
           child: Text(
             s.actionOpenNotValid,
-            style: const TextStyle(color: Colors.red, fontSize: 12),
+            style: TextStyle(
+              color: Colors.red,
+              fontSize: context.design.typeCaption,
+            ),
           ),
         ),
       const SizedBox(height: 8),
@@ -2731,12 +2756,15 @@ class _ActionSettingsState extends State<_ActionSettings> {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
+              color: context.design.fillSubtle,
+              borderRadius: BorderRadius.circular(context.design.radiusMedium),
             ),
             child: Text(
               _testResult!,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: context.design.typeCaption,
+              ),
             ),
           ),
         ),
@@ -2754,7 +2782,7 @@ class _ActionSettingsState extends State<_ActionSettings> {
         // field below actually needs (which quick-insert row it shows, and
         // whether a body makes sense), so picking them after would mean
         // scrolling back up to react to them.
-        ElementEditorScreen._sectionLabel(s.actionMethodLabel),
+        FieldLabel(s.actionMethodLabel),
         Wrap(
           spacing: 8,
           children: [
@@ -2770,10 +2798,13 @@ class _ActionSettingsState extends State<_ActionSettings> {
         ),
         const SizedBox(height: 6),
         Text(_methodHint(s, widget.element.actionMethod),
-            style: const TextStyle(fontSize: 12, color: Colors.black54)),
+            style: TextStyle(
+              fontSize: context.design.typeCaption,
+              color: context.design.textSecondary),
+            ),
         const SizedBox(height: 20),
 
-        ElementEditorScreen._sectionLabel(s.actionModeLabel),
+        FieldLabel(s.actionModeLabel),
         Wrap(
           spacing: 8,
           children: [
@@ -2800,7 +2831,10 @@ class _ActionSettingsState extends State<_ActionSettings> {
           mode == ActionValueMode.toggle
               ? s.actionModeToggleHint
               : s.actionModeFixedHint,
-          style: const TextStyle(fontSize: 12, color: Colors.black54),
+          style: TextStyle(
+            fontSize: context.design.typeCaption,
+            color: context.design.textSecondary,
+          ),
         ),
 
         if (mode == ActionValueMode.toggle) ...[
@@ -2849,7 +2883,10 @@ class _ActionSettingsState extends State<_ActionSettings> {
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               s.actionUrlNotValid,
-              style: const TextStyle(color: Colors.red, fontSize: 12),
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: context.design.typeCaption,
+              ),
             ),
           ),
         const SizedBox(height: 8),
@@ -2869,10 +2906,10 @@ class _ActionSettingsState extends State<_ActionSettings> {
             childrenPadding: const EdgeInsets.only(bottom: 8),
             title: Text(
               s.advanced,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: context.design.typeLabel,
                 fontWeight: FontWeight.bold,
-                color: Colors.black54,
+                color: context.design.textSecondary,
               ),
             ),
             children: [
@@ -2919,12 +2956,17 @@ class _ActionSettingsState extends State<_ActionSettings> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
+                color: context.design.fillSubtle,
+                borderRadius: BorderRadius.circular(
+                  context.design.radiusMedium,
+                ),
               ),
               child: Text(
                 _testResult!,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: context.design.typeCaption,
+                ),
               ),
             ),
           ),

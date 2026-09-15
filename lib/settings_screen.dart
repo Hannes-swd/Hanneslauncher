@@ -5,6 +5,7 @@ import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
 import 'default_launcher_controller.dart';
 import 'default_launcher_screen.dart';
+import 'design_tokens.dart';
 import 'folders_controller.dart';
 import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
@@ -146,9 +147,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                   icon: const Icon(Icons.clear),
                   onPressed: () => setState(_search.clear),
                 ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
+          // No border of its own: how a field is framed is a setting now, and
+          // the most prominent field in the app is the last place to opt out
+          // of it.
         ),
       ),
     );
@@ -213,7 +214,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           padding: const EdgeInsets.all(32),
           child: Text(
             s.noSettingsFound,
-            style: const TextStyle(color: Colors.black54),
+            style: TextStyle(color: context.design.textSecondary),
           ),
         ),
       );

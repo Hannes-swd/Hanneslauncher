@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_icon.dart';
 import 'app_strings.dart';
 import 'browser_apps.dart';
+import 'design_tokens.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
@@ -36,7 +37,7 @@ class WebAppsSettingsScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(24),
                       child: Text(
                         s.noWebApps,
-                        style: const TextStyle(color: Colors.black54),
+                        style: TextStyle(color: context.design.textSecondary),
                       ),
                     )
                   : ListView.builder(
@@ -71,10 +72,7 @@ class WebAppsSettingsScreen extends StatelessWidget {
   Future<void> _addWebApp(BuildContext context, AppStrings s) async {
     final result = await _promptNameAndUrl(context, s);
     if (result == null) return;
-    await WebAppsController.instance.add(
-      name: result.name,
-      url: result.url,
-    );
+    await WebAppsController.instance.add(name: result.name, url: result.url);
   }
 
   Future<void> _openOptions(
@@ -332,14 +330,12 @@ class _NameAndUrlDialogState extends State<_NameAndUrlDialog> {
           child: Text(s.cancel),
         ),
         TextButton(
-          onPressed: () => Navigator.of(context).pop((
-            name: _nameField.text,
-            url: _urlField.text,
-          )),
+          onPressed: () => Navigator.of(
+            context,
+          ).pop((name: _nameField.text, url: _urlField.text)),
           child: Text(s.save),
         ),
       ],
     );
   }
 }
-

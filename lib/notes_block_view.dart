@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_strings.dart';
+import 'design_tokens.dart';
 import 'note_document.dart';
 import 'note_editor_screen.dart';
 import 'panel_blocks_controller.dart';
@@ -32,10 +33,10 @@ class NotesBlockView extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.sticky_note_2_outlined,
                 size: 18,
-                color: Colors.black54,
+                color: context.design.textSecondary,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -43,9 +44,9 @@ class NotesBlockView extends StatelessWidget {
                   block.title.isEmpty ? s.blockNotes : block.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: context.design.textPrimary,
                   ),
                 ),
               ),
@@ -55,7 +56,7 @@ class NotesBlockView extends StatelessWidget {
           if (!hasText)
             Text(
               s.emptyNote,
-              style: const TextStyle(color: Colors.black54),
+              style: TextStyle(color: context.design.textSecondary),
             )
           else
             for (var i = 0; i < lines.length && i < _previewLines; i++)
@@ -64,9 +65,12 @@ class NotesBlockView extends StatelessWidget {
                 number: _numberOf(lines, i),
               ),
           if (lines.length > _previewLines)
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(top: 4),
-              child: Text('…', style: TextStyle(color: Colors.black54)),
+              child: Text(
+                '…',
+                style: TextStyle(color: context.design.textSecondary),
+              ),
             ),
         ],
       ),
@@ -99,7 +103,7 @@ class NoteParagraphView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = noteBaseStyle(paragraph.style);
+    final base = noteBaseStyle(paragraph.style, design: context.design);
     return Padding(
       padding: EdgeInsets.only(
         top: paragraph.style == NoteBlockStyle.title ? 6 : 1,
@@ -124,14 +128,14 @@ class NoteParagraphView extends StatelessWidget {
                     ? Icons.check_box_outlined
                     : Icons.check_box_outline_blank,
                 size: (base.fontSize ?? 16) + 2,
-                color: Colors.black54,
+                color: context.design.textSecondary,
               ),
             ),
             NoteListKind.none => const SizedBox.shrink(),
           },
           Expanded(
             child: Text.rich(
-              noteParagraphSpan(paragraph),
+              noteParagraphSpan(paragraph, design: context.design),
               textAlign: noteTextAlign(paragraph.align),
             ),
           ),

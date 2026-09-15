@@ -8,6 +8,8 @@ import 'code_widgets_settings_screen.dart';
 import 'data_sources_settings_screen.dart';
 import 'default_launcher_controller.dart';
 import 'default_launcher_screen.dart';
+import 'design_settings_screen.dart';
+import 'design_tokens.dart';
 import 'device_data_screen.dart';
 import 'folders_settings_screen.dart';
 import 'icon_theme_controller.dart';
@@ -127,21 +129,30 @@ List<SettingsEntry> buildSettingsCatalog({
         'background', 'image', 'picture', 'video', 'gif', 'mp4', 'film',
         'bewegt', 'animiert', 'animated', 'live',
       ],
+      // Wrapped in a Builder because the catalog is assembled outside any
+      // widget's build - the thumbnail still has to reach the design for its
+      // corner radius and its placeholder, and this is where a context first
+      // exists.
       trailing: wallpaper == null
           ? null
-          : SizedBox(
-              width: 40,
-              height: 40,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                // No thumbnail for a video - pulling a frame out of it costs
-                // a decoder run per settings rebuild, for a 40 pixel square.
-                child: wallpaper.isVideo
-                    ? const ColoredBox(
-                        color: Color(0xFFE0E0E0),
-                        child: Icon(Icons.movie_outlined, size: 22),
-                      )
-                    : Image.file(wallpaper.file, fit: BoxFit.cover),
+          : Builder(
+              builder: (context) => SizedBox(
+                width: 40,
+                height: 40,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(
+                    context.design.radiusSmall,
+                  ),
+                  // No thumbnail for a video - pulling a frame out of it
+                  // costs a decoder run per settings rebuild, for a 40 pixel
+                  // square.
+                  child: wallpaper.isVideo
+                      ? ColoredBox(
+                          color: context.design.fillSubtle,
+                          child: const Icon(Icons.movie_outlined, size: 22),
+                        )
+                      : Image.file(wallpaper.file, fit: BoxFit.cover),
+                ),
               ),
             ),
       onTap: (context) => WallpaperController.instance.pickAndSet(),
@@ -157,6 +168,35 @@ List<SettingsEntry> buildSettingsCatalog({
         ],
         onTap: (context) => WallpaperController.instance.clear(),
       ),
+    SettingsEntry(
+      icon: Icons.format_paint_outlined,
+      title: s.design,
+      section: SettingsSection.appearance,
+      subtitle: s.designSubtitle,
+      keywords: const [
+        'design', 'thema', 'theme', 'farbthema', 'color theme', 'farben',
+        'colors', 'colours', 'farbe', 'color', 'akzent', 'accent',
+        'hell', 'light', 'dunkel', 'dark', 'dark mode', 'nachtmodus',
+        'grau', 'grey', 'gray', 'rosa', 'pink', 'rose', 'grün', 'gruen',
+        'green', 'blau', 'blue',
+        'rundung', 'runde ecken', 'ecken', 'rounding', 'corners', 'radius',
+        'schatten', 'shadow', 'shadows', 'tiefe', 'depth', 'elevation',
+        'abstand', 'abstände', 'abstaende', 'spacing', 'padding', 'luft',
+        'kartenhöhe', 'kartenhoehe', 'karten', 'card height', 'cards',
+        'schriftgröße', 'schriftgroesse', 'textgröße', 'textgroesse',
+        'font size', 'text size', 'größer', 'groesser', 'bigger',
+        'deckkraft', 'transparenz', 'durchsichtig', 'opacity',
+        'transparency', 'panel', 'aussehen', 'appearance', 'look',
+        'zurücksetzen', 'zuruecksetzen', 'reset', 'standard', 'default',
+      ],
+      trailing: Builder(
+        builder: (context) => CircleAvatar(
+          radius: 12,
+          backgroundColor: context.design.accent,
+        ),
+      ),
+      onTap: (context) => _push(context, const DesignSettingsScreen()),
+    ),
     SettingsEntry(
       icon: Icons.access_time_outlined,
       title: s.clock,

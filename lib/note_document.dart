@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_list_settings_controller.dart' show appListColorPalette;
+import 'design_tokens.dart';
 
 /// What a whole line of a note is - picked in the format panel's top row.
 enum NoteBlockStyle { title, heading, text, note }
@@ -221,7 +222,8 @@ class NoteParagraph {
     return NoteParagraph(
       text: text,
       formats: fittedFormats(text, formats),
-      style: _enumByName(NoteBlockStyle.values, json['style']) ??
+      style:
+          _enumByName(NoteBlockStyle.values, json['style']) ??
           NoteBlockStyle.text,
       list: _enumByName(NoteListKind.values, json['list']) ?? NoteListKind.none,
       checked: json['checked'] as bool? ?? false,
@@ -253,33 +255,43 @@ List<NoteInlineFormat> fittedFormats(
 }
 
 /// The look a line's [NoteBlockStyle] gives it before any inline format.
-TextStyle noteBaseStyle(NoteBlockStyle style) => switch (style) {
-  NoteBlockStyle.title => const TextStyle(
-    fontSize: 26,
-    fontWeight: FontWeight.w700,
-    color: Colors.black87,
-    height: 1.3,
-  ),
-  NoteBlockStyle.heading => const TextStyle(
-    fontSize: 20,
-    fontWeight: FontWeight.w600,
-    color: Colors.black87,
-    height: 1.3,
-  ),
-  NoteBlockStyle.text => const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w400,
-    color: Colors.black87,
-    height: 1.4,
-  ),
-  NoteBlockStyle.note => const TextStyle(
-    fontSize: 13,
-    fontWeight: FontWeight.w400,
-    fontStyle: FontStyle.italic,
-    color: Colors.black54,
-    height: 1.4,
-  ),
-};
+///
+/// The sizes are the note's own - a note is written text, so how big its
+/// title is belongs to the note rather than to the app's type scale. The
+/// colors do come from [design] though: a note is read on a card the theme
+/// draws, and black-on-black is what leaving them fixed would mean on a dark
+/// theme. [design] is optional so the pure-text tests can still call this
+/// without building a widget tree.
+TextStyle noteBaseStyle(NoteBlockStyle style, {DesignTokens? design}) {
+  final tokens = design ?? DesignTokens.fallback;
+  return switch (style) {
+    NoteBlockStyle.title => TextStyle(
+      fontSize: 26,
+      fontWeight: FontWeight.w700,
+      color: tokens.textPrimary,
+      height: 1.3,
+    ),
+    NoteBlockStyle.heading => TextStyle(
+      fontSize: 20,
+      fontWeight: FontWeight.w600,
+      color: tokens.textPrimary,
+      height: 1.3,
+    ),
+    NoteBlockStyle.text => TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w400,
+      color: tokens.textPrimary,
+      height: 1.4,
+    ),
+    NoteBlockStyle.note => TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w400,
+      fontStyle: FontStyle.italic,
+      color: tokens.textSecondary,
+      height: 1.4,
+    ),
+  };
+}
 
 TextAlign noteTextAlign(NoteAlign align) => switch (align) {
   NoteAlign.left => TextAlign.left,
@@ -321,9 +333,13 @@ TextStyle applyNoteFormat(TextStyle base, NoteInlineFormat format) {
 }
 
 /// Builds one line as a span, e.g. for the read-only preview on the panel.
-TextSpan noteParagraphSpan(NoteParagraph paragraph, {TextStyle? base}) {
+TextSpan noteParagraphSpan(
+  NoteParagraph paragraph, {
+  TextStyle? base,
+  DesignTokens? design,
+}) {
   final style = (base ?? const TextStyle()).merge(
-    noteBaseStyle(paragraph.style),
+    noteBaseStyle(paragraph.style, design: design),
   );
   final formats = fittedFormats(paragraph.text, paragraph.formats);
   final children = <TextSpan>[];

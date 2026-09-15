@@ -8,6 +8,7 @@ import 'calendar_block_settings_screen.dart';
 import 'code_widget_editor_screen.dart';
 import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
+import 'design_tokens.dart';
 import 'device_stats_controller.dart';
 import 'locale_controller.dart';
 import 'location_controller.dart';
@@ -125,8 +126,7 @@ class _PanelViewState extends State<PanelView> {
           title: Text(s.addBlock),
           children: [
             SimpleDialogOption(
-              onPressed: () =>
-                  Navigator.of(context).pop(PanelBlockType.appRow),
+              onPressed: () => Navigator.of(context).pop(PanelBlockType.appRow),
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.apps),
@@ -135,8 +135,7 @@ class _PanelViewState extends State<PanelView> {
               ),
             ),
             SimpleDialogOption(
-              onPressed: () =>
-                  Navigator.of(context).pop(PanelBlockType.widget),
+              onPressed: () => Navigator.of(context).pop(PanelBlockType.widget),
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.widgets_outlined),
@@ -228,16 +227,21 @@ class _PanelViewState extends State<PanelView> {
 
   Future<void> _edit(PanelBlock block) async {
     final builder = switch (block.type) {
-      PanelBlockType.appRow => (context) =>
-          AppRowSettingsScreen(blockId: block.id),
-      PanelBlockType.widget => (context) =>
-          WidgetEditorScreen(blockId: block.id),
-      PanelBlockType.calendar => (context) =>
-          CalendarBlockSettingsScreen(blockId: block.id),
-      PanelBlockType.notes => (context) =>
-          NoteBlockSettingsScreen(blockId: block.id),
-      PanelBlockType.code => (context) =>
-          CodeWidgetEditorScreen(blockId: block.id),
+      PanelBlockType.appRow => (context) => AppRowSettingsScreen(
+        blockId: block.id,
+      ),
+      PanelBlockType.widget => (context) => WidgetEditorScreen(
+        blockId: block.id,
+      ),
+      PanelBlockType.calendar => (context) => CalendarBlockSettingsScreen(
+        blockId: block.id,
+      ),
+      PanelBlockType.notes => (context) => NoteBlockSettingsScreen(
+        blockId: block.id,
+      ),
+      PanelBlockType.code => (context) => CodeWidgetEditorScreen(
+        blockId: block.id,
+      ),
     };
     await Navigator.of(context).push(MaterialPageRoute(builder: builder));
   }
@@ -290,7 +294,7 @@ class _PanelViewState extends State<PanelView> {
             width: 36,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.25),
+              color: context.design.textSecondary.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -340,11 +344,13 @@ class _PanelViewState extends State<PanelView> {
             onVerticalDragEnd: widget.onHandleDragEnd,
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
+                padding: EdgeInsets.symmetric(
+                  horizontal: context.design.spaceXl,
+                ),
                 child: Text(
                   s.emptyPanel,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.black54),
+                  style: TextStyle(color: context.design.textSecondary),
                 ),
               ),
             ),
@@ -360,7 +366,12 @@ class _PanelViewState extends State<PanelView> {
           },
           child: ReorderableListView.builder(
             scrollController: widget.scrollController,
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+            padding: EdgeInsets.fromLTRB(
+              context.design.spaceSm,
+              0,
+              context.design.spaceSm,
+              context.design.spaceXl * 0.75,
+            ),
             // Own handles: the whole card is the handle, but only after a
             // long press, so ordinary dragging still scrolls the list.
             buildDefaultDragHandles: false,

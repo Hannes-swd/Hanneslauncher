@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_strings.dart';
 import 'backup_file_bridge.dart';
+import 'design_tokens.dart';
 import 'locale_controller.dart';
 import 'settings_backup_service.dart';
 
@@ -92,7 +93,10 @@ class _SettingsBackupScreenState extends State<SettingsBackupScreen> {
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text(s.backupHint, style: const TextStyle(color: Colors.black54)),
+              Text(
+                s.backupHint,
+                style: TextStyle(color: context.design.textSecondary),
+              ),
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: _busy ? null : () => _export(s),

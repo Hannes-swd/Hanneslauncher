@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'app_icon.dart';
 import 'app_strings.dart';
+import 'design_tokens.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
@@ -361,15 +362,15 @@ class _SecretFolderScreenState extends State<_SecretFolderScreen>
                     padding: const EdgeInsets.all(16),
                     child: Text(
                       s.secretFolderWarning,
-                      style: const TextStyle(color: Colors.black54),
+                      style: TextStyle(color: context.design.textSecondary),
                     ),
                   ),
                   if (entries.isEmpty)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: context.design.pagePadding,
                       child: Text(
                         s.secretFolderEmpty,
-                        style: const TextStyle(color: Colors.black54),
+                        style: TextStyle(color: context.design.textSecondary),
                       ),
                     ),
                   for (final entry in entries)
@@ -494,7 +495,10 @@ class _PasswordDialogState extends State<_PasswordDialog> {
               padding: const EdgeInsets.only(top: 16),
               child: Text(
                 widget.note!,
-                style: const TextStyle(color: Colors.black54, fontSize: 12),
+                style: TextStyle(
+                  color: context.design.textSecondary,
+                  fontSize: context.design.typeCaption,
+                ),
               ),
             ),
         ],
@@ -593,7 +597,10 @@ class _RecoveryCodeDialog extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             s.recoveryCodeIntro,
-            style: const TextStyle(color: Colors.black54, fontSize: 12),
+            style: TextStyle(
+              color: context.design.textSecondary,
+              fontSize: context.design.typeCaption,
+            ),
           ),
         ],
       ),

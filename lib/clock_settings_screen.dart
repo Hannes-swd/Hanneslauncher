@@ -5,6 +5,8 @@ import 'clock_font_picker.dart';
 import 'clock_settings_controller.dart';
 import 'clock_widget.dart';
 import 'color_swatch_picker.dart';
+import 'design_tokens.dart';
+import 'design_widgets.dart';
 import 'locale_controller.dart';
 
 class ClockSettingsScreen extends StatelessWidget {
@@ -32,17 +34,7 @@ class ClockSettingsScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Text(
-                      s.position,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ),
+                  SettingsHeading(s.position),
                   Opacity(
                     opacity: settings.enabled ? 1 : 0.4,
                     child: IgnorePointer(
@@ -50,17 +42,7 @@ class ClockSettingsScreen extends StatelessWidget {
                       child: _PositionSettings(settings: settings, s: s),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Text(
-                      s.style,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ),
+                  SettingsHeading(s.style),
                   Opacity(
                     opacity: settings.enabled ? 1 : 0.4,
                     child: IgnorePointer(
@@ -68,23 +50,13 @@ class ClockSettingsScreen extends StatelessWidget {
                       child: _StyleGrid(settings: settings, s: s),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Text(
-                      s.appearanceCustom,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ),
+                  SettingsHeading(s.appearanceCustom),
                   Opacity(
                     opacity: settings.enabled ? 1 : 0.4,
                     child: IgnorePointer(
                       ignoring: !settings.enabled,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: context.design.pagePadding,
                         // Only the section for the style actually in use -
                         // the others' colors would sit there unused and just
                         // be confusing to look at.
@@ -177,27 +149,34 @@ class _StyleGrid extends StatelessWidget {
       ),
     ];
 
+    final design = context.design;
     return GridView(
       // Inside the settings list, so it neither scrolls on its own nor
       // guesses a height - the page it sits in does the scrolling.
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      padding: design.pagePadding,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
+        mainAxisSpacing: design.spaceSm,
+        crossAxisSpacing: design.spaceSm,
         // A set height rather than an aspect ratio: tied to the width, the
         // tiles would grow taller on a bigger screen and undo the very
-        // saving the grid is here for.
-        mainAxisExtent: 128,
+        // saving the grid is here for. It follows the card size setting, so
+        // "roomy" gives the previews more room here too.
+        mainAxisExtent:
+            design.surfaceStyle(SurfaceLevel.compact).minHeight * 1.28,
       ),
       children: [
         for (final entry in styles)
-          _StyleOption(
+          OptionTile(
             title: entry.title,
             selected: settings.style == entry.style,
-            preview: entry.preview,
+            // Scaled down to whatever the tile leaves rather than cropped:
+            // the previews are real clocks of quite different sizes (a whole
+            // letter grid next to four digits), and half a word clock says
+            // nothing about what it looks like.
+            preview: FittedBox(fit: BoxFit.scaleDown, child: entry.preview),
             onTap: () => ClockSettingsController.instance.update(
               settings.copyWith(style: entry.style),
             ),
@@ -217,7 +196,7 @@ class _PositionSettings extends StatelessWidget {
   Widget build(BuildContext context) {
     final centered = settings.alignment == ClockAlignment.center;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: context.design.pagePadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -248,7 +227,7 @@ class _PositionSettings extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          _Label(s.distanceFromTop(settings.topPadding.round())),
+          FieldLabel(s.distanceFromTop(settings.topPadding.round())),
           Slider(
             value: settings.topPadding,
             min: 0,
@@ -262,7 +241,7 @@ class _PositionSettings extends StatelessWidget {
           // against yet.
           if (!centered) ...[
             const SizedBox(height: 8),
-            _Label(s.distanceFromSide(settings.sidePadding.round())),
+            FieldLabel(s.distanceFromSide(settings.sidePadding.round())),
             Slider(
               value: settings.sidePadding,
               min: 0,
@@ -291,7 +270,7 @@ class _DigitalAppearance extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Label(s.textColor),
+        FieldLabel(s.textColor),
         ColorSwatchPicker(
           s: s,
           selectedIndex: settings.digitalColorIndex,
@@ -302,7 +281,7 @@ class _DigitalAppearance extends StatelessWidget {
           },
         ),
         const SizedBox(height: 16),
-        _Label(s.font),
+        FieldLabel(s.font),
         ClockFontPicker(
           s: s,
           selected: settings.digitalFontFamily,
@@ -327,7 +306,7 @@ class _RomanAppearance extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Label(s.textColor),
+        FieldLabel(s.textColor),
         ColorSwatchPicker(
           s: s,
           selectedIndex: settings.romanColorIndex,
@@ -354,7 +333,7 @@ class _DotMatrixAppearance extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Label(s.textColor),
+        FieldLabel(s.textColor),
         ColorSwatchPicker(
           s: s,
           selectedIndex: settings.dotColorIndex,
@@ -381,7 +360,7 @@ class _SplitFlapAppearance extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Label(s.backgroundColor),
+        FieldLabel(s.backgroundColor),
         ColorSwatchPicker(
           s: s,
           selectedIndex: settings.splitFlapBgColorIndex,
@@ -392,7 +371,7 @@ class _SplitFlapAppearance extends StatelessWidget {
           },
         ),
         const SizedBox(height: 16),
-        _Label(
+        FieldLabel(
           s.backgroundStrength((settings.splitFlapBgOpacity * 100).round()),
         ),
         Slider(
@@ -407,7 +386,7 @@ class _SplitFlapAppearance extends StatelessWidget {
           },
         ),
         const SizedBox(height: 8),
-        _Label(s.textColor),
+        FieldLabel(s.textColor),
         ColorSwatchPicker(
           s: s,
           selectedIndex: settings.splitFlapTextColorIndex,
@@ -434,7 +413,7 @@ class _OrbitAppearance extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Label(s.textColor),
+        FieldLabel(s.textColor),
         ColorSwatchPicker(
           s: s,
           selectedIndex: settings.orbitColorIndex,
@@ -461,7 +440,7 @@ class _VerticalAppearance extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Label(s.textColor),
+        FieldLabel(s.textColor),
         ColorSwatchPicker(
           s: s,
           selectedIndex: settings.verticalColorIndex,
@@ -488,7 +467,7 @@ class _BarsAppearance extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Label(s.barsFilledColor),
+        FieldLabel(s.barsFilledColor),
         ColorSwatchPicker(
           s: s,
           selectedIndex: settings.barsFilledColorIndex,
@@ -499,7 +478,7 @@ class _BarsAppearance extends StatelessWidget {
           },
         ),
         const SizedBox(height: 16),
-        _Label(s.barsUnfilledColor),
+        FieldLabel(s.barsUnfilledColor),
         ColorSwatchPicker(
           s: s,
           selectedIndex: settings.barsUnfilledColorIndex,
@@ -510,7 +489,7 @@ class _BarsAppearance extends StatelessWidget {
           },
         ),
         const SizedBox(height: 16),
-        _Label(
+        FieldLabel(
           s.barsUnfilledStrength((settings.barsUnfilledOpacity * 100).round()),
         ),
         Slider(
@@ -525,7 +504,7 @@ class _BarsAppearance extends StatelessWidget {
           },
         ),
         const SizedBox(height: 8),
-        _Label(s.barsTextColor),
+        FieldLabel(s.barsTextColor),
         ColorSwatchPicker(
           s: s,
           selectedIndex: settings.barsTextColorIndex,
@@ -552,7 +531,7 @@ class _WordAppearance extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Label(s.backgroundColor),
+        FieldLabel(s.backgroundColor),
         ColorSwatchPicker(
           s: s,
           selectedIndex: settings.wordBgColorIndex,
@@ -563,7 +542,9 @@ class _WordAppearance extends StatelessWidget {
           },
         ),
         const SizedBox(height: 16),
-        _Label(s.backgroundStrength((settings.wordBgOpacity * 100).round())),
+        FieldLabel(
+          s.backgroundStrength((settings.wordBgOpacity * 100).round()),
+        ),
         Slider(
           value: settings.wordBgOpacity,
           min: 0,
@@ -576,7 +557,7 @@ class _WordAppearance extends StatelessWidget {
           },
         ),
         const SizedBox(height: 8),
-        _Label(s.activeLetters),
+        FieldLabel(s.activeLetters),
         ColorSwatchPicker(
           s: s,
           selectedIndex: settings.wordActiveColorIndex,
@@ -587,7 +568,7 @@ class _WordAppearance extends StatelessWidget {
           },
         ),
         const SizedBox(height: 16),
-        _Label(s.inactiveLetters),
+        FieldLabel(s.inactiveLetters),
         ColorSwatchPicker(
           s: s,
           selectedIndex: settings.wordInactiveColorIndex,
@@ -599,89 +580,6 @@ class _WordAppearance extends StatelessWidget {
         ),
         const SizedBox(height: 24),
       ],
-    );
-  }
-}
-
-class _Label extends StatelessWidget {
-  const _Label(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        text,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-      ),
-    );
-  }
-}
-
-class _StyleOption extends StatelessWidget {
-  const _StyleOption({
-    required this.title,
-    required this.selected,
-    required this.preview,
-    required this.onTap,
-  });
-
-  final String title;
-  final bool selected;
-  final Widget preview;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? Colors.black : Colors.black26,
-            width: selected ? 2 : 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            // Scaled down to whatever the tile leaves rather than cropped:
-            // the previews are real clocks of quite different sizes (a whole
-            // letter grid next to four digits), and half a word clock says
-            // nothing about what it looks like.
-            Expanded(
-              child: Center(
-                child: FittedBox(fit: BoxFit.scaleDown, child: preview),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (selected) ...[
-                  const Icon(Icons.check_circle, size: 14),
-                  const SizedBox(width: 4),
-                ],
-                Flexible(
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

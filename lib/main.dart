@@ -7,6 +7,8 @@ import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
 import 'default_launcher_controller.dart';
 import 'default_launcher_screen.dart';
+import 'design_controller.dart';
+import 'design_tokens.dart';
 import 'device_stats_controller.dart';
 import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
@@ -28,8 +30,27 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: LauncherRoot(),
+    // The one place the design is turned into a theme. Everything the app
+    // draws itself - the panel, every settings screen, every dialog - hangs
+    // below this, so moving a slider in the design settings redraws the
+    // screen it is being dragged on, with no reload and nothing else to keep
+    // in step. See design_tokens.dart.
+    return ValueListenableBuilder<DesignSettings>(
+      valueListenable: DesignController.instance,
+      builder: (context, design, child) {
+        final tokens = DesignTokens(design);
+        return MaterialApp(
+          theme: buildAppTheme(design),
+          // Changing theme is a crossfade rather than a cut: every colour
+          // travels through the ones in between, which is what makes picking
+          // a theme feel like the app changing its mind rather than like it
+          // reloading. DesignTokens.lerp is what carries it.
+          themeAnimationDuration: tokens.motionNormal,
+          themeAnimationCurve: tokens.motionCurve,
+          home: child,
+        );
+      },
+      child: const LauncherRoot(),
     );
   }
 }
@@ -77,6 +98,7 @@ class _LauncherRootState extends State<LauncherRoot>
     AppListSettingsController.instance.addListener(_onAppListSettingsChanged);
     WallpaperController.instance.load();
     LocaleController.instance.load();
+    DesignController.instance.load();
     IconThemeController.instance.load();
     OfflineModeController.instance.load();
     // Reads the installed version and the last check's result from disk, so
@@ -246,9 +268,12 @@ class _LauncherRootState extends State<LauncherRoot>
     }
   }
 
-  static const _panelRadius = BorderRadius.only(
-    bottomLeft: Radius.circular(32),
-    bottomRight: Radius.circular(32),
+  /// The panel's two bottom corners, from the design's largest radius - it is
+  /// the biggest surface in the app, so it is what the rounding slider is
+  /// read against.
+  BorderRadius _panelRadius(DesignTokens design) => BorderRadius.only(
+    bottomLeft: Radius.circular(design.radiusLarge),
+    bottomRight: Radius.circular(design.radiusLarge),
   );
 
   // Height of the invisible strip at the top of the home screen that opens
@@ -292,8 +317,9 @@ class _LauncherRootState extends State<LauncherRoot>
   Widget build(BuildContext context) {
     // Read here because this is the highest place that sees the phone's
     // clock setting; the widget cards format {{zeit}} from it.
-    DataSourcesController.use24HourFormat =
-        MediaQuery.of(context).alwaysUse24HourFormat;
+    DataSourcesController.use24HourFormat = MediaQuery.of(
+      context,
+    ).alwaysUse24HourFormat;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -321,39 +347,39 @@ class _LauncherRootState extends State<LauncherRoot>
             child: child!,
           ),
           child: Stack(
-          children: [
-            ValueListenableBuilder<bool>(
-              valueListenable: _homeVisible,
-              builder: (context, visible, child) =>
-                  WallpaperView(animate: visible),
-            ),
-            Scaffold(
-              backgroundColor: Colors.transparent,
-              body: Column(
-                children: [
-                  GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onVerticalDragStart: _onDragStart,
-                    onVerticalDragUpdate: (details) =>
-                        _onDragUpdate(details, height),
-                    onVerticalDragEnd: _onDragEnd,
-                    child: const SizedBox(
-                      height: _dragStripHeight,
-                      width: double.infinity,
-                    ),
-                  ),
-                  Expanded(
-                    child: AppListView(
-                      onPanelDragStart: _onDragStart,
-                      onPanelDragUpdate: (details) =>
-                          _onDragUpdate(details, height),
-                      onPanelDragEnd: _onDragEnd,
-                    ),
-                  ),
-                ],
+            children: [
+              ValueListenableBuilder<bool>(
+                valueListenable: _homeVisible,
+                builder: (context, visible, child) =>
+                    WallpaperView(animate: visible),
               ),
-            ),
-            AnimatedBuilder(
+              Scaffold(
+                backgroundColor: Colors.transparent,
+                body: Column(
+                  children: [
+                    GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onVerticalDragStart: _onDragStart,
+                      onVerticalDragUpdate: (details) =>
+                          _onDragUpdate(details, height),
+                      onVerticalDragEnd: _onDragEnd,
+                      child: const SizedBox(
+                        height: _dragStripHeight,
+                        width: double.infinity,
+                      ),
+                    ),
+                    Expanded(
+                      child: AppListView(
+                        onPanelDragStart: _onDragStart,
+                        onPanelDragUpdate: (details) =>
+                            _onDragUpdate(details, height),
+                        onPanelDragEnd: _onDragEnd,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              AnimatedBuilder(
                 animation: _controller,
                 builder: (context, child) {
                   final dy = (_controller.value - 1) * height;
@@ -365,36 +391,41 @@ class _LauncherRootState extends State<LauncherRoot>
                 // No drag handler around the whole panel any more: the block
                 // list inside scrolls, and the two gestures would fight over
                 // every touch. The panel is dragged by its header instead.
-                child: Scaffold(
-                  backgroundColor: Colors.transparent,
-                  body: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: _panelRadius,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          blurRadius: 16,
-                          offset: const Offset(0, 8),
+                child: Builder(
+                  builder: (context) {
+                    // The panel is the app's one hero surface: the roundest
+                    // corners, the deepest shadow, and the only thing between
+                    // the wallpaper and everything the launcher draws.
+                    final design = context.design;
+                    final radius = _panelRadius(design);
+                    return Scaffold(
+                      backgroundColor: Colors.transparent,
+                      body: AnimatedContainer(
+                        duration: design.motionFast,
+                        curve: design.motionCurve,
+                        decoration: BoxDecoration(
+                          borderRadius: radius,
+                          boxShadow: design.shadow(SurfaceLevel.hero),
                         ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: _panelRadius,
-                      child: Container(
-                        color: Colors.white.withValues(alpha: 0.85),
-                        child: SafeArea(
-                          child: PanelView(
-                            onHandleDragStart: _onDragStart,
-                            onHandleDragUpdate: (details) =>
-                                _onDragUpdate(details, height),
-                            onHandleDragEnd: _onDragEnd,
-                            onCloseRequested: _closePanel,
-                            scrollController: _panelScroll,
+                        child: ClipRRect(
+                          borderRadius: radius,
+                          child: Container(
+                            color: design.panelSurface,
+                            child: SafeArea(
+                              child: PanelView(
+                                onHandleDragStart: _onDragStart,
+                                onHandleDragUpdate: (details) =>
+                                    _onDragUpdate(details, height),
+                                onHandleDragEnd: _onDragEnd,
+                                onCloseRequested: _closePanel,
+                                scrollController: _panelScroll,
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
             ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'app_strings.dart';
+import 'design_tokens.dart';
 import 'locale_controller.dart';
 import 'update_controller.dart';
 
@@ -133,7 +134,7 @@ class _UpdateScreenState extends State<UpdateScreen>
                 release == null
                     ? s.updateNoReleaseYet
                     : s.updateLatestVersion(release.version),
-                style: const TextStyle(color: Colors.black54),
+                style: TextStyle(color: context.design.textSecondary),
               ),
               const SizedBox(height: 16),
               if (state.available) ...[
@@ -154,7 +155,7 @@ class _UpdateScreenState extends State<UpdateScreen>
                 if (release!.apkUrl.isEmpty)
                   Text(
                     s.updateNoApkInRelease,
-                    style: const TextStyle(color: Colors.black54),
+                    style: TextStyle(color: context.design.textSecondary),
                   )
                 else if (state.downloading) ...[
                   // Determinate whenever the server said how big the file is,
@@ -171,7 +172,10 @@ class _UpdateScreenState extends State<UpdateScreen>
                         : s.updateDownloading(
                             (state.downloadedFraction * 100).round(),
                           ),
-                    style: const TextStyle(color: Colors.black54, fontSize: 13),
+                    style: TextStyle(
+                      color: context.design.textSecondary,
+                      fontSize: context.design.typeLabel,
+                    ),
                   ),
                 ] else
                   FilledButton.icon(
@@ -183,9 +187,9 @@ class _UpdateScreenState extends State<UpdateScreen>
                   const SizedBox(height: 8),
                   Text(
                     s.updateNeedsInstallPermission,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Color(0xFFD32F2F),
-                      fontSize: 13,
+                      fontSize: context.design.typeLabel,
                     ),
                   ),
                   TextButton.icon(
@@ -199,22 +203,25 @@ class _UpdateScreenState extends State<UpdateScreen>
                   const SizedBox(height: 8),
                   Text(
                     s.updateDownloadFailed,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Color(0xFFD32F2F),
-                      fontSize: 13,
+                      fontSize: context.design.typeLabel,
                     ),
                   ),
                 ],
                 const SizedBox(height: 8),
                 Text(
                   s.updateInstallHint,
-                  style: const TextStyle(color: Colors.black54, fontSize: 13),
+                  style: TextStyle(
+                    color: context.design.textSecondary,
+                    fontSize: context.design.typeLabel,
+                  ),
                 ),
                 const SizedBox(height: 16),
               ] else if (release != null && !state.checking) ...[
                 Text(
                   s.updateUpToDate,
-                  style: const TextStyle(color: Colors.black54),
+                  style: TextStyle(color: context.design.textSecondary),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -223,20 +230,28 @@ class _UpdateScreenState extends State<UpdateScreen>
                     ? null
                     : () => UpdateController.instance.check(),
                 icon: const Icon(Icons.refresh),
-                label: Text(state.checking ? s.updateChecking : s.updateCheckNow),
+                label: Text(
+                  state.checking ? s.updateChecking : s.updateCheckNow,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 state.lastCheck == null
                     ? s.updateNeverChecked
                     : s.updateLastChecked(_formatTime(state.lastCheck!, s)),
-                style: const TextStyle(color: Colors.black54, fontSize: 13),
+                style: TextStyle(
+                  color: context.design.textSecondary,
+                  fontSize: context.design.typeLabel,
+                ),
               ),
               if (state.lastCheckFailed) ...[
                 const SizedBox(height: 8),
                 Text(
                   s.updateCheckFailed,
-                  style: const TextStyle(color: Color(0xFFD32F2F), fontSize: 13),
+                  style: TextStyle(
+                    color: Color(0xFFD32F2F),
+                    fontSize: context.design.typeLabel,
+                  ),
                 ),
               ],
               if (release != null && release.notes.isNotEmpty) ...[

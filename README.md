@@ -66,6 +66,65 @@ Split-flap · Orbit · Vertical
 
 ---
 
+## Design
+
+Everything the launcher draws itself - the panel, its cards, every settings
+screen and every dialog - is one theme, changed under
+*Settings → Appearance → Design*:
+
+- **Color theme**: grey, rose, green, blue or dark, and each of the six
+  colors it is made of - ground, cards, text, quieter text, accent, lines -
+  can be set on its own on top of that
+- **Rounding**, 4 px to 32 px. It sets the roundest surfaces; smaller cards
+  and controls follow a golden step behind, so a big card stays rounder than
+  a small one at every setting
+- **Shadows**, off to strong. Each one is three layers - a contact line, a
+  short throw and a wide haze - because that is what a real shadow is; a
+  single soft blur is the same grey everywhere and gives nothing a near edge
+- **Input fields**: a line under them, a full box, or a tint and no edge at
+  all - every text field in the app follows it, search included
+- **Spacing**, **card height** and **text size**, each as a multiplier
+- **Panel opacity**: how much of the wallpaper shows through the panel
+- **Motion**, off to calm: how long a theme change, a page or a card takes.
+  Picking a theme is a crossfade through the colours in between rather than a
+  cut, and the slider comes with something to tap, because a duration in
+  milliseconds is a number nobody can picture
+
+Every size is derived from the golden ratio rather than picked one at a time:
+the three corner radii are a golden step apart, the type ramp climbs by a half
+step (so two steps make the whole ratio), and the spacing ramp is 4, 8, 12,
+20, 32, 52 - each the sum of the two before it, which is that same ratio in
+whole pixels. Sizes chosen separately drift a pixel or two out of relation and
+the eye reads the result as approximate without being able to say why.
+
+The type does the rest. Six sizes, not ten, with the work of telling text
+apart done by weight and letter-spacing instead: tracking runs tight at the
+top of the ramp and open at the bottom, and weight runs the other way, so a
+title is set large and light while a section heading is small, spaced out and
+capitalised. Everything shouting in bold is what a default looks like.
+
+Surfaces come in three tiers - a widget card on the panel is drawn larger,
+rounder and deeper than an app row next to it - so the screen has a visible
+order without anything being hidden behind a menu. Every value is bounded, so
+no combination of them can break the layout, and the default is a designed
+look rather than whatever Material ships with.
+
+Two rules keep the colors honest whatever they are set to, and neither does
+anything to a theme that is already fine: text is lifted until it can be read
+on the ground it sits on (keeping its own hue, so a warm grey stays one), and
+a card cannot end up on the other side of the light/dark line from that
+ground - a pale card on a dark page would leave no text color that works on
+both. A colour is picked on a hue-and-saturation field with brightness and
+opacity under it; opacity is offered wherever the colour is laid *on* top of
+something, which is everywhere except the two the app paints its solid
+grounds with.
+
+The home screen is deliberately left out: the clock, the app list and the
+wallpaper sit on top of the picture and keep the colors set for them
+separately.
+
+---
+
 ## The panel
 
 Pull down from the top edge of the screen. It follows the finger one to one
@@ -161,6 +220,8 @@ in **[CODE_WIDGETS.md](CODE_WIDGETS.md)**.
 - **Web apps**: treat links and PWAs like apps, and pick per entry which
   browser they open in
 - **Customize apps**: rename, set your own icon, uninstall
+- **Design**: theme, rounding, shadows, spacing and text size for the whole
+  app (see above)
 - **Icon design**: tint every icon the same color
 - **App list**: font, size, line spacing, color, sort order
 - **Language**: German or English, following the system language by default
@@ -224,6 +285,11 @@ Plain Flutter, no state management package: every area has a singleton
 calendar, device sensors, excluding the screen edge from the system
 gestures, runs through method channels in
 `android/app/src/main/kotlin/.../MainActivity.kt`.
+
+Nothing picks a color, a corner radius or a text size of its own:
+`design_tokens.dart` holds them all, hands them to Material as a `ThemeData`
+plus a `ThemeExtension`, and everything else reads `context.design`. The home
+screen is the one thing outside it, for the reason given above.
 
 Code widgets are the one part that doesn't live in `SharedPreferences`: each
 one keeps its HTML, CSS, JavaScript and uploaded files in its own folder
