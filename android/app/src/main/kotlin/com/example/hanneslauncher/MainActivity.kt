@@ -32,6 +32,7 @@ import android.os.Process
 import android.provider.CalendarContract
 import android.provider.ContactsContract
 import android.provider.Settings
+import android.service.notification.NotificationListenerService
 import android.view.WindowManager
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -53,6 +54,7 @@ class MainActivity : FlutterActivity() {
     private val offlineModeChannelName = "hanneslauncher/offline_mode"
     private val mediaChannelName = "hanneslauncher/media"
     private val contactsChannelName = "hanneslauncher/contacts"
+    private val notificationsChannelName = "hanneslauncher/notifications"
     private val calendarPermissionRequestCode = 4201
     private val importFileRequestCode = 4202
     private val stepsPermissionRequestCode = 4203
@@ -360,6 +362,47 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        // How many notifications each package currently has waiting, for the
+        // badge on a pinned app. Same permission as the media line above -
+        // the notification listener is what Android hands both to - so the
+        // two channels answer "hasPermission" identically on purpose: the
+        // badge setting can ask for it without knowing anything about music.
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            notificationsChannelName,
+        )
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "hasPermission" -> result.success(hasNotificationAccess())
+                    "requestPermission" -> result.success(requestNotificationAccess())
+                    "counts" -> result.success(notificationCounts())
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    // Empty whenever the permission is missing, which the Dart side tells
+    // apart by asking "hasPermission" - here it is simply "no badges".
+    //
+    // The listener service can also be switched on and yet not bound: after
+    // an update, or after Android stopped this app's process. requestRebind
+    // is the documented way to ask for it back; this call still answers
+    // empty, and the next poll a few seconds later finds it connected.
+    private fun notificationCounts(): Map<String, Int> {
+        if (!hasNotificationAccess()) return emptyMap()
+        if (!MediaNotificationListener.isConnected) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                try {
+                    NotificationListenerService.requestRebind(
+                        ComponentName(this, MediaNotificationListener::class.java),
+                    )
+                } catch (_: Exception) {
+                }
+            }
+            return emptyMap()
+        }
+        return MediaNotificationListener.countsByPackage()
     }
 
     // Started without resolveActivity() on purpose, like the other settings

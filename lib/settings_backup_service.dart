@@ -15,6 +15,7 @@ import 'folders_controller.dart';
 import 'icon_theme_controller.dart';
 import 'launcher_entries_controller.dart';
 import 'locale_controller.dart';
+import 'notification_badges_controller.dart';
 import 'offline_mode_controller.dart';
 import 'panel_blocks_controller.dart';
 import 'pinned_apps_controller.dart';
@@ -118,6 +119,8 @@ class SettingsBackupService {
       },
       'pinnedApps': PinnedAppsController.instance.value,
       'pinnedAppsLeftMargin': PinnedAppsLayoutController.instance.value,
+      'pinnedBadgeStyle': PinnedBadgeController.instance.value.style.name,
+      'pinnedBadgeColorIndex': PinnedBadgeController.instance.value.colorIndex,
       'panelBlocks': [
         for (final block in PanelBlocksController.instance.value)
           block.toJson(),
@@ -494,6 +497,20 @@ class SettingsBackupService {
     if (leftMargin != null) {
       await PinnedAppsLayoutController.instance.setLeftMargin(
         leftMargin.toDouble(),
+      );
+    }
+
+    final badgeStyle = decoded['pinnedBadgeStyle'];
+    final badgeColor = decoded['pinnedBadgeColorIndex'] as int?;
+    if (badgeStyle != null || badgeColor != null) {
+      // The notification permission itself doesn't travel with a backup -
+      // restoring "show a number" on a phone that hasn't granted it leaves
+      // the setting standing and the badges simply empty until it is.
+      await PinnedBadgeController.instance.update(
+        PinnedBadgeSettings(
+          style: PinnedBadgeController.styleFromName(badgeStyle),
+          colorIndex: badgeColor ?? PinnedBadgeSettings.defaultColorIndex,
+        ),
       );
     }
   }

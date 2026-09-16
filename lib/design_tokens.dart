@@ -531,10 +531,14 @@ class DesignTokens extends ThemeExtension<DesignTokens> {
   /// contrasts more puts the line exactly where it belongs for the color in
   /// hand, and puts it there for a color the user picked as well as for one
   /// of ours.
-  Color get onAccent => contrastBetween(_ink, accent) > contrastBetween(
-    Colors.white,
-    accent,
-  )
+  Color get onAccent => inkOn(accent);
+
+  /// The same measurement for a ground the design doesn't hold: a
+  /// notification badge painted in a color the user picked out of the
+  /// palette. Stated once here so every such mark answers the question the
+  /// same way instead of each one guessing at a brightness threshold.
+  static Color inkOn(Color ground) =>
+      contrastBetween(_ink, ground) > contrastBetween(Colors.white, ground)
       ? _ink
       : Colors.white;
 

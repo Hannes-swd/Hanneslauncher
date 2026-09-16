@@ -13,6 +13,7 @@ import 'package:hanneslauncher/folders_controller.dart';
 import 'package:hanneslauncher/icon_theme_controller.dart';
 import 'package:hanneslauncher/launcher_entries_controller.dart';
 import 'package:hanneslauncher/locale_controller.dart';
+import 'package:hanneslauncher/notification_badges_controller.dart';
 import 'package:hanneslauncher/offline_mode_controller.dart';
 import 'package:hanneslauncher/panel_blocks_controller.dart';
 import 'package:hanneslauncher/pinned_apps_controller.dart';
@@ -114,6 +115,9 @@ void main() {
     ]);
     await PinnedAppsController.instance.restore(['com.example.mail']);
     await PinnedAppsLayoutController.instance.setLeftMargin(42);
+    await PinnedBadgeController.instance.update(
+      const PinnedBadgeSettings(style: PinnedBadgeStyle.count, colorIndex: 4),
+    );
     await CustomColorsController.instance.restore([const Color(0xFF123456)]);
     // Restoring pinned apps only keeps ones that resolve on this device (an
     // uninstalled app's pin is dropped rather than occupying a slot
@@ -151,6 +155,7 @@ void main() {
     await DataSourcesController.instance.replaceAll([]);
     await PinnedAppsController.instance.restore([]);
     await PinnedAppsLayoutController.instance.setLeftMargin(16);
+    await PinnedBadgeController.instance.update(const PinnedBadgeSettings());
     await CustomColorsController.instance.restore([]);
 
     await SettingsBackupService.apply(exported);
@@ -216,6 +221,10 @@ void main() {
     expect(DataSourcesController.instance.value.single.key, 'wetter');
     expect(PinnedAppsController.instance.value, ['com.example.mail']);
     expect(PinnedAppsLayoutController.instance.value, 42);
+    expect(
+      PinnedBadgeController.instance.value,
+      const PinnedBadgeSettings(style: PinnedBadgeStyle.count, colorIndex: 4),
+    );
     expect(CustomColorsController.instance.value, [const Color(0xFF123456)]);
   });
 

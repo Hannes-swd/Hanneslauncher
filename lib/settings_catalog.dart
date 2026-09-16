@@ -271,6 +271,9 @@ List<SettingsEntry> buildSettingsCatalog({
       keywords: const [
         'angepinnt', 'anpinnen', 'pin', 'pinned', 'homescreen', 'startseite',
         'favoriten', 'favourites', 'abstand', 'rand', 'margin',
+        'benachrichtigung', 'benachrichtigungen', 'notification',
+        'notifications', 'badge', 'punkt', 'zahl', 'anzahl', 'ungelesen',
+        'unread', 'zähler', 'zaehler', 'whatsapp', 'farbe', 'color',
       ],
       onTap: (context) => _push(context, const PinnedAppsSettingsScreen()),
     ),

@@ -52,6 +52,12 @@ a full text search across all apps, web apps and folders.
 **Long-pressing a pinned icon** opens its quick actions, swap the icon, or
 change the color of a folder, without the detour through the settings.
 
+**Notification badges** on the pinned apps are off by default and can be
+switched to a plain dot ("something is waiting") or to the number of waiting
+notifications, in any color from the shared palette - a pinned folder adds up
+everything inside it. It needs Android's notification access, and only the
+count is ever read: no text, no sender, nothing stored.
+
 ### Clock
 
 Eight styles, each with its own colors, plus position, alignment and the

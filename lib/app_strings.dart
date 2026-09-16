@@ -191,6 +191,37 @@ class AppStrings {
       ? 'Distance from left edge ($pixels)'
       : 'Abstand vom linken Rand ($pixels)';
 
+  String get pinnedBadges => _en ? 'Notifications' : 'Benachrichtigungen';
+  String get pinnedBadgesHint => _en
+      ? 'What a pinned app shows while notifications are waiting in it. A '
+            'folder adds up everything inside it.'
+      : 'Was eine angepinnte App zeigt, solange Benachrichtigungen in ihr '
+            'warten. Ein Ordner zählt alles zusammen, was in ihm steckt.';
+  String get pinnedBadgesOff => _en ? 'Nothing' : 'Nichts';
+  String get pinnedBadgesOffHint =>
+      _en ? 'As before - no mark' : 'Wie bisher - kein Zeichen';
+  String get pinnedBadgesDot => _en ? 'A dot' : 'Ein Punkt';
+  String get pinnedBadgesDotHint => _en
+      ? 'Shows that something is there'
+      : 'Zeigt, dass etwas da ist';
+  String get pinnedBadgesCount => _en ? 'A number' : 'Eine Zahl';
+  String get pinnedBadgesCountHint => _en
+      ? 'How many are waiting, like on WhatsApp'
+      : 'Wie viele warten, z. B. bei WhatsApp';
+  String get pinnedBadgesColor => _en ? 'Badge color' : 'Farbe des Zeichens';
+  String get pinnedBadgesPermission =>
+      _en ? 'Allow notification access' : 'Benachrichtigungszugriff erlauben';
+  String get pinnedBadgesPermissionHint => _en
+      ? 'Android only tells an app what is waiting when it is switched on '
+            'under "Notification access". Open that screen and switch '
+            'hanneslauncher on. Only the number is read - no text, no sender.'
+      : 'Android verrät einer App nur dann, was wartet, wenn sie unter '
+            '"Benachrichtigungszugriff" eingeschaltet ist. Dort '
+            'hanneslauncher einschalten. Gelesen wird nur die Anzahl - kein '
+            'Text, kein Absender.';
+  String get pinnedBadgesPermissionGranted =>
+      _en ? 'Access granted' : 'Zugriff erteilt';
+
   String get customizeApps => _en ? 'Customize apps' : 'Apps anpassen';
   String get customizeAppsSubtitle =>
       _en ? 'Change name and icon' : 'Name und Icon ändern';

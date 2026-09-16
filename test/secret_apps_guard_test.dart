@@ -82,6 +82,10 @@ void main() {
       'hanneslauncher/contacts',
       'hanneslauncher/device_stats',
       'hanneslauncher/media',
+      // Names a package per waiting notification, so NotificationCounts
+      // drops the secret ones as they arrive - a hidden app must not
+      // announce itself with a badge either.
+      'hanneslauncher/notifications',
       'hanneslauncher/offline_mode',
       'hanneslauncher/system_apps',
       'hanneslauncher/system_gestures',

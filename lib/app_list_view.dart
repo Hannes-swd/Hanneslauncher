@@ -12,10 +12,12 @@ import 'app_strings.dart';
 import 'clock_settings_controller.dart';
 import 'clock_widget.dart';
 import 'custom_colors_controller.dart';
+import 'design_tokens.dart';
 import 'folder_sheet.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
+import 'notification_badges_controller.dart';
 import 'pinned_apps_controller.dart';
 import 'pinned_quick_actions.dart';
 import 'secret_apps_controller.dart';
@@ -161,6 +163,10 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     ClockSettingsController.instance.load();
     PinnedAppsController.instance.load();
     PinnedAppsLayoutController.instance.load();
+    PinnedBadgeController.instance.load();
+    // The home screen is the only place a badge is drawn, so this is where
+    // the counting starts - and stops again the moment it isn't visible.
+    NotificationCounts.instance.setVisible(true);
   }
 
   // Rapid drag input (or another widget's build/notifyListeners) can call
@@ -186,6 +192,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    NotificationCounts.instance.setVisible(false);
     AppListSettingsController.instance.removeListener(_onSettingsChanged);
     LauncherEntriesController.instance.removeListener(_onEntriesChanged);
     _autoScrollTimer?.cancel();
@@ -203,12 +210,16 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       LauncherEntriesController.instance.load();
+      // Notifications arrive while another app is in front, so coming back
+      // is exactly the moment the badges are most likely to be stale.
+      NotificationCounts.instance.setVisible(true);
     }
     // Starting a secret app from the search is itself a trip to the
     // background, so this is what keeps the hidden apps from still being
     // listed when the launcher comes back.
     if (state == AppLifecycleState.paused) {
       _lockSecretApps();
+      NotificationCounts.instance.setVisible(false);
     }
   }
 
@@ -887,21 +898,24 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
             ),
             child: child,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final entry in pinnedApps)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: GestureDetector(
-                    onTap: () => _open(entry),
-                    // Long press edits the pin itself (icon, or a folder's
-                    // color) instead of opening it.
-                    onLongPress: () => showPinnedQuickActions(context, entry),
-                    child: AppIcon(entry: entry, size: 48),
+          child: ValueListenableBuilder<PinnedBadgeSettings>(
+            valueListenable: PinnedBadgeController.instance,
+            builder: (context, badge, child) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final entry in pinnedApps)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: GestureDetector(
+                      onTap: () => _open(entry),
+                      // Long press edits the pin itself (icon, or a folder's
+                      // color) instead of opening it.
+                      onLongPress: () => showPinnedQuickActions(context, entry),
+                      child: _PinnedIcon(entry: entry, badge: badge),
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -1220,5 +1234,106 @@ class _SearchBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final iconColor = color == Colors.white ? Colors.black : color;
     return Icon(Icons.search, size: 32, color: iconColor);
+  }
+}
+
+/// A pinned app's icon, with the notification badge on top when the user
+/// asked for one and there is something to show.
+///
+/// The count is read here rather than up in [_AppListViewState] so that a
+/// notification arriving only repaints the one icon it belongs to, instead
+/// of the whole home screen.
+class _PinnedIcon extends StatelessWidget {
+  const _PinnedIcon({required this.entry, required this.badge});
+
+  final LauncherEntry entry;
+  final PinnedBadgeSettings badge;
+
+  static const _size = 48.0;
+
+  @override
+  Widget build(BuildContext context) {
+    if (badge.style == PinnedBadgeStyle.none) {
+      return AppIcon(entry: entry, size: _size);
+    }
+    return ValueListenableBuilder<Map<String, int>>(
+      valueListenable: NotificationCounts.instance,
+      // The icon is built once and handed through both branches below, so
+      // it isn't rebuilt every time a count changes.
+      child: AppIcon(entry: entry, size: _size),
+      builder: (context, counts, child) {
+        final count = NotificationCounts.instance.countFor(entry);
+        if (count <= 0) return child!;
+        return Stack(
+          // The badge sits half off the icon's corner, the way every other
+          // launcher draws one - without this it would be cut off.
+          clipBehavior: Clip.none,
+          children: [
+            child!,
+            Positioned(
+              top: -4,
+              right: -4,
+              child: _NotificationBadge(count: count, badge: badge),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// The dot or the number itself, in the color picked in the settings - red
+/// unless it was changed, because that is the one mark on the home screen
+/// meant to be read as "unread" before it is read as anything else. The ring
+/// around it is what keeps it apart from a wallpaper of the same color.
+class _NotificationBadge extends StatelessWidget {
+  const _NotificationBadge({required this.count, required this.badge});
+
+  final int count;
+  final PinnedBadgeSettings badge;
+
+  @override
+  Widget build(BuildContext context) {
+    final design = context.design;
+    final color = badge.color;
+    final border = Border.all(color: design.background, width: 2);
+    if (badge.style == PinnedBadgeStyle.dot) {
+      return Container(
+        width: 14,
+        height: 14,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: border,
+        ),
+      );
+    }
+    // Past a hundred the exact number stops being information and starts
+    // being a wide badge covering the icon.
+    final label = count > 99 ? '99+' : '$count';
+    return Container(
+      constraints: const BoxConstraints(minWidth: 20),
+      height: 20,
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(10),
+        border: border,
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          // Worked out from the color rather than fixed white: a badge in
+          // pale yellow would otherwise have nothing readable on it.
+          color: DesignTokens.inkOn(color),
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          // Without this the digits sit low in the circle: the default line
+          // height leaves room under them for descenders numbers don't have.
+          height: 1,
+        ),
+      ),
+    );
   }
 }
