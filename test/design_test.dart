@@ -302,6 +302,75 @@ void main() {
       }
     });
 
+    test('an accent can be written in, not just filled with', () {
+      // The rule that keeps the palette off the bright end of the wheel. An
+      // accent is the color of a link, a floating label and a text button as
+      // much as it is the fill of a switch, so it has to clear the bar body
+      // text clears against the card it sits on. A bright accent - every
+      // stock indigo, every neon green - passes the eye test as a fill and
+      // then turns every piece of accent-colored text into a smudge.
+      for (final preset in DesignThemePreset.values) {
+        final t = DesignTokens(DesignSettings(preset: preset));
+        expect(
+          DesignTokens.contrastBetween(t.accent, t.surface),
+          greaterThanOrEqualTo(4.5),
+          reason: '$preset accent is too close to its own card',
+        );
+      }
+    });
+
+    test('a filled accent button can always be read', () {
+      // onAccent measures rather than guessing at a brightness threshold,
+      // and this is the promise that buys: whatever the accent, the label on
+      // top of it clears 4.5:1. Checked for the presets and for the band a
+      // fixed threshold used to get wrong - mid-tone colors, where white and
+      // near-black are both middling and only one of them wins.
+      final accents = [
+        for (final preset in DesignThemePreset.values)
+          presetColor(preset, DesignColorRole.accent),
+        const Color(0xFFD98A4A), // amber, just under the old threshold
+        const Color(0xFF3B82F6), // the stock blue
+        const Color(0xFF10B981), // a mid green
+        const Color(0xFFFFE066), // pale
+        const Color(0xFF203080), // deep
+      ];
+      for (final accent in accents) {
+        final t = DesignTokens(
+          DesignSettings(overrides: {DesignColorRole.accent: accent}),
+        );
+        expect(
+          DesignTokens.contrastBetween(t.onAccent, t.accent),
+          greaterThanOrEqualTo(4.5),
+          reason: 'label on $accent',
+        );
+      }
+    });
+
+    test('what a preset fills large areas with stays near grey', () {
+      // Background, card and border are the three that cover most of the
+      // screen. Tinted past a whisper they stop being a ground and become a
+      // wash, which is both the "pastel form" look and the reason an accent
+      // on top of them reads as arbitrary. The hue lives in the ink and the
+      // accent instead.
+      const fills = [
+        DesignColorRole.background,
+        DesignColorRole.surface,
+        DesignColorRole.border,
+      ];
+      for (final preset in DesignThemePreset.values) {
+        for (final role in fills) {
+          final saturation = HSVColor.fromColor(
+            presetColor(preset, role),
+          ).saturation;
+          expect(
+            saturation,
+            lessThanOrEqualTo(0.12),
+            reason: '$preset $role is tinted, not neutral',
+          );
+        }
+      }
+    });
+
     test('the dark preset is recognised as dark', () {
       expect(
         DesignTokens(DesignSettings(preset: DesignThemePreset.dark)).isDark,

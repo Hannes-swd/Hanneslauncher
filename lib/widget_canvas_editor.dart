@@ -226,7 +226,10 @@ class _Guide extends StatelessWidget {
       child: Container(
         width: vertical ? 1 : null,
         height: vertical ? null : 1,
-        color: Colors.blueAccent.withValues(alpha: 0.8),
+        // The theme's accent, not a fixed blue: this line is the editor
+        // saying "you are lined up", and it was the one mark on the screen
+        // that kept its own colour whatever theme was picked.
+        color: context.design.accent.withValues(alpha: 0.8),
       ),
     );
   }

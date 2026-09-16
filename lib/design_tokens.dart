@@ -61,46 +61,74 @@ enum InputFieldStyle { line, box, plain }
 /// ones that differ": a half-filled preset would have to inherit the rest
 /// from somewhere, and that somewhere is exactly where a rose theme ends up
 /// with a grey border nobody chose.
+///
+/// Three rules hold across all five, and between them they are what stops a
+/// preset looking like a color picker went off:
+///
+///   The grounds are near-grey. Everything a preset fills large areas with -
+///   background, surface, border - stays under about a tenth of full
+///   saturation, so the tint is something you notice only next to another
+///   preset. A theme whose ground is a pastel wash reads as a form to fill
+///   in, and it leaves the accent nothing to be the colored thing against;
+///   these carry the hue in the ink and the accent instead, where a small
+///   amount of it goes a long way.
+///
+///   The accents are deep, not bright. Each one clears 4.5:1 against its own
+///   card, which is the same bar its text has to clear - so an accent is a
+///   color a link can be *set in*, not just a color a switch can be filled
+///   with. It also rules out the whole top-right corner of the color wheel,
+///   which is where a saturated accent at full brightness lives and where
+///   every stock palette puts its blue.
+///
+///   The accent belongs to its neutrals. The near-greys are pulled a step
+///   towards the accent's own hue - warm paper under a copper, cool paper
+///   under the slate blue. Neutrals at flat zero saturation under a
+///   saturated accent is the arrangement that makes the accent look stuck
+///   on rather than chosen, whatever the accent is.
+///
+/// [test/design_test.dart] holds the first two to those numbers, because
+/// they are the ones a later edit would break without anything looking wrong
+/// until the app is on a phone.
 const Map<DesignThemePreset, Map<DesignColorRole, Color>> _presetColors = {
   DesignThemePreset.grey: {
-    DesignColorRole.background: Color(0xFFF5F5F5),
+    DesignColorRole.background: Color(0xFFF4F3F0),
     DesignColorRole.surface: Color(0xFFFFFFFF),
-    DesignColorRole.textPrimary: Color(0xFF1A1A1A),
-    DesignColorRole.textSecondary: Color(0xFF666666),
-    DesignColorRole.accent: Color(0xFF6366F1),
-    DesignColorRole.border: Color(0xFFE2E2E5),
+    DesignColorRole.textPrimary: Color(0xFF1B1A17),
+    DesignColorRole.textSecondary: Color(0xFF6C6860),
+    DesignColorRole.accent: Color(0xFFA15B2D),
+    DesignColorRole.border: Color(0xFFE4E1DA),
   },
   DesignThemePreset.rose: {
-    DesignColorRole.background: Color(0xFFFDF2F8),
-    DesignColorRole.surface: Color(0xFFFFF5FA),
-    DesignColorRole.textPrimary: Color(0xFF1A1A1A),
-    DesignColorRole.textSecondary: Color(0xFF6B5560),
-    DesignColorRole.accent: Color(0xFFEC4899),
-    DesignColorRole.border: Color(0xFFF3D9E6),
+    DesignColorRole.background: Color(0xFFF7F1F1),
+    DesignColorRole.surface: Color(0xFFFFFBFB),
+    DesignColorRole.textPrimary: Color(0xFF20191A),
+    DesignColorRole.textSecondary: Color(0xFF756264),
+    DesignColorRole.accent: Color(0xFFA63D5C),
+    DesignColorRole.border: Color(0xFFEBDDDF),
   },
   DesignThemePreset.green: {
-    DesignColorRole.background: Color(0xFFECFDF5),
-    DesignColorRole.surface: Color(0xFFF0FDF4),
-    DesignColorRole.textPrimary: Color(0xFF1A1A1A),
-    DesignColorRole.textSecondary: Color(0xFF55665D),
-    DesignColorRole.accent: Color(0xFF10B981),
-    DesignColorRole.border: Color(0xFFD3EADD),
+    DesignColorRole.background: Color(0xFFF0F3EF),
+    DesignColorRole.surface: Color(0xFFFBFDFA),
+    DesignColorRole.textPrimary: Color(0xFF181C18),
+    DesignColorRole.textSecondary: Color(0xFF5F6B5F),
+    DesignColorRole.accent: Color(0xFF3F7A52),
+    DesignColorRole.border: Color(0xFFDCE3D9),
   },
   DesignThemePreset.blue: {
-    DesignColorRole.background: Color(0xFFEFF6FF),
-    DesignColorRole.surface: Color(0xFFF8FAFC),
-    DesignColorRole.textPrimary: Color(0xFF1A1A1A),
-    DesignColorRole.textSecondary: Color(0xFF5A6675),
-    DesignColorRole.accent: Color(0xFF3B82F6),
-    DesignColorRole.border: Color(0xFFD9E3F0),
+    DesignColorRole.background: Color(0xFFEFF2F5),
+    DesignColorRole.surface: Color(0xFFFAFCFD),
+    DesignColorRole.textPrimary: Color(0xFF171B1F),
+    DesignColorRole.textSecondary: Color(0xFF5C6874),
+    DesignColorRole.accent: Color(0xFF2E6C8E),
+    DesignColorRole.border: Color(0xFFDCE3E9),
   },
   DesignThemePreset.dark: {
-    DesignColorRole.background: Color(0xFF1A1A1A),
-    DesignColorRole.surface: Color(0xFF2A2A2A),
-    DesignColorRole.textPrimary: Color(0xFFFFFFFF),
-    DesignColorRole.textSecondary: Color(0xFFA3A3A3),
-    DesignColorRole.accent: Color(0xFF6366F1),
-    DesignColorRole.border: Color(0xFF3C3C3C),
+    DesignColorRole.background: Color(0xFF121211),
+    DesignColorRole.surface: Color(0xFF1D1C1A),
+    DesignColorRole.textPrimary: Color(0xFFF2F0EC),
+    DesignColorRole.textSecondary: Color(0xFFA09C94),
+    DesignColorRole.accent: Color(0xFFD98A4A),
+    DesignColorRole.border: Color(0xFF33322E),
   },
 };
 
@@ -494,8 +522,26 @@ class DesignTokens extends ThemeExtension<DesignTokens> {
 
   /// Text on a filled accent button. Worked out from the accent rather than
   /// fixed, so a pale accent doesn't end up with white text on it.
-  Color get onAccent =>
-      accent.computeLuminance() > 0.55 ? const Color(0xFF1A1A1A) : Colors.white;
+  ///
+  /// Measured rather than guessed at a brightness threshold. A threshold has
+  /// to sit somewhere, and wherever it sits there is a band of mid-tone
+  /// accents just under it - every amber, every mid green - that keep white
+  /// text at barely 2.5:1, which is the "filled button you cannot read" every
+  /// colored theme used to end up with. Asking which of the two actually
+  /// contrasts more puts the line exactly where it belongs for the color in
+  /// hand, and puts it there for a color the user picked as well as for one
+  /// of ours.
+  Color get onAccent => contrastBetween(_ink, accent) > contrastBetween(
+    Colors.white,
+    accent,
+  )
+      ? _ink
+      : Colors.white;
+
+  /// The near-black the theme uses where a true black would be a hole. Taken
+  /// from the light presets rather than from [textPrimary], because this is
+  /// the ink on *the accent*, which does not change when the theme goes dark.
+  static const _ink = Color(0xFF1B1A17);
 
   /// A wash of the accent, for the background of something switched on.
   Color get accentWash => accent.withValues(alpha: 0.12);
@@ -515,6 +561,18 @@ class DesignTokens extends ThemeExtension<DesignTokens> {
 
   /// Dimming behind a sheet or dialog.
   Color get scrim => const Color(0xFF000000).withValues(alpha: 0.45);
+
+  /// The one color the user does not get to pick: something has gone wrong.
+  ///
+  /// Stated here rather than typed at each of the three places that need it
+  /// (the [ColorScheme], a field's error text, a destructive row), which is
+  /// how the app used to carry two different reds. Warm rather than the
+  /// stock Material scarlet, so it belongs to the same family as the rest of
+  /// the palette instead of arriving from another design.
+  Color get danger =>
+      isDark ? const Color(0xFFF08E7A) : const Color(0xFFAE3A2E);
+
+  Color get onDanger => isDark ? const Color(0xFF1B1A17) : Colors.white;
 
   /// Whether this theme is a dark one. Read off the background rather than
   /// stored, so a hand-picked dark background gets light Material defaults
@@ -611,14 +669,22 @@ class DesignTokens extends ThemeExtension<DesignTokens> {
       SurfaceLevel.compact => 1 / (phi * phi),
     };
     return [
-      BoxShadow(
-        color: accent.withValues(alpha: 0.28 * strength),
-        blurRadius: 26 * reach * strength,
-        offset: Offset(0, 6 * reach * strength),
-      ),
+      // Wide and faint, thrown downwards: colored light pooling under the
+      // card. The alpha is low on purpose - a saturated color at the
+      // strength a grey shadow needs stops reading as light and starts
+      // reading as a neon outline, which was the single loudest thing on
+      // these screens.
       BoxShadow(
         color: accent.withValues(alpha: 0.16 * strength),
-        blurRadius: 6 * reach * strength,
+        blurRadius: 24 * reach * strength,
+        offset: Offset(0, 8 * reach * strength),
+      ),
+      // The contact layer, still colored but tight enough to read as the
+      // card meeting the page rather than as a halo around it.
+      BoxShadow(
+        color: accent.withValues(alpha: 0.10 * strength),
+        blurRadius: 4 * reach * strength,
+        offset: Offset(0, 1 * reach * strength),
       ),
     ];
   }
@@ -902,8 +968,8 @@ ThemeData buildAppTheme(DesignSettings settings) {
     onSurfaceVariant: t.textSecondary,
     outline: t.border,
     outlineVariant: t.border,
-    error: dark ? const Color(0xFFFF8A80) : const Color(0xFFC62828),
-    onError: dark ? const Color(0xFF1A1A1A) : Colors.white,
+    error: t.danger,
+    onError: t.onDanger,
   );
 
   TextStyle role(TypeRole r) => t.textStyle(r);
@@ -1166,10 +1232,7 @@ InputDecorationTheme _inputTheme(DesignTokens t) {
     floatingLabelStyle: t.textStyle(TypeRole.label, color: t.accent),
     helperStyle: t.textStyle(TypeRole.caption),
     counterStyle: t.textStyle(TypeRole.caption),
-    errorStyle: t.textStyle(
-      TypeRole.caption,
-      color: t.isDark ? const Color(0xFFFF8A80) : const Color(0xFFC62828),
-    ),
+    errorStyle: t.textStyle(TypeRole.caption, color: t.danger),
     // The little bits of text a field can carry alongside the input - the "#"
     // in front of a hex value, a unit behind a number. Left unset they take
     // Material's own color, which is the one color on the field the theme
