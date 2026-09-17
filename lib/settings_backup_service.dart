@@ -96,8 +96,12 @@ class SettingsBackupService {
         'backgroundBlur': appList.backgroundBlur,
       },
       'iconTheme': {
-        'enabled': iconTheme.enabled,
+        'style': iconTheme.style.name,
         'colorIndex': iconTheme.colorIndex,
+        // The pack's package name, not the pack itself: a backup restored on
+        // a phone without it falls back to the app's own icons, and installing
+        // the pack there brings the setting straight back to life.
+        'packPackage': iconTheme.packPackage,
       },
       // Raw ARGB rather than an index into the shared palette: these six are
       // the theme's own colors, and putting them in the palette would add six
@@ -361,8 +365,15 @@ class SettingsBackupService {
     if (iconThemeJson != null) {
       await IconThemeController.instance.update(
         IconThemeSettings(
-          enabled: iconThemeJson['enabled'] as bool? ?? false,
+          // 'enabled' is what a backup written before there were three
+          // styles carries, and it only ever meant the color.
+          style: iconThemeJson.containsKey('style')
+              ? IconThemeController.styleFromName(iconThemeJson['style'])
+              : ((iconThemeJson['enabled'] as bool? ?? false)
+                    ? IconStyle.color
+                    : IconStyle.system),
           colorIndex: iconThemeJson['colorIndex'] as int? ?? 3,
+          packPackage: iconThemeJson['packPackage'] as String?,
         ),
       );
     }

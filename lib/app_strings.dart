@@ -840,13 +840,80 @@ class AppStrings {
   String get designReset => _en ? 'Reset the design' : 'Design zurücksetzen';
 
   String get iconTheme => _en ? 'Icon design' : 'Icon-Design';
-  String get iconThemeSubtitle =>
-      _en ? 'All icons in one color' : 'Alle Icons in einer Farbe';
-  String get iconThemeEnabled => _en ? 'Theme icons' : 'Icons einfärben';
+  String get iconThemeSubtitle => _en
+      ? 'Standard, icon pack or one color'
+      : 'Standard, Icon-Paket oder eine Farbe';
   String get iconThemeHint => _en
-      ? 'The original icons are kept - switching this off brings them back.'
-      : 'Die Original-Icons bleiben erhalten - beim Ausschalten sind sie '
-            'wieder da.';
+      ? 'The original icons are kept - switching back to standard brings '
+            'them straight back.'
+      : 'Die Original-Icons bleiben erhalten - zurück auf Standard sind sie '
+            'sofort wieder da.';
+
+  String get iconStyleSystem => _en ? 'Standard' : 'Standard';
+  String get iconStyleSystemHint => _en
+      ? 'The icon every app brings along itself.'
+      : 'Das Icon, das jede App selbst mitbringt.';
+  String get iconStylePack => _en ? 'Icon pack' : 'Icon-Paket';
+  String get iconStylePackHint => _en
+      ? 'An icon pack installed on the phone redraws every app it covers.'
+      : 'Ein installiertes Icon-Paket zeichnet jede App neu, die es kennt.';
+  String get iconStyleColor => _en ? 'Colored' : 'Farbig';
+  String get iconStyleColorHint => _en
+      ? 'Every icon in one and the same color.'
+      : 'Jedes Icon in ein und derselben Farbe.';
+  String get iconStyleCustom => _en ? 'Own picture' : 'Eigenes Bild';
+  String get iconStyleCustomHint => _en
+      ? 'A picture from the gallery, per app. It always wins over the style '
+            'above - remove it and the app follows the style again.'
+      : 'Ein Bild aus der Galerie, pro App. Es geht immer vor - wird es '
+            'entfernt, folgt die App wieder dem Stil oben.';
+
+  String get iconPackChoose => _en ? 'Icon pack' : 'Icon-Paket';
+  String get iconPackNone => _en
+      ? 'No icon pack installed'
+      : 'Kein Icon-Paket installiert';
+  String get iconPackNoneHint => _en
+      ? 'Icon packs are normal apps - install one from the store and it '
+            'shows up here.'
+      : 'Icon-Pakete sind normale Apps - eines aus dem Store installieren, '
+            'dann steht es hier.';
+  String get iconPackFormats => _en ? 'Recognised packs' : 'Erkannte Pakete';
+  String get iconPackFormatsHint => _en
+      ? 'A pack is recognised when it announces itself as one of these. '
+            'Almost every pack in the store names several, so most simply '
+            'work - if one is missing here, this is the list it failed to '
+            'match.'
+      : 'Ein Paket wird erkannt, wenn es sich als eines davon ausgibt. Fast '
+            'jedes Paket aus dem Store nennt mehrere, deshalb funktionieren '
+            'die meisten einfach - fehlt eines hier, passt es zu keinem '
+            'dieser Einträge.';
+  String iconPackCovered(int covered, int total) => _en
+      ? '$covered of $total apps come from the pack'
+      : '$covered von $total Apps kommen aus dem Paket';
+  String get iconPackWorking =>
+      _en ? 'Applying the pack...' : 'Paket wird angewendet...';
+  String get iconPackRefresh => _en ? 'Apply again' : 'Neu anwenden';
+  String get iconPackRefreshHint => _en
+      ? 'After the pack itself was updated.'
+      : 'Nachdem das Paket selbst aktualisiert wurde.';
+  String get iconPackRest => _en
+      ? 'Apps the pack does not know keep their own icon.'
+      : 'Apps, die das Paket nicht kennt, behalten ihr eigenes Icon.';
+
+  String iconPickedCount(int count) => _en
+      ? '$count apps have a picture of their own'
+      : '$count Apps haben ein eigenes Bild';
+  String get iconPickedNone => _en
+      ? 'No app has a picture of its own yet'
+      : 'Noch hat keine App ein eigenes Bild';
+  String get iconPickedEdit => _en ? 'Pick per app' : 'Pro App auswählen';
+  String get iconPickedClear =>
+      _en ? 'Remove all own pictures' : 'Alle eigenen Bilder entfernen';
+  String get iconPickedClearConfirm => _en
+      ? 'Every picked picture is removed and those apps follow the icon '
+            'style again. Renames are kept.'
+      : 'Jedes ausgewählte Bild wird entfernt, die Apps folgen dann wieder '
+            'dem Icon-Stil. Umbenennungen bleiben.';
 
   String get folders => _en ? 'Folders' : 'Ordner';
   String foldersSubtitle(int count) => _en

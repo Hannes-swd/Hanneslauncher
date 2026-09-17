@@ -105,9 +105,44 @@ class AppOverridesController extends ValueNotifier<Map<String, AppOverride>> {
     return true;
   }
 
+  /// Sets an entry's picture from a file that is already on disk. Stands in
+  /// for [pickIcon] in tests, which have no gallery to pick from.
+  @visibleForTesting
+  Future<void> debugSetIconPath(String packageName, String path) {
+    return _write(
+      packageName,
+      AppOverride(name: value[packageName]?.name, iconPath: path),
+    );
+  }
+
   Future<void> clearIcon(String packageName) async {
     await deleteStoredImage(value[packageName]?.iconPath);
     await _write(packageName, AppOverride(name: value[packageName]?.name));
+  }
+
+  /// How many entries have a picture picked by hand. These are the ones the
+  /// icon style deliberately leaves alone, so the icon settings screen says
+  /// how many there are rather than leaving the exception invisible.
+  int get pickedIconCount {
+    var count = 0;
+    for (final override in value.values) {
+      if (override.iconPath != null) count++;
+    }
+    return count;
+  }
+
+  /// Drops every picked picture at once, renames untouched. The way to hand
+  /// all the apps back to the icon style without hunting down each one that
+  /// was changed by hand.
+  Future<void> clearAllIcons() async {
+    final updated = <String, AppOverride>{};
+    for (final entry in value.entries) {
+      await deleteStoredImage(entry.value.iconPath);
+      final name = entry.value.name;
+      if (name != null) updated[entry.key] = AppOverride(name: name);
+    }
+    value = updated;
+    await _save(updated);
   }
 
   /// Drops both the custom name and the custom icon for an app.
@@ -129,13 +164,7 @@ class AppOverridesController extends ValueNotifier<Map<String, AppOverride>> {
       );
     }
     value = updated;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _key,
-      jsonEncode({
-        for (final entry in updated.entries) entry.key: entry.value.toJson(),
-      }),
-    );
+    await _save(updated);
   }
 
   Future<void> _write(String packageName, AppOverride override) async {
@@ -146,12 +175,15 @@ class AppOverridesController extends ValueNotifier<Map<String, AppOverride>> {
       updated[packageName] = override;
     }
     value = updated;
+    await _save(updated);
+  }
 
+  Future<void> _save(Map<String, AppOverride> overrides) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _key,
       jsonEncode({
-        for (final entry in updated.entries) entry.key: entry.value.toJson(),
+        for (final entry in overrides.entries) entry.key: entry.value.toJson(),
       }),
     );
   }

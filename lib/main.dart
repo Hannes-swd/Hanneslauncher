@@ -10,6 +10,7 @@ import 'default_launcher_screen.dart';
 import 'design_controller.dart';
 import 'design_tokens.dart';
 import 'device_stats_controller.dart';
+import 'icon_pack_controller.dart';
 import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
 import 'offline_mode_controller.dart';
@@ -100,6 +101,10 @@ class _LauncherRootState extends State<LauncherRoot>
     LocaleController.instance.load();
     DesignController.instance.load();
     IconThemeController.instance.load();
+    // Follows the style and the app list from here on, so a chosen icon pack
+    // is rendered once the apps are known and again whenever one is
+    // installed. Does nothing at all while another style is picked.
+    IconPacksController.instance.start();
     OfflineModeController.instance.load();
     // Reads the installed version and the last check's result from disk, so
     // the settings button already carries the update mark on the first

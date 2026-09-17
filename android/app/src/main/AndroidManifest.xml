@@ -154,5 +154,63 @@
             <action android:name="android.intent.action.MAIN"/>
             <category android:name="android.intent.category.HOME"/>
         </intent>
+        <!-- Icon packs. There is no single declaration for one - every
+             launcher invented its own and pack authors name the ones they
+             care about - so every spelling IconPacks.kt looks for is listed
+             here, in both forms: as the action, and as a category on MAIN.
+             Without the matching entry Android 11+ simply hides the pack,
+             with no error anywhere, so this list and supportedActions in
+             IconPacks.kt must stay identical; icon_pack_queries_test.dart
+             fails the build when they drift apart. -->
+        <intent><action android:name="org.adw.launcher.THEMES"/></intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="org.adw.launcher.THEMES"/>
+        </intent>
+        <intent><action android:name="com.novalauncher.THEME"/></intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="com.novalauncher.THEME"/>
+        </intent>
+        <intent><action android:name="com.teslacoilsw.launcher.THEME"/></intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="com.teslacoilsw.launcher.THEME"/>
+        </intent>
+        <intent><action android:name="com.anddoes.launcher.THEME"/></intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="com.anddoes.launcher.THEME"/>
+        </intent>
+        <intent><action android:name="com.fede.launcher.THEME_ICONPACK"/></intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="com.fede.launcher.THEME_ICONPACK"/>
+        </intent>
+        <intent><action android:name="com.gau.go.launcherex.theme"/></intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="com.gau.go.launcherex.theme"/>
+        </intent>
+        <intent><action android:name="com.dlto.atom.launcher.THEME"/></intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="com.dlto.atom.launcher.THEME"/>
+        </intent>
+        <intent><action android:name="ch.deletescape.lawnchair.ICONPACK"/></intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="ch.deletescape.lawnchair.ICONPACK"/>
+        </intent>
+        <intent><action android:name="net.oneplus.launcher.icons.ICONPACK"/></intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="net.oneplus.launcher.icons.ICONPACK"/>
+        </intent>
+        <intent><action android:name="com.sonymobile.home.ICON_PACK"/></intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="com.sonymobile.home.ICON_PACK"/>
+        </intent>
     </queries>
 </manifest>

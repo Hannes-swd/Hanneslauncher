@@ -86,6 +86,11 @@ void main() {
       // drops the secret ones as they arrive - a hidden app must not
       // announce itself with a badge either.
       'hanneslauncher/notifications',
+      // Names no app on its own: Dart hands it the packages to render an
+      // icon for, and that list comes from LauncherEntriesController.entries,
+      // which the secret ones are already out of. Nothing comes back but
+      // paths for packages that were sent in.
+      'hanneslauncher/icon_packs',
       'hanneslauncher/offline_mode',
       'hanneslauncher/system_apps',
       'hanneslauncher/system_gestures',
@@ -112,21 +117,39 @@ void main() {
 
   test('no new native app lookup slipped in unnoticed', () {
     // The same check on the Android side, where the app names actually come
-    // from. Comment lines are dropped first, so a mention in prose does not
-    // count.
-    final kotlin = File(
-      'android/app/src/main/kotlin/com/example/hanneslauncher/MainActivity.kt',
-    ).readAsLinesSync().where((line) => !line.trimLeft().startsWith('//'));
-    final code = kotlin.join('\n');
+    // from. Every Kotlin file, not just MainActivity: a lookup moved into a
+    // helper of its own would otherwise walk straight past this. Comment
+    // lines are dropped first, so a mention in prose does not count.
+    final code =
+        Directory('android/app/src/main/kotlin/com/example/hanneslauncher')
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((file) => file.path.endsWith('.kt'))
+            .expand((file) => file.readAsLinesSync())
+            .where((line) => !line.trimLeft().startsWith('//'))
+            .join('\n');
 
     // What each lookup is used for today:
-    //   queryIntentActivities -> installedBrowsers()
-    //   queryUsageStats / getApplicationLabel -> mostUsedAppToday()
+    //   queryIntentActivities -> installedBrowsers(), IconPacks.installed()
+    //   queryUsageStats -> mostUsedAppToday()
+    //   getApplicationLabel/getApplicationInfo -> mostUsedAppToday(), and an
+    //     installed icon pack's own name
     //   resolveActivity -> the default-launcher and clock/calendar intents
+    //   getPackageInfo -> this app's own version, and a pack's, which keys
+    //     the pack's rendered icons so an update isn't served from the old
+    //     cache
+    //   getApplicationIcon/getLaunchIntentForPackage/
+    //     getResourcesForApplication -> IconPacks, all three only ever asked
+    //     about a package Dart named first
     const expected = {
-      'queryIntentActivities': 1,
+      'queryIntentActivities': 2,
       'queryUsageStats': 1,
-      'getApplicationLabel': 1,
+      'getApplicationLabel': 2,
+      'getApplicationInfo': 2,
+      'getApplicationIcon': 1,
+      'getLaunchIntentForPackage': 1,
+      'getResourcesForApplication': 1,
+      'getPackageInfo': 2,
       'resolveActivity': 2,
       'getInstalledPackages': 0,
       'getInstalledApplications': 0,

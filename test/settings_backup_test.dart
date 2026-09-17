@@ -66,7 +66,11 @@ void main() {
       ),
     );
     await IconThemeController.instance.update(
-      const IconThemeSettings(enabled: true, colorIndex: 2),
+      const IconThemeSettings(
+        style: IconStyle.pack,
+        colorIndex: 2,
+        packPackage: 'com.example.pack',
+      ),
     );
     await DesignController.instance.update(
       DesignSettings(
@@ -188,8 +192,9 @@ void main() {
     expect(appList.backgroundBlur, 6);
 
     final iconTheme = IconThemeController.instance.value;
-    expect(iconTheme.enabled, true);
+    expect(iconTheme.style, IconStyle.pack);
     expect(iconTheme.colorIndex, 2);
+    expect(iconTheme.packPackage, 'com.example.pack');
 
     final design = DesignController.instance.value;
     expect(design.preset, DesignThemePreset.blue);

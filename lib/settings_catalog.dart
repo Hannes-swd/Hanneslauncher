@@ -256,9 +256,12 @@ List<SettingsEntry> buildSettingsCatalog({
       subtitle: s.iconThemeSubtitle,
       keywords: const [
         'icon', 'icons', 'symbol', 'design', 'theme', 'farbe', 'color',
-        'einfärben', 'einfaerben', 'tint', 'einheitlich',
+        'einfärben', 'einfaerben', 'tint', 'einheitlich', 'paket', 'pakete',
+        'pack', 'packs', 'iconpack', 'icon pack', 'icon-paket', 'iconpaket',
+        'nova', 'adw', 'apex', 'lawnchair', 'standard', 'original',
+        'eigenes', 'bild', 'bilder', 'galerie', 'gallery', 'picture',
       ],
-      trailing: iconTheme.enabled
+      trailing: iconTheme.style == IconStyle.color
           ? CircleAvatar(radius: 12, backgroundColor: iconTheme.color)
           : null,
       onTap: (context) => _push(context, const IconThemeSettingsScreen()),

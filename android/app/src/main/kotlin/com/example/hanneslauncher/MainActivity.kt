@@ -55,6 +55,7 @@ class MainActivity : FlutterActivity() {
     private val mediaChannelName = "hanneslauncher/media"
     private val contactsChannelName = "hanneslauncher/contacts"
     private val notificationsChannelName = "hanneslauncher/notifications"
+    private val iconPacksChannelName = "hanneslauncher/icon_packs"
     private val calendarPermissionRequestCode = 4201
     private val importFileRequestCode = 4202
     private val stepsPermissionRequestCode = 4203
@@ -377,6 +378,42 @@ class MainActivity : FlutterActivity() {
                     "hasPermission" -> result.success(hasNotificationAccess())
                     "requestPermission" -> result.success(requestNotificationAccess())
                     "counts" -> result.success(notificationCounts())
+                    else -> result.notImplemented()
+                }
+            }
+
+        // Icon packs: which ones are installed, and the rendered icons from
+        // the one that is switched on. Android has no API for either - a pack
+        // is an ordinary app whose drawings are addressed by name - so
+        // IconPacks.kt reads them the way every other launcher does.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, iconPacksChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "formats" -> result.success(IconPacks.supportedActions)
+                    "list" -> result.success(IconPacks.installed(this))
+                    "resolve" -> {
+                        val pack = call.argument<String>("pack")
+                        val packages =
+                            call.argument<List<String>>("packages") ?: emptyList()
+                        if (pack == null) {
+                            result.success(emptyMap<String, String>())
+                        } else {
+                            // A few hundred PNGs get decoded, composed and
+                            // written on the first run for a pack. On the
+                            // main thread that is a visibly frozen launcher,
+                            // so it goes to a thread of its own and the Dart
+                            // side simply draws the old icons until it lands.
+                            val context = applicationContext
+                            Thread {
+                                val icons = try {
+                                    IconPacks.resolve(context, pack, packages)
+                                } catch (_: Exception) {
+                                    emptyMap<String, String>()
+                                }
+                                runOnUiThread { result.success(icons) }
+                            }.start()
+                        }
+                    }
                     else -> result.notImplemented()
                 }
             }
