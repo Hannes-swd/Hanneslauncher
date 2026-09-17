@@ -221,6 +221,29 @@ class AppStrings {
             'Text, kein Absender.';
   String get pinnedBadgesPermissionGranted =>
       _en ? 'Access granted' : 'Zugriff erteilt';
+  String get pinnedBadgesPermissionStalled => _en
+      ? 'Switched on, but nothing is arriving'
+      : 'Eingeschaltet, es kommt aber nichts an';
+  String get pinnedBadgesPermissionStalledHint => _en
+      ? 'Android is not handing the notifications over - it usually stops '
+            'after a new version has been installed over the old one. Open '
+            '"Notification access", switch hanneslauncher off and on again, '
+            'or restart the phone.'
+      : 'Android reicht die Benachrichtigungen nicht durch - meistens nach '
+            'einem Update, das über die alte Version installiert wurde. '
+            '"Benachrichtigungszugriff" öffnen, hanneslauncher aus- und '
+            'wieder einschalten, oder das Handy neu starten.';
+  String get pinnedBadgesRestricted =>
+      _en ? 'Open app settings' : 'App-Einstellungen öffnen';
+  String get pinnedBadgesRestrictedHint => _en
+      ? 'If the switch refuses to stay on: hanneslauncher is installed from '
+            'a file, not a store, so Android blocks it as a restricted '
+            'setting. Use "Allow restricted settings" in the menu at the top '
+            'right of this page first.'
+      : 'Falls sich der Schalter nicht einschalten lässt: hanneslauncher ist '
+            'aus einer Datei installiert, nicht aus einem Store - Android '
+            'sperrt das als eingeschränkte Einstellung. Zuerst im Menü oben '
+            'rechts "Eingeschränkte Einstellungen zulassen" verwenden.';
 
   String get customizeApps => _en ? 'Customize apps' : 'Apps anpassen';
   String get customizeAppsSubtitle =>

@@ -367,16 +367,21 @@ class MainActivity : FlutterActivity() {
         // How many notifications each package currently has waiting, for the
         // badge on a pinned app. Same permission as the media line above -
         // the notification listener is what Android hands both to - so the
-        // two channels answer "hasPermission" identically on purpose: the
         // badge setting can ask for it without knowing anything about music.
+        //
+        // It asks with "state" rather than the media line's "hasPermission"
+        // because the badge needs one answer more: reading what is waiting
+        // needs the listener to be bound, not merely switched on, and those
+        // two come apart routinely (see [notificationState]).
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             notificationsChannelName,
         )
             .setMethodCallHandler { call, result ->
                 when (call.method) {
-                    "hasPermission" -> result.success(hasNotificationAccess())
+                    "state" -> result.success(notificationState())
                     "requestPermission" -> result.success(requestNotificationAccess())
+                    "openAppSettings" -> result.success(openAppDetails())
                     "counts" -> result.success(notificationCounts())
                     else -> result.notImplemented()
                 }
@@ -429,17 +434,61 @@ class MainActivity : FlutterActivity() {
     private fun notificationCounts(): Map<String, Int> {
         if (!hasNotificationAccess()) return emptyMap()
         if (!MediaNotificationListener.isConnected) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                try {
-                    NotificationListenerService.requestRebind(
-                        ComponentName(this, MediaNotificationListener::class.java),
-                    )
-                } catch (_: Exception) {
-                }
-            }
+            requestListenerRebind()
             return emptyMap()
         }
         return MediaNotificationListener.countsByPackage()
+    }
+
+    // Two answers rather than one, because they fail differently and need
+    // different words on the settings screen: "enabled" is the switch the
+    // user flips under Android's "Notification access", "connected" is
+    // whether Android has actually bound the listener behind it.
+    //
+    // They come apart routinely - installing a new APK over the old one
+    // leaves the switch on and the binding gone - and the old single
+    // "granted" answer then reported everything as fine while no badge was
+    // ever drawn. Asking is also the moment to ask for the binding back.
+    private fun notificationState(): Map<String, Boolean> {
+        val enabled = hasNotificationAccess()
+        if (enabled && !MediaNotificationListener.isConnected) {
+            requestListenerRebind()
+        }
+        return mapOf(
+            "enabled" to enabled,
+            "connected" to MediaNotificationListener.isConnected,
+        )
+    }
+
+    // The documented way to ask for a listener that is switched on but not
+    // bound. It answers nothing: the binding arrives later, and the next
+    // poll a few seconds on is what finds it.
+    private fun requestListenerRebind() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return
+        try {
+            NotificationListenerService.requestRebind(
+                ComponentName(this, MediaNotificationListener::class.java),
+            )
+        } catch (_: Exception) {
+        }
+    }
+
+    // This app's own page in Android's settings. That is where "Allow
+    // restricted settings" lives, and it is the only way in for an app
+    // installed from a file rather than a store: Android refuses
+    // notification access to one until that menu item has been used, and
+    // there is no intent that opens the item itself.
+    private fun openAppDetails(): Boolean {
+        return try {
+            startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    .setData(Uri.fromParts("package", packageName, null))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+            true
+        } catch (_: Exception) {
+            false
+        }
     }
 
     // Started without resolveActivity() on purpose, like the other settings

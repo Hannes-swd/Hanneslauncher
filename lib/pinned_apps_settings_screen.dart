@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'app_icon.dart';
@@ -184,7 +186,13 @@ class _BadgeSection extends StatefulWidget {
 
 class _BadgeSectionState extends State<_BadgeSection>
     with WidgetsBindingObserver {
-  bool _granted = false;
+  NotificationAccess _access = NotificationAccess.none;
+
+  /// The binding can arrive a moment after it was asked for, so the answer
+  /// is re-read while it is still missing rather than only on the way back
+  /// from Android's settings - otherwise the screen would keep claiming the
+  /// listener is stalled seconds after it came back.
+  Timer? _recheck;
 
   @override
   void initState() {
@@ -196,21 +204,31 @@ class _BadgeSectionState extends State<_BadgeSection>
 
   @override
   void dispose() {
+    _recheck?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   /// Notification access is granted in Android's own settings, so coming
-  /// back from there is the only moment this answer can have changed.
+  /// back from there is the moment this answer is most likely to have
+  /// changed.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) _refreshPermission();
   }
 
   Future<void> _refreshPermission() async {
-    final granted = await NotificationCounts.hasPermission();
-    if (!mounted || granted == _granted) return;
-    setState(() => _granted = granted);
+    final access = await NotificationCounts.state();
+    if (!mounted) return;
+    if (access != _access) setState(() => _access = access);
+    _recheck?.cancel();
+    // Nothing to chase while no badge is wanted, and nothing left to chase
+    // once it works.
+    final wanted =
+        PinnedBadgeController.instance.value.style != PinnedBadgeStyle.none;
+    _recheck = (access.working || !wanted)
+        ? null
+        : Timer(const Duration(seconds: 3), _refreshPermission);
   }
 
   @override
@@ -284,22 +302,57 @@ class _BadgeSectionState extends State<_BadgeSection>
               ),
             // Only once a badge is actually wanted: before that the
             // permission has nothing to do with anything on screen.
-            if (badge.style != PinnedBadgeStyle.none)
+            //
+            // Three states, not two. "Switched on" and "actually reading
+            // notifications" are different things, and the gap between them
+            // is what a bare "granted" used to hide: the row said yes while
+            // every pinned icon stayed bare.
+            if (badge.style != PinnedBadgeStyle.none) ...[
               ListTile(
                 leading: Icon(
-                  _granted ? Icons.check_circle_outline : Icons.lock_outline,
+                  _access.working
+                      ? Icons.check_circle_outline
+                      : _access.stalled
+                      ? Icons.sync_problem_outlined
+                      : Icons.lock_outline,
                 ),
                 title: Text(
-                  _granted
+                  _access.working
                       ? s.pinnedBadgesPermissionGranted
+                      : _access.stalled
+                      ? s.pinnedBadgesPermissionStalled
                       : s.pinnedBadgesPermission,
                 ),
-                subtitle: _granted
+                subtitle: _access.working
                     ? null
-                    : Text(s.pinnedBadgesPermissionHint),
-                trailing: _granted ? null : const Icon(Icons.open_in_new),
-                onTap: _granted ? null : NotificationCounts.requestPermission,
+                    : Text(
+                        _access.stalled
+                            ? s.pinnedBadgesPermissionStalledHint
+                            : s.pinnedBadgesPermissionHint,
+                      ),
+                trailing: _access.working
+                    ? null
+                    : const Icon(Icons.open_in_new),
+                // Both ways out lead to the same screen: granting it the
+                // first time and switching it off and on again to unstick it
+                // are the same two taps.
+                onTap: _access.working
+                    ? null
+                    : NotificationCounts.requestPermission,
               ),
+              // The second way in, for when the switch on that screen
+              // refuses to stay on at all. That is not a bug in the switch -
+              // it is Android holding a restricted setting shut on an app
+              // installed from a file, and this page is where it is opened.
+              if (!_access.working)
+                ListTile(
+                  leading: const Icon(Icons.app_settings_alt_outlined),
+                  title: Text(s.pinnedBadgesRestricted),
+                  subtitle: Text(s.pinnedBadgesRestrictedHint),
+                  trailing: const Icon(Icons.open_in_new),
+                  onTap: NotificationCounts.openAppSettings,
+                ),
+            ],
           ],
         );
       },

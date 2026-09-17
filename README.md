@@ -56,7 +56,11 @@ change the color of a folder, without the detour through the settings.
 switched to a plain dot ("something is waiting") or to the number of waiting
 notifications, in any color from the shared palette - a pinned folder adds up
 everything inside it. It needs Android's notification access, and only the
-count is ever read: no text, no sender, nothing stored.
+count is ever read: no text, no sender, nothing stored. The settings screen
+says which of the two halves of that access is missing - switched off, or
+switched on but not actually handing anything over, which is what installing
+a new APK over the old one leaves behind - and links straight to the Android
+screen that fixes it.
 
 ### Clock
 

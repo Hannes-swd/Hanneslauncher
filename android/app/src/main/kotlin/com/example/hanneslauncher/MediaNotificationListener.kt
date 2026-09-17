@@ -46,25 +46,46 @@ class MediaNotificationListener : NotificationListenerService() {
                 null
             } ?: return emptyMap()
 
-            val counts = mutableMapOf<String, Int>()
+            // Kept apart rather than added into one map, because a group
+            // summary only stands in for children that are actually there -
+            // see the fold below.
+            val children = mutableMapOf<String, Int>()
+            val summaries = mutableMapOf<String, Int>()
             for (notification in active) {
                 val details = notification.notification ?: continue
                 // Anything the user cannot swipe away is a standing status
                 // line, not news: a music player, a download, a VPN. Counting
                 // those would leave a badge sitting on an app forever.
-                if (notification.isOngoing || !notification.isClearable) continue
-                // Messengers post one notification per chat plus a summary
-                // holding them together. Counting the summary too would make
-                // every single message read as two.
-                if (details.flags and Notification.FLAG_GROUP_SUMMARY != 0) continue
+                // isClearable already covers the ongoing flag.
+                if (!notification.isClearable) continue
                 // Notification.number is what the app itself puts in a badge
                 // ("3 new messages" in one chat). Not every app sets it, so a
                 // notification without one counts as the single item it is.
                 val number = if (details.number > 0) details.number else 1
-                counts[notification.packageName] =
-                    (counts[notification.packageName] ?: 0) + number
+                val into =
+                    if (details.flags and Notification.FLAG_GROUP_SUMMARY != 0) {
+                        summaries
+                    } else {
+                        children
+                    }
+                into[notification.packageName] =
+                    (into[notification.packageName] ?: 0) + number
             }
-            return counts
+
+            // Messengers post one notification per chat plus a summary
+            // holding them together, so counting the summary as well would
+            // read every single message as two - which is why it is dropped
+            // wherever there are children to drop it in favour of.
+            //
+            // But a group of one is still a group: with a single chat
+            // waiting, an app can post nothing but the summary. Dropping
+            // that one unconditionally left the package at zero and the
+            // pinned icon bare while a message was plainly waiting, so a
+            // package with no children at all counts its summaries instead.
+            for ((packageName, count) in summaries) {
+                if (!children.containsKey(packageName)) children[packageName] = count
+            }
+            return children
         }
     }
 }

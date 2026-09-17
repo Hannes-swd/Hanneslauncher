@@ -23,16 +23,24 @@ void main() {
 
   const channel = MethodChannel('hanneslauncher/notifications');
   var platformCounts = <String, int>{};
+  var platformState = <String, bool>{'enabled': true, 'connected': true};
+  var opened = <String>[];
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     platformCounts = <String, int>{};
+    platformState = <String, bool>{'enabled': true, 'connected': true};
+    opened = <String>[];
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
           switch (call.method) {
             case 'counts':
               return platformCounts;
-            case 'hasPermission':
+            case 'state':
+              return platformState;
+            case 'requestPermission':
+            case 'openAppSettings':
+              opened.add(call.method);
               return true;
             default:
               return null;
@@ -157,9 +165,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(PinnedBadgeController.instance.value.style, PinnedBadgeStyle.count);
-    // The mock channel above answers "granted", so the row says so rather
-    // than offering the trip to Android's settings.
+    // The mock channel above answers switched on and connected, so the row
+    // says so rather than offering the trip to Android's settings.
     expect(find.text('Access granted'), findsOneWidget);
+    // And with it working there is nothing to unblock either.
+    expect(find.text('Open app settings'), findsNothing);
 
     // The color row only appears once a badge is drawn at all. Third swatch
     // in the shared palette: the blue grey.
@@ -170,6 +180,87 @@ void main() {
     expect(PinnedBadgeController.instance.value.colorIndex, 2);
     // Picking a color leaves the shape alone.
     expect(PinnedBadgeController.instance.value.style, PinnedBadgeStyle.count);
+  });
+
+  /// The settings screen, with one app installed and a badge already asked
+  /// for - which is what brings the permission rows out at all.
+  Future<void> pumpBadgeSettings(WidgetTester tester) async {
+    LauncherEntriesController.instance.debugSetInstalledApps([
+      const AppInfo(
+        name: 'Mail',
+        icon: null,
+        packageName: 'com.example.mail',
+        versionName: '1.0.0',
+        versionCode: 1,
+        platformType: PlatformType.nativeOrOthers,
+        installedTimestamp: 0,
+        isSystemApp: false,
+        isLaunchableApp: true,
+        category: AppCategory.undefined,
+      ),
+    ]);
+    await PinnedBadgeController.instance.update(
+      const PinnedBadgeSettings(style: PinnedBadgeStyle.dot),
+    );
+    await tester.pumpWidget(const MaterialApp(home: PinnedAppsSettingsScreen()));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('a listener that is on but not reading says so', (tester) async {
+    // The state the old single "granted" answer could not tell apart, and
+    // the one a new APK over the old one leaves behind: switched on, bound
+    // to nothing, every count zero.
+    platformState = {'enabled': true, 'connected': false};
+
+    await pumpBadgeSettings(tester);
+
+    expect(find.text('Access granted'), findsNothing);
+    expect(find.text('Switched on, but nothing is arriving'), findsOneWidget);
+
+    // Both ways into Android's settings are offered, because either one can
+    // be what is in the way.
+    for (final row in const [
+      'Switched on, but nothing is arriving',
+      'Open app settings',
+    ]) {
+      await tester.ensureVisible(find.text(row));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(row));
+      await tester.pumpAndSettle();
+    }
+    expect(opened, ['requestPermission', 'openAppSettings']);
+
+    // Disposes the screen, and with it the timer that keeps re-asking.
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a listener that was never switched on offers the way in', (
+    tester,
+  ) async {
+    platformState = {'enabled': false, 'connected': false};
+
+    await pumpBadgeSettings(tester);
+
+    expect(find.text('Allow notification access'), findsOneWidget);
+    // The restricted-settings way in matters most here: on a phone that
+    // refuses to keep the switch on, the first row alone is a dead end.
+    expect(find.text('Open app settings'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  test('a platform that cannot answer at all is simply not working', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          channel,
+          (call) async => throw MissingPluginException(),
+        );
+
+    final access = await NotificationCounts.state();
+
+    expect(access, NotificationAccess.none);
+    expect(access.working, isFalse);
+    expect(access.stalled, isFalse);
   });
 
   test('the badge text is readable on whatever color was picked', () {

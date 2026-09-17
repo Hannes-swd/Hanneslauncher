@@ -106,6 +106,46 @@ class PinnedBadgeController extends ValueNotifier<PinnedBadgeSettings> {
   }
 }
 
+/// How far the launcher has got towards being allowed to read what is
+/// waiting. Two answers rather than one, because they fail differently and
+/// the way out of each is a different screen:
+///
+/// * [enabled] is the switch under Android's "Notification access". Off
+///   means it was never granted - or that Android is refusing to let it be
+///   granted at all, which it does for an app installed from a file.
+/// * [connected] is whether Android has actually bound the listener. It
+///   goes false on its own - a new APK installed over the old one does it
+///   every time - and until it comes back every count reads zero.
+///
+/// Reporting only the first is what let the settings screen say "access
+/// granted" while no badge was ever drawn.
+class NotificationAccess {
+  const NotificationAccess({required this.enabled, required this.connected});
+
+  /// What a phone that cannot answer at all looks like, which is every
+  /// platform but Android.
+  static const none = NotificationAccess(enabled: false, connected: false);
+
+  final bool enabled;
+  final bool connected;
+
+  /// Badges are actually being read.
+  bool get working => enabled && connected;
+
+  /// Switched on, but Android is not handing anything over. Worth saying
+  /// out loud: it looks exactly like "nothing ever arrives".
+  bool get stalled => enabled && !connected;
+
+  @override
+  bool operator ==(Object other) =>
+      other is NotificationAccess &&
+      other.enabled == enabled &&
+      other.connected == connected;
+
+  @override
+  int get hashCode => Object.hash(enabled, connected);
+}
+
 /// How many notifications each package currently has waiting, read from
 /// Android's notification listener - the same permission the offline mode's
 /// music line needs, because it is the same service behind both.
@@ -133,21 +173,41 @@ class NotificationCounts extends ValueNotifier<Map<String, int>> {
   Timer? _timer;
   bool _visible = false;
 
-  /// Whether this app is switched on as a notification listener. Without it
-  /// every count is zero, and the settings screen offers the way in.
-  static Future<bool> hasPermission() async {
+  /// Whether the badges can be read at all - see [NotificationAccess] for
+  /// why that is two answers rather than one. The settings screen asks, and
+  /// offers the matching way in.
+  static Future<NotificationAccess> state() async {
     try {
-      return await _channel.invokeMethod<bool>('hasPermission') ?? false;
+      final state = await _channel.invokeMapMethod<String, bool>('state');
+      if (state == null) return NotificationAccess.none;
+      return NotificationAccess(
+        enabled: state['enabled'] ?? false,
+        connected: state['connected'] ?? false,
+      );
+    } catch (_) {
+      return NotificationAccess.none;
+    }
+  }
+
+  /// Opens Android's "Notification access" screen. There is no runtime
+  /// prompt for this permission - that screen is the only way to grant it,
+  /// and switching it off and on again there is also the way to shake a
+  /// stalled listener back into place.
+  static Future<bool> requestPermission() async {
+    try {
+      return await _channel.invokeMethod<bool>('requestPermission') ?? false;
     } catch (_) {
       return false;
     }
   }
 
-  /// Opens Android's "Notification access" screen. There is no runtime
-  /// prompt for this permission - that screen is the only way to grant it.
-  static Future<bool> requestPermission() async {
+  /// Opens this app's own page in Android's settings, where "Allow
+  /// restricted settings" sits. Android hides notification access behind
+  /// that from an app installed out of a file instead of a store, which is
+  /// how this one is installed every time.
+  static Future<bool> openAppSettings() async {
     try {
-      return await _channel.invokeMethod<bool>('requestPermission') ?? false;
+      return await _channel.invokeMethod<bool>('openAppSettings') ?? false;
     } catch (_) {
       return false;
     }
