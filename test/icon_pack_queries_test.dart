@@ -19,6 +19,7 @@ void main() {
   final manifest = File(
     'android/app/src/main/AndroidManifest.xml',
   ).readAsStringSync();
+  final readme = File('README.md').readAsStringSync();
 
   /// The string literals inside `supportedActions = listOf(...)`.
   List<String> supportedActions() {
@@ -53,5 +54,39 @@ void main() {
             'so packs hanging it off MAIN are invisible on Android 11+',
       );
     }
+  });
+
+  /// The settings screen reads its list off the platform side, so it can't
+  /// drift. The README's copy is typed out by hand and can, and a readme
+  /// promising support for a pack format that was dropped is worse than one
+  /// saying nothing.
+  test('the README names the same icon pack formats', () {
+    for (final action in supportedActions()) {
+      expect(
+        readme.contains(action),
+        isTrue,
+        reason:
+            'README.md does not name $action in its list of accepted icon '
+            'packs. Both directions matter: an action added here has to be '
+            'listed there, and one dropped here has to go.',
+      );
+    }
+
+    // And nothing in that block that the launcher no longer accepts. The
+    // block is the fenced list under "Which icon packs work".
+    final block = RegExp(
+      r'### Which icon packs work[\s\S]*?```([\s\S]*?)```',
+    ).firstMatch(readme);
+    expect(block, isNotNull, reason: 'the README list moved or was renamed');
+    final listed = RegExp(
+      r'[a-z][\w.]*\.[A-Z_a-z][\w.]*',
+    ).allMatches(block!.group(1)!).map((match) => match.group(0)!).toSet();
+    expect(
+      listed.difference(supportedActions().toSet()),
+      isEmpty,
+      reason:
+          'README.md promises icon pack formats the launcher does not look '
+          'for any more.',
+    );
   });
 }

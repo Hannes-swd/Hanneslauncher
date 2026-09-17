@@ -131,6 +131,55 @@ separately.
 
 ---
 
+## Icons
+
+Where an app's icon comes from is set under *Settings → Appearance → Icon
+design*, and there are four answers:
+
+- **Standard**: the icon each app brings along itself
+- **Icon pack**: an icon pack installed on the phone redraws every app it
+  covers
+- **Colored**: every icon reduced to its brightness and re-tinted to one
+  color, so a pile of brand logos reads as one set
+- **Own picture**: a picture from the gallery, for one app
+
+The first three are one choice for all apps at once. The fourth is per app
+(*Settings → Apps → Customize apps*, or straight from the icon design screen)
+and always wins over the other three: switching a pack on leaves every app you
+gave a picture of its own untouched, and removing that picture hands the app
+straight back to the pack or the color. Nothing is ever written onto an app,
+so every one of these is undone by undoing it.
+
+An app the pack has no icon for keeps its own - dressed in the pack's frame
+when the pack ships one, so the odd app out still belongs to the set. Web
+apps, folders and the launcher's own screens are not part of a pack at all.
+
+### Which icon packs work
+
+Not quite all of them, and the launcher says so itself: the icon design screen
+lists the declarations it looks for under *Recognised packs*, read from the
+platform side that does the looking, so the list in the app can never promise
+support that isn't there.
+
+A pack is an ordinary app, and there is no Android standard for announcing one
+- every launcher invented its own name for it. These are the ten the launcher
+accepts:
+
+```
+org.adw.launcher.THEMES              com.dlto.atom.launcher.THEME
+com.novalauncher.THEME               ch.deletescape.lawnchair.ICONPACK
+com.teslacoilsw.launcher.THEME       net.oneplus.launcher.icons.ICONPACK
+com.anddoes.launcher.THEME           com.sonymobile.home.ICON_PACK
+com.fede.launcher.THEME_ICONPACK     com.gau.go.launcherex.theme
+```
+
+Nearly every pack in the store names several of these, because a pack naming
+none would be invisible to every launcher rather than just to this one - so in
+practice they simply work. If one doesn't show up in the list, this is the set
+it failed to match.
+
+---
+
 ## The panel
 
 Pull down from the top edge of the screen. It follows the finger one to one
@@ -228,7 +277,8 @@ in **[CODE_WIDGETS.md](CODE_WIDGETS.md)**.
 - **Customize apps**: rename, set your own icon, uninstall
 - **Design**: theme, rounding, shadows, spacing and text size for the whole
   app (see above)
-- **Icon design**: tint every icon the same color
+- **Icon design**: standard icons, an installed icon pack, one color for all
+  of them, or your own picture per app (see above)
 - **App list**: font, size, line spacing, color, sort order
 - **Language**: German or English, following the system language by default
 - **Backup**: export every setting as JSON and read it back in
