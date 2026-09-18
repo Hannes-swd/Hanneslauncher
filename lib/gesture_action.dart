@@ -140,8 +140,11 @@ Future<GestureActionResult> runGestureAction(
         showFolderSheet(context, entry.folder!);
       } else if (entry.isBuiltIn) {
         await openBuiltIn(context, entry.builtIn!);
-      } else {
-        await entry.launch();
+      } else if (!await entry.launch()) {
+        // Only a kept app shortcut gets here: the app that published it is
+        // free to drop it, and a shape that draws itself and then does
+        // nothing is the worst way to find that out.
+        return GestureActionResult(ok: false, message: s.appShortcutFailed);
       }
       return const GestureActionResult(ok: true);
 

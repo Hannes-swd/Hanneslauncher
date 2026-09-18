@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:installed_apps/app_info.dart';
 import 'package:installed_apps/installed_apps.dart';
@@ -7,12 +9,13 @@ import 'builtin_entries.dart';
 import 'folders_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
+import 'saved_shortcuts_controller.dart';
 import 'secret_apps_controller.dart';
 import 'web_apps_controller.dart';
 
 /// The single list of everything the launcher can show: installed apps,
-/// saved web apps, folders and the launcher's own built-in screens, sorted
-/// by displayed name.
+/// saved web apps, saved app shortcuts, folders and the launcher's own
+/// built-in screens, sorted by displayed name.
 ///
 /// Kept in one place because folders reference their contents by key, so
 /// resolving a folder needs the same lookup the app list and the pinned apps
@@ -28,6 +31,7 @@ class LauncherEntriesController extends ChangeNotifier {
   LauncherEntriesController._() {
     AppOverridesController.instance.addListener(_rebuild);
     WebAppsController.instance.addListener(_rebuild);
+    SavedShortcutsController.instance.addListener(_rebuild);
     FoldersController.instance.addListener(_rebuild);
     // Hiding an app has to take effect everywhere at once, the same way a
     // rename does.
@@ -56,9 +60,13 @@ class LauncherEntriesController extends ChangeNotifier {
 
   LauncherEntry? byKey(String key) => _byKey[key];
 
-  /// The apps hidden behind the secret folder's password - everything
-  /// [entries] leaves out. Empty unless [token] is the current unlock, so
-  /// this cannot be used to peek.
+  /// The apps hidden behind the secret folder's password. Empty unless
+  /// [token] is the current unlock, so this cannot be used to peek.
+  ///
+  /// Not quite the complement of [entries]: a shortcut saved out of a hidden
+  /// app is left out of both. It was never hidden by name - it goes when its
+  /// app goes - so the row here would carry a "remove from secret folder"
+  /// button with no key to remove. Un-hiding the app brings it back.
   List<LauncherEntry> secretEntries(SecretUnlock token) {
     if (!SecretAppsController.instance.isUnlockedWith(token)) return const [];
     final secret = SecretAppsController.instance.value;
@@ -86,6 +94,11 @@ class LauncherEntriesController extends ChangeNotifier {
     _apps = apps;
     _loaded = true;
     _rebuild();
+    // Saved shortcuts follow the apps that published them: a contact renamed
+    // in the messenger renames the shortcut here too. Not awaited - it is a
+    // handful of platform calls, and the list above is already right without
+    // them; the rebuild it triggers when something did change is enough.
+    unawaited(SavedShortcutsController.instance.refresh());
   }
 
   /// Reads the installed apps. Safe to call again to pick up newly
@@ -94,6 +107,7 @@ class LauncherEntriesController extends ChangeNotifier {
     await Future.wait([
       AppOverridesController.instance.load(),
       WebAppsController.instance.load(),
+      SavedShortcutsController.instance.load(),
       FoldersController.instance.load(),
       // Before the apps are turned into entries, otherwise the first build
       // after a cold start would show the hidden ones.
@@ -113,6 +127,8 @@ class LauncherEntriesController extends ChangeNotifier {
       for (final app in _apps) LauncherEntry.app(app),
       for (final webApp in WebAppsController.instance.value)
         LauncherEntry.web(webApp),
+      for (final shortcut in SavedShortcutsController.instance.value)
+        LauncherEntry.shortcut(shortcut),
       for (final folder in FoldersController.instance.value)
         LauncherEntry.folder(folder),
       for (final builtIn in BuiltInEntry.values) LauncherEntry.builtIn(builtIn),
@@ -121,7 +137,7 @@ class LauncherEntriesController extends ChangeNotifier {
     final secret = SecretAppsController.instance.value;
     _entries = [
       for (final entry in _all)
-        if (!secret.contains(entry.key)) entry,
+        if (!entry.hidingKeys.any(secret.contains)) entry,
     ];
     _byKey = {for (final entry in _entries) entry.key: entry};
     notifyListeners();

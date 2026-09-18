@@ -5,7 +5,9 @@ import 'package:hanneslauncher/app_list_view.dart';
 import 'package:hanneslauncher/device_stats_controller.dart';
 import 'package:hanneslauncher/folders_controller.dart';
 import 'package:hanneslauncher/launcher_entries_controller.dart';
+import 'package:hanneslauncher/app_shortcuts.dart';
 import 'package:hanneslauncher/pinned_apps_controller.dart';
+import 'package:hanneslauncher/saved_shortcuts_controller.dart';
 import 'package:hanneslauncher/secret_apps_controller.dart';
 import 'package:hanneslauncher/settings_backup_service.dart';
 import 'package:installed_apps/app_category.dart';
@@ -144,6 +146,40 @@ void main() {
       FoldersController.instance.value.first.itemKeys,
     );
     expect(contents.map((entry) => entry.key), ['com.example.mail']);
+  });
+
+  test('hiding an app hides the shortcuts kept out of it', () async {
+    final unlock = await reset();
+    await SavedShortcutsController.instance.replaceAll(const []);
+    // A chat kept out of the diary app: it carries a name and a picture of
+    // its own, so leaving it behind would put the more telling half of a
+    // hidden app back into the app list.
+    final saved = await SavedShortcutsController.instance.add(
+      const AppShortcut(
+        package: 'com.example.diary',
+        id: 'entry-1',
+        label: 'Yesterday',
+      ),
+    );
+    final key = SavedShortcutsController.pinKeyFor(saved.id);
+    await PinnedAppsController.instance.toggle(key);
+
+    expect(LauncherEntriesController.instance.byKey(key), isNotNull);
+
+    await SecretAppsController.instance.add(unlock, 'com.example.diary');
+
+    expect(LauncherEntriesController.instance.byKey(key), isNull);
+    expect(
+      LauncherEntriesController.instance.entries.map((entry) => entry.key),
+      isNot(contains(key)),
+    );
+    // And off the home screen with it, the same way the app itself goes.
+    expect(LauncherEntriesController.instance.resolve([key]), isEmpty);
+
+    // Un-hiding the app brings the shortcut back - it was never hidden by
+    // name, so nothing had to be remembered about it.
+    await SecretAppsController.instance.remove(unlock, 'com.example.diary');
+    expect(LauncherEntriesController.instance.byKey(key), isNotNull);
   });
 
   test('the password survives a restore, a wrong one still fails', () async {

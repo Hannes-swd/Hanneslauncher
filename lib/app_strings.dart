@@ -259,6 +259,33 @@ class AppStrings {
   String get save => _en ? 'Save' : 'Speichern';
   String get nameLabel => _en ? 'Name' : 'Name';
 
+  // App shortcuts: what an app publishes about itself - a chat, "new tab", a
+  // playlist. "Verknüpfung" rather than "Shortcut" because that is the word
+  // Android's own German uses for exactly these.
+  String get appShortcuts => _en ? 'Shortcuts' : 'Verknüpfungen';
+  String get noAppShortcuts =>
+      _en ? 'This app has no shortcuts' : 'Diese App hat keine Verknüpfungen';
+  String get appShortcutsNeedHomeApp => _en
+      ? 'Android only hands shortcuts to the app the home button opens. Set '
+            'hanneslauncher as the home app to see them.'
+      : 'Android gibt Verknüpfungen nur an die App, die der Home-Button '
+            'öffnet. Dafür muss hanneslauncher als Home-App eingestellt sein.';
+  String get keepAppShortcut => _en ? 'Keep in launcher' : 'Im Launcher behalten';
+  String get appShortcutKeptHint => _en
+      ? 'Kept shortcuts sit in the app list under their own letter, go into '
+            'folders and can be pinned to the home screen.'
+      : 'Behaltene Verknüpfungen stehen in der App-Liste unter ihrem eigenen '
+            'Buchstaben, passen in Ordner und lassen sich anpinnen.';
+  String appShortcutKept(String name) =>
+      _en ? '"$name" is now in the app list' : '„$name" steht jetzt in der App-Liste';
+  String get appShortcutAlreadyKept => _en ? 'Already kept' : 'Schon behalten';
+  String get removeAppShortcut =>
+      _en ? 'Remove shortcut' : 'Verknüpfung entfernen';
+  String get appShortcutFailed => _en
+      ? 'This shortcut no longer works - the app has dropped it'
+      : 'Diese Verknüpfung funktioniert nicht mehr - die App hat sie '
+            'aufgegeben';
+
   // The secret folder. Deliberately without a count anywhere: a subtitle
   // saying "3 apps" would give away in the settings list - and in the
   // settings search - what the password is there to keep to itself.
@@ -1024,15 +1051,15 @@ class AppStrings {
       : 'Alle Einstellungen als Datei exportieren oder importieren';
   String get backupHint => _en
       ? 'Exports the clock, widgets, panel, pinned apps, folders, web apps, '
-            'data sources, device data packages, custom colors, app '
-            'renames and language into one file. The code widgets come '
+            'kept shortcuts, data sources, device data packages, custom '
+            'colors, app renames and language into one file. The code widgets come '
             'along with their HTML, CSS and JavaScript, and with the files '
             'uploaded into them up to 512 KB each. Custom pictures '
             '(wallpaper, replaced icons) aren\'t included - their '
             'files stay behind on this install.'
       : 'Exportiert Uhr, Widgets, Panel, angepinnte Apps, Ordner, Web-Apps, '
-            'Datenquellen, Gerätedaten-Pakete, eigene Farben, '
-            'App-Umbenennungen und Sprache in eine Datei. Die Code-Widgets '
+            'behaltene Verknüpfungen, Datenquellen, Gerätedaten-Pakete, '
+            'eigene Farben, App-Umbenennungen und Sprache in eine Datei. Die Code-Widgets '
             'kommen mit ihrem HTML, CSS und JavaScript mit, und mit den '
             'hochgeladenen Dateien bis 512 KB pro Stück. '
             'Eigene Bilder (Hintergrund, ersetzte Icons) sind nicht '

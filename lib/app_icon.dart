@@ -91,7 +91,11 @@ class AppIcon extends StatelessWidget {
   /// rather than to a hole. That is not a corner case: a pack's icons live in
   /// the cache directory, which Android empties whenever it is short of
   /// space, and it can do so between two frames.
-  Widget _picture(File file) {
+  ///
+  /// [onError] overrides that fallback, and the one caller that passes it is
+  /// [_rawIcon] drawing a shortcut's own picture: falling back to itself is
+  /// where it would otherwise end up, and that loops forever.
+  Widget _picture(File file, [Widget? onError]) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(size * 0.22),
       child: Image.file(
@@ -99,7 +103,7 @@ class AppIcon extends StatelessWidget {
         width: size,
         height: size,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _rawIcon(),
+        errorBuilder: (context, error, stackTrace) => onError ?? _rawIcon(),
       ),
     );
   }
@@ -109,9 +113,22 @@ class AppIcon extends StatelessWidget {
     if (systemIcon != null) {
       return Image.memory(systemIcon, width: size, height: size);
     }
+    // A saved shortcut's own picture, the one Android drew for it. Below the
+    // picked picture above and above the fallback glyph below, which is the
+    // same order everything else in here follows.
+    final shortcutIcon = entry.shortcutIcon;
+    if (shortcutIcon != null) return _picture(shortcutIcon, _fallbackGlyph());
     final builtIn = entry.builtIn;
     if (builtIn != null) return Icon(builtIn.icon, size: size);
-    return Icon(entry.isWebApp ? Icons.public : Icons.apps, size: size);
+    return _fallbackGlyph();
+  }
+
+  Widget _fallbackGlyph() {
+    if (entry.isWebApp) return Icon(Icons.public, size: size);
+    // Shortcuts without a picture are rare but allowed, and an arrow says
+    // "this goes somewhere inside an app" better than a grid of squares.
+    if (entry.isShortcut) return Icon(Icons.arrow_outward, size: size);
+    return Icon(Icons.apps, size: size);
   }
 
   /// Strips an icon down to its brightness and multiplies the chosen color

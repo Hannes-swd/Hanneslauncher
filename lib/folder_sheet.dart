@@ -9,6 +9,7 @@ import 'folders_settings_screen.dart' show FolderContentsPicker;
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
+import 'pinned_quick_actions.dart';
 import 'text_prompt_dialog.dart';
 
 /// Opens a folder's window: its apps, web apps and subfolders. Tapping an
@@ -213,15 +214,19 @@ class _FolderItem extends StatelessWidget {
         if (entry.isFolder) {
           showFolderSheet(context, entry.folder!);
         } else {
+          final messenger = ScaffoldMessenger.of(context);
           // The window has done its job once something is launched.
           Navigator.of(context).pop();
           if (entry.isBuiltIn) {
             openBuiltIn(context, entry.builtIn!);
           } else {
-            entry.launch();
+            _launch(entry, messenger);
           }
         }
       },
+      // Same menu as a long press on the home screen: an app's shortcuts,
+      // and the icon of whatever is being held.
+      onLongPress: () => showPinnedQuickActions(context, entry),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -238,6 +243,23 @@ class _FolderItem extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// A saved shortcut is the one entry in here that can fail to start - the
+  /// app it came from is free to drop it. The messenger is taken before the
+  /// sheet closes, because this widget's context is gone by then.
+  Future<void> _launch(
+    LauncherEntry entry,
+    ScaffoldMessengerState messenger,
+  ) async {
+    if (await entry.launch()) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          AppStrings(LocaleController.instance.value).appShortcutFailed,
+        ),
       ),
     );
   }

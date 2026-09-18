@@ -57,6 +57,7 @@ class MainActivity : FlutterActivity() {
     private val contactsChannelName = "hanneslauncher/contacts"
     private val notificationsChannelName = "hanneslauncher/notifications"
     private val iconPacksChannelName = "hanneslauncher/icon_packs"
+    private val appShortcutsChannelName = "hanneslauncher/app_shortcuts"
     private val calendarPermissionRequestCode = 4201
     private val importFileRequestCode = 4202
     private val stepsPermissionRequestCode = 4203
@@ -443,6 +444,81 @@ class MainActivity : FlutterActivity() {
                                 runOnUiThread { result.success(icons) }
                             }.start()
                         }
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        // The shortcuts an app publishes about itself - a chat, "new tab", a
+        // playlist. Readable only by the current home app, so every method
+        // here answers empty rather than failing when this launcher isn't it
+        // yet; see AppShortcuts.kt.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, appShortcutsChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "available" -> result.success(AppShortcuts.available(this))
+                    "list" -> {
+                        val pkg = call.argument<String>("package")
+                        if (pkg == null) {
+                            result.success(emptyList<Map<String, Any?>>())
+                        } else {
+                            // One icon per shortcut gets decoded and written
+                            // here. A handful is quick, but it is still file
+                            // I/O on the thread that draws the long-press
+                            // menu, so it goes to the side the same way the
+                            // icon packs do.
+                            val context = applicationContext
+                            Thread {
+                                val shortcuts = try {
+                                    AppShortcuts.list(context, pkg)
+                                } catch (_: Exception) {
+                                    emptyList()
+                                }
+                                runOnUiThread { result.success(shortcuts) }
+                            }.start()
+                        }
+                    }
+                    "launch" -> {
+                        val pkg = call.argument<String>("package")
+                        val id = call.argument<String>("id")
+                        result.success(
+                            if (pkg == null || id == null) {
+                                false
+                            } else {
+                                AppShortcuts.launch(this, pkg, id)
+                            },
+                        )
+                    }
+                    "pin" -> {
+                        val pkg = call.argument<String>("package")
+                        val ids = call.argument<List<String>>("ids") ?: emptyList()
+                        result.success(
+                            if (pkg == null) false else AppShortcuts.pin(this, pkg, ids),
+                        )
+                    }
+                    // Both answer null for a shortcut that is gone, which is
+                    // how the Dart side notices a saved one has died.
+                    "icon" -> {
+                        val pkg = call.argument<String>("package")
+                        val id = call.argument<String>("id")
+                        result.success(
+                            if (pkg == null || id == null) {
+                                null
+                            } else {
+                                AppShortcuts.icon(this, pkg, id)
+                            },
+                        )
+                    }
+                    "label" -> {
+                        val pkg = call.argument<String>("package")
+                        val id = call.argument<String>("id")
+                        result.success(
+                            if (pkg == null || id == null) {
+                                null
+                            } else {
+                                AppShortcuts.label(this, pkg, id)
+                            },
+                        )
                     }
                     else -> result.notImplemented()
                 }

@@ -443,8 +443,23 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     } else if (entry.isBuiltIn) {
       openBuiltIn(context, entry.builtIn!);
     } else {
-      entry.launch();
+      _launch(entry);
     }
+  }
+
+  /// A saved shortcut is the one entry that can fail to start: the app it
+  /// came from is free to drop it, and Android stops handing them out the
+  /// moment another launcher becomes the home app. Both leave a tap looking
+  /// ignored unless it is said out loud.
+  Future<void> _launch(LauncherEntry entry) async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (await entry.launch()) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(AppStrings(LocaleController.instance.value)
+            .appShortcutFailed),
+      ),
+    );
   }
 
   @override
@@ -895,6 +910,11 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
                         _closeSearch();
                         _open(entry);
                       },
+                      // The way to reach an app's own shortcuts without
+                      // pinning it first: the search is one gesture from the
+                      // home screen, and the rows in the alphabet list are
+                      // not tap targets at all - they are released onto.
+                      onLongPress: () => showPinnedQuickActions(context, entry),
                       child: _buildAppRow(entry, -1),
                     );
                   },

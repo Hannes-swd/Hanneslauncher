@@ -17,6 +17,7 @@ import 'package:hanneslauncher/notification_badges_controller.dart';
 import 'package:hanneslauncher/offline_mode_controller.dart';
 import 'package:hanneslauncher/panel_blocks_controller.dart';
 import 'package:hanneslauncher/pinned_apps_controller.dart';
+import 'package:hanneslauncher/saved_shortcuts_controller.dart';
 import 'package:hanneslauncher/settings_backup_service.dart';
 import 'package:hanneslauncher/web_apps_controller.dart';
 import 'package:installed_apps/app_category.dart';
@@ -105,6 +106,14 @@ void main() {
         browserPackage: 'org.mozilla.firefox',
       ),
     ]);
+    await SavedShortcutsController.instance.replaceAll([
+      const SavedShortcut(
+        id: 's1',
+        package: 'com.example.messenger',
+        shortcutId: 'chat-4711',
+        name: 'Mama',
+      ),
+    ]);
     await AppOverridesController.instance.restoreNames({
       'com.example.mail': 'Post',
     });
@@ -155,6 +164,7 @@ void main() {
     await PanelBlocksController.instance.replaceAll([]);
     await FoldersController.instance.replaceAll([]);
     await WebAppsController.instance.replaceAll([]);
+    await SavedShortcutsController.instance.replaceAll([]);
     await AppOverridesController.instance.restoreNames({});
     await DataSourcesController.instance.replaceAll([]);
     await PinnedAppsController.instance.restore([]);
@@ -219,6 +229,11 @@ void main() {
       WebAppsController.instance.value.single.browserPackage,
       'org.mozilla.firefox',
     );
+    final shortcut = SavedShortcutsController.instance.value.single;
+    expect(shortcut.id, 's1');
+    expect(shortcut.package, 'com.example.messenger');
+    expect(shortcut.shortcutId, 'chat-4711');
+    expect(shortcut.name, 'Mama');
     expect(
       AppOverridesController.instance.value['com.example.mail']?.name,
       'Post',

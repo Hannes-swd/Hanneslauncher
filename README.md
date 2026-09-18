@@ -49,8 +49,35 @@ finger.
 At the very bottom of the bar sits the **magnifier**: releasing there opens
 a full text search across all apps, web apps and folders.
 
-**Long-pressing a pinned icon** opens its quick actions, swap the icon, or
-change the color of a folder, without the detour through the settings.
+**Long-pressing an entry** - a pinned icon, a row in the search results, an
+icon inside a folder - opens its quick actions: swap the icon, or change the
+color of a folder, without the detour through the settings. For an installed
+app it also lists that app's own shortcuts (see below).
+
+### App shortcuts
+
+Apps publish shortcuts about themselves: the last few chats in a messenger,
+"new tab" in a browser, a playlist. Long-press an app and they are right
+there, tapping one goes straight in.
+
+The bookmark next to a shortcut **keeps** it. A kept shortcut stops being a
+menu item and becomes an entry like any other: it sits in the app list under
+its own letter, goes into folders, can be pinned to the home screen, gets a
+name and a picture of your own in *Settings -> Apps -> Customize apps*, and
+can be wired to a drawn shape. A chat with one person becomes an icon on the
+home screen.
+
+Keeping one also tells Android to hold it open. That matters for the dynamic
+kind: a messenger publishes its four most recent chats and drops the rest, so
+a kept chat would otherwise stop working within the day. Name and picture
+follow the app from then on - a contact who changes their name changes it
+here too.
+
+Android hands shortcuts to whichever app the home button opens and to nobody
+else, so they only appear once hanneslauncher is actually set as the home
+app; the menu says so rather than just being empty. Apps hidden in the secret
+folder take the shortcuts kept out of them along, and they come back when the
+app does.
 
 **Shortcuts you draw.** Draw a shape on the home screen - a heart, a house,
 a circle, whatever you will remember - and it opens an app, an address, a
@@ -294,6 +321,8 @@ in **[CODE_WIDGETS.md](CODE_WIDGETS.md)**.
 ## More features
 
 - **Folders**, nestable to any depth, each with its own color
+- **App shortcuts**: an app's own shortcuts on a long press, and keeping one
+  turns it into a full entry (see above)
 - **Web apps**: treat links and PWAs like apps, and pick per entry which
   browser they open in
 - **Customize apps**: rename, set your own icon, uninstall
@@ -303,7 +332,8 @@ in **[CODE_WIDGETS.md](CODE_WIDGETS.md)**.
   of them, or your own picture per app (see above)
 - **App list**: font, size, line spacing, color, sort order
 - **Language**: German or English, following the system language by default
-- **Backup**: export every setting as JSON and read it back in
+- **Backup**: export every setting as JSON and read it back in (kept
+  shortcuts included; their pictures are fetched again from the apps)
 - **Update**: the app checks GitHub for new releases and installs the APK
   directly (see [RELEASE.md](RELEASE.md))
 - **Settings search**: across every setting, in both languages at once, so

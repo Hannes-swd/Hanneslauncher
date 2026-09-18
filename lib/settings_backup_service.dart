@@ -22,12 +22,13 @@ import 'offline_mode_controller.dart';
 import 'panel_blocks_controller.dart';
 import 'pinned_apps_controller.dart';
 import 'secret_apps_controller.dart';
+import 'saved_shortcuts_controller.dart';
 import 'web_apps_controller.dart';
 
 /// Everything the user has configured, as one JSON document: colors,
 /// positions, the panel's widgets and calendar/app blocks, pinned apps,
-/// folders, web apps, data sources, app renames, the secret folder, clock
-/// and offline mode style, the design, and language.
+/// folders, web apps, saved app shortcuts, data sources, app renames, the
+/// secret folder, clock and offline mode style, the design, and language.
 ///
 /// The code widgets are the one part that isn't held by a block: their
 /// files are written alongside the document by [buildWithFiles].
@@ -154,6 +155,19 @@ class SettingsBackupService {
             'url': app.url,
             if (app.browserPackage != null)
               'browserPackage': app.browserPackage,
+          },
+      ],
+      // Without the picture: Android renders a shortcut's icon into this
+      // install's own cache, so the path would point nowhere after a
+      // restore. The refresh on the next load fetches it again from the app
+      // that published the shortcut, which is where it came from anyway.
+      'savedShortcuts': [
+        for (final shortcut in SavedShortcutsController.instance.value)
+          {
+            'id': shortcut.id,
+            'package': shortcut.package,
+            'shortcutId': shortcut.shortcutId,
+            'name': shortcut.name,
           },
       ],
       'appOverrides': {
@@ -485,6 +499,30 @@ class SettingsBackupService {
         }
       }
       await WebAppsController.instance.replaceAll(apps);
+    }
+
+    // Before the pinned apps below, like the web apps and folders above: a
+    // pin pointing at a shortcut is only kept if the shortcut it names
+    // already exists again by then.
+    final shortcutsJson = decoded['savedShortcuts'] as List<dynamic>?;
+    if (shortcutsJson != null) {
+      final shortcuts = <SavedShortcut>[];
+      for (final entry in shortcutsJson) {
+        try {
+          final map = entry as Map<String, dynamic>;
+          shortcuts.add(
+            SavedShortcut(
+              id: map['id'] as String,
+              package: map['package'] as String,
+              shortcutId: map['shortcutId'] as String,
+              name: map['name'] as String,
+            ),
+          );
+        } catch (_) {
+          // Skip just the unreadable one.
+        }
+      }
+      await SavedShortcutsController.instance.replaceAll(shortcuts);
     }
 
     final appOverridesJson = decoded['appOverrides'] as Map<String, dynamic>?;

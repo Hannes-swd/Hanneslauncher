@@ -76,6 +76,12 @@ void main() {
     // DeviceStatsController.mostUsedApp does.
     const known = {
       'hanneslauncher/app_info',
+      // Answers only about a package Dart named first, and those names come
+      // from LauncherEntriesController.entries, which the secret ones are
+      // already out of - so a hidden app's shortcuts can never be asked for.
+      // The kept shortcuts themselves are covered by LauncherEntry.hidingKeys:
+      // a shortcut goes when the app that published it goes.
+      'hanneslauncher/app_shortcuts',
       'hanneslauncher/backup',
       'hanneslauncher/browsers',
       'hanneslauncher/calendar',
@@ -141,6 +147,10 @@ void main() {
     //   getApplicationIcon/getLaunchIntentForPackage/
     //     getResourcesForApplication -> IconPacks, all three only ever asked
     //     about a package Dart named first
+    //   getShortcuts/getShortcutIconDrawable/startShortcut/pinShortcuts ->
+    //     AppShortcuts, likewise only ever about a package Dart named first.
+    //     getShortcuts is the one to watch: dropped from the query, it
+    //     enumerates every app on the phone, hidden ones included.
     const expected = {
       'queryIntentActivities': 2,
       'queryUsageStats': 1,
@@ -153,6 +163,10 @@ void main() {
       'resolveActivity': 2,
       'getInstalledPackages': 0,
       'getInstalledApplications': 0,
+      'getShortcuts': 1,
+      'getShortcutIconDrawable': 1,
+      'startShortcut': 1,
+      'pinShortcuts': 1,
     };
 
     final counts = {
