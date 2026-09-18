@@ -232,6 +232,29 @@ class _LauncherRootState extends State<LauncherRoot>
     _controller.animateTo(0, curve: Curves.easeOut);
   }
 
+  /// Opens the panel without a drag - what a shape drawn on the home screen
+  /// and wired to the settings does.
+  void _openPanel() {
+    if (_controller.value == 1) return;
+    _controller.animateTo(1, curve: Curves.easeOut);
+    _refreshPanelData();
+  }
+
+  /// Opening the panel is the moment its widgets become visible, so that's
+  /// when anything past its refresh interval is fetched - a panel nobody
+  /// pulls down costs no data at all.
+  void _refreshPanelData() {
+    DataSourcesController.instance.refreshStale();
+    CalendarController.instance.refresh();
+    // Same reasoning, and the settings button that carries the mark is
+    // right there in the panel's header.
+    UpdateController.instance.refreshStale();
+    DeviceStatsController.instance.ensureFresh(
+      wantsSteps: DeviceDataController.instance.value,
+      wantsMostUsedApp: DeviceDataController.instance.value,
+    );
+  }
+
   void _onDragEnd(DragEndDetails details) {
     // Downwards is positive, so a flick means "keep going" either way round.
     final velocity = details.primaryVelocity ?? 0;
@@ -257,20 +280,7 @@ class _LauncherRootState extends State<LauncherRoot>
       open = _controller.value > 0.5;
     }
     _controller.animateTo(open ? 1 : 0, curve: Curves.easeOut);
-    // Opening the panel is the moment its widgets become visible, so that's
-    // when anything past its refresh interval is fetched - a panel nobody
-    // pulls down costs no data at all.
-    if (open) {
-      DataSourcesController.instance.refreshStale();
-      CalendarController.instance.refresh();
-      // Same reasoning, and the settings button that carries the mark is
-      // right there in the panel's header.
-      UpdateController.instance.refreshStale();
-      DeviceStatsController.instance.ensureFresh(
-        wantsSteps: DeviceDataController.instance.value,
-        wantsMostUsedApp: DeviceDataController.instance.value,
-      );
-    }
+    if (open) _refreshPanelData();
   }
 
   /// The panel's two bottom corners, from the design's largest radius - it is
@@ -379,6 +389,7 @@ class _LauncherRootState extends State<LauncherRoot>
                         onPanelDragUpdate: (details) =>
                             _onDragUpdate(details, height),
                         onPanelDragEnd: _onDragEnd,
+                        onOpenPanel: _openPanel,
                       ),
                     ),
                   ],

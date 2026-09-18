@@ -146,6 +146,12 @@
             <action android:name="android.intent.action.MAIN"/>
             <category android:name="android.intent.category.APP_CALENDAR"/>
         </intent>
+        <!-- Same again, for a drawn shortcut that starts a countdown: the
+             timer is handed to whichever clock app answers SET_TIMER, and
+             without this entry resolveActivity() sees none of them. -->
+        <intent>
+            <action android:name="android.intent.action.SET_TIMER"/>
+        </intent>
         <!-- So defaultLauncher() in MainActivity.kt can name the launcher the
              home button currently opens. Without it another launcher stays
              invisible and the settings could only say "not this one" without

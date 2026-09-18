@@ -23,4 +23,20 @@ class SystemAppLauncher {
       // No calendar app registered to handle it - nothing to open.
     }
   }
+
+  /// Starts a countdown of [seconds] in the phone's clock app, without
+  /// opening it. False when no installed app answers for timers, which is
+  /// the one case worth telling the user about - a shortcut that looks like
+  /// it fired but never rings is worse than one that says it can't.
+  static Future<bool> startTimer(int seconds, {String label = ''}) async {
+    try {
+      final started = await _channel.invokeMethod<bool>('startTimer', {
+        'seconds': seconds,
+        'label': label,
+      });
+      return started ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
 }

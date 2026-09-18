@@ -7,6 +7,7 @@ import 'default_launcher_controller.dart';
 import 'default_launcher_screen.dart';
 import 'design_tokens.dart';
 import 'folders_controller.dart';
+import 'gesture_shortcuts_controller.dart';
 import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
 import 'panel_blocks_controller.dart';
@@ -34,6 +35,7 @@ List<SettingsEntry> _catalog(AppStrings s) {
     webAppCount: WebAppsController.instance.value.length,
     pinnedCount: PinnedAppsController.instance.value.length,
     pinnedMax: PinnedAppsController.maxPinned,
+    gestureShortcutCount: GestureShortcutsController.instance.value.length,
     dataSourceCount: DataSourcesController.instance.value.length,
     codeWidgetCount: [
       for (final block in PanelBlocksController.instance.value)
@@ -55,6 +57,7 @@ Listenable _settingsSources() => Listenable.merge([
   FoldersController.instance,
   WebAppsController.instance,
   PinnedAppsController.instance,
+  GestureShortcutsController.instance,
   DataSourcesController.instance,
   DeviceDataController.instance,
   // The code widget count is read off the blocks, so the row has to follow

@@ -14,6 +14,8 @@ import 'clock_widget.dart';
 import 'custom_colors_controller.dart';
 import 'design_tokens.dart';
 import 'folder_sheet.dart';
+import 'gesture_home_layer.dart';
+import 'gesture_shortcuts_controller.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
@@ -67,6 +69,7 @@ class AppListView extends StatefulWidget {
     this.onPanelDragStart,
     this.onPanelDragUpdate,
     this.onPanelDragEnd,
+    this.onOpenPanel,
   });
 
   /// Dragging anywhere on the home screen (except the alphabet bar, which
@@ -75,6 +78,12 @@ class AppListView extends StatefulWidget {
   final GestureDragStartCallback? onPanelDragStart;
   final GestureDragUpdateCallback? onPanelDragUpdate;
   final GestureDragEndCallback? onPanelDragEnd;
+
+  /// Opens the panel outright, without a drag. A shape drawn on the home
+  /// screen can be wired to the settings, and that is the one action of the
+  /// four that the launcher's root state has to carry out rather than
+  /// anything reachable from here.
+  final VoidCallback? onOpenPanel;
 
   @override
   State<AppListView> createState() => _AppListViewState();
@@ -142,6 +151,23 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
   double _lastDragDy = 0;
   double _lastDraggedOut = 0;
 
+  /// The shape currently being drawn on the home screen, shared between the
+  /// layer that takes the touch and the one that paints the line. Its own
+  /// notifier so a stroke repaints only that line instead of the app list
+  /// and the clock along with it.
+  final ValueNotifier<List<Offset>> _strokeTrail = ValueNotifier(const []);
+
+  /// Whether a finger on the home screen might be drawing a shape rather
+  /// than pulling the panel. False while the app list is in use (the
+  /// alphabet is up, the search is open) and while there is nothing to
+  /// recognise - in both cases the panel gets every drag, exactly as it did
+  /// before any of this existed.
+  bool get _drawingActive =>
+      GestureDrawingController.instance.value.enabled &&
+      _activeLetter == null &&
+      !_searchMode &&
+      GestureShortcutsController.instance.templates.isNotEmpty;
+
   AppListSettings _settings = AppListSettingsController.instance.value;
   double get _rowHeight => _settings.rowHeight;
   bool get _singleColumn =>
@@ -164,6 +190,10 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     PinnedAppsController.instance.load();
     PinnedAppsLayoutController.instance.load();
     PinnedBadgeController.instance.load();
+    // The home screen is also the only place a drawn shape is ever watched
+    // for, so this is where the saved ones are read.
+    GestureShortcutsController.instance.load();
+    GestureDrawingController.instance.load();
     // The home screen is the only place a badge is drawn, so this is where
     // the counting starts - and stops again the moment it isn't visible.
     NotificationCounts.instance.setVisible(true);
@@ -198,6 +228,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     _autoScrollTimer?.cancel();
     _listScrollController.dispose();
     _bubblePosition.dispose();
+    _strokeTrail.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
@@ -393,6 +424,17 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     _open(group[index]);
   }
 
+  /// A shape has been drawn on the home screen and the finger lifted. What
+  /// it was - and whether it was a shape at all - is decided in
+  /// gesture_home_layer.dart, which also carries the action out.
+  void _onStrokeFinished(List<Offset> points) {
+    handleHomeStroke(
+      context,
+      points,
+      onOpenSettings: widget.onOpenPanel ?? () {},
+    );
+  }
+
   /// Launches an entry, or - for a folder or one of the launcher's own
   /// screens - opens that on top instead.
   void _open(LauncherEntry entry) {
@@ -418,16 +460,29 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
         // blocks taps on the icons/list items painted on top of it, and
         // inset from the alphabet bar so its own vertical scrub gesture is
         // never contested.
+        //
+        // The same layer is where a shape drawn on the home screen is taken:
+        // a finger can only belong to one of the two, so they have to be
+        // decided together. See gesture_home_layer.dart.
         Positioned(
           left: _leftHanded ? _alphabetBarWidth : 0,
           right: _leftHanded ? 0 : _alphabetBarWidth,
           top: 0,
           bottom: 0,
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onVerticalDragStart: widget.onPanelDragStart,
-            onVerticalDragUpdate: widget.onPanelDragUpdate,
-            onVerticalDragEnd: widget.onPanelDragEnd,
+          child: ListenableBuilder(
+            listenable: Listenable.merge([
+              GestureShortcutsController.instance,
+              GestureDrawingController.instance,
+            ]),
+            builder: (context, child) => HomeGestureLayer(
+              drawingActive: _drawingActive,
+              showTrail: GestureDrawingController.instance.value.showTrail,
+              trail: _strokeTrail,
+              onStrokeFinished: _onStrokeFinished,
+              onPanelDragStart: widget.onPanelDragStart,
+              onPanelDragUpdate: widget.onPanelDragUpdate,
+              onPanelDragEnd: widget.onPanelDragEnd,
+            ),
           ),
         ),
         // Kept as a permanent child (hidden via Offstage rather than being
@@ -576,6 +631,17 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
                     ),
             );
           },
+        ),
+        // The line a shape is drawn with, last so it is painted over the
+        // clock and the pinned icons rather than under them. Exactly the
+        // same box as the layer that takes the touch, so the points arrive
+        // in the coordinates it paints in.
+        Positioned(
+          left: _leftHanded ? _alphabetBarWidth : 0,
+          right: _leftHanded ? 0 : _alphabetBarWidth,
+          top: 0,
+          bottom: 0,
+          child: HomeGestureTrail(trail: _strokeTrail),
         ),
       ],
     );

@@ -5,6 +5,12 @@ import 'app_strings.dart';
 import 'custom_colors_controller.dart';
 import 'design_tokens.dart';
 
+/// The index that means "no colour of its own - follow the design's accent".
+/// Only ever stored by settings that offer it (see
+/// [ColorSwatchPicker.autoColor]); everywhere else a colour is a real index
+/// into [appListColorPalette] and this never comes up.
+const int autoColorIndex = -1;
+
 /// Every selectable color (the fixed palette plus whatever the user has
 /// added), as tappable circles, with a trailing "+" that opens a full color
 /// picker. A color picked there is added to the palette and selected right
@@ -16,12 +22,22 @@ class ColorSwatchPicker extends StatelessWidget {
     required this.onSelected,
     required this.s,
     this.swatchSize = 36,
+    this.autoColor,
   });
 
   final int selectedIndex;
   final ValueChanged<int> onSelected;
   final AppStrings s;
   final double swatchSize;
+
+  /// Set to offer an extra swatch in front of the palette standing for
+  /// "whatever the design is using right now" - it reports
+  /// [autoColorIndex] and is drawn in the colour it currently resolves to.
+  ///
+  /// Without it, picking a colour once is a one-way door: there is no entry
+  /// in the palette that means "back to following the theme", so a setting
+  /// that starts out following it could never be put back.
+  final Color? autoColor;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +51,19 @@ class ColorSwatchPicker extends StatelessWidget {
           spacing: 12,
           runSpacing: 12,
           children: [
+            if (autoColor != null)
+              GestureDetector(
+                onTap: () => onSelected(autoColorIndex),
+                child: ColorDot(
+                  color: autoColor!,
+                  size: swatchSize,
+                  selected: selectedIndex == autoColorIndex,
+                  // The one swatch that is not a colour but a rule, so it
+                  // says so rather than looking like a palette entry that
+                  // happens to match the theme.
+                  glyph: Icons.auto_awesome,
+                ),
+              ),
             for (var i = 0; i < palette.length; i++)
               GestureDetector(
                 onTap: () => onSelected(i),
@@ -86,11 +115,17 @@ class ColorDot extends StatelessWidget {
     required this.color,
     this.size = 36,
     this.selected = false,
+    this.glyph,
   });
 
   final Color color;
   final double size;
   final bool selected;
+
+  /// Drawn on top of the colour, in whichever of black or white can be read
+  /// against it. Only used by the swatch that stands for a rule rather than
+  /// for a colour - see [ColorSwatchPicker.autoColor].
+  final IconData? glyph;
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +143,18 @@ class ColorDot extends StatelessWidget {
       child: ClipOval(
         child: CustomPaint(
           painter: _CheckerPainter(design.border),
-          child: ColoredBox(color: color, child: const SizedBox.expand()),
+          child: ColoredBox(
+            color: color,
+            child: glyph == null
+                ? const SizedBox.expand()
+                : Center(
+                    child: Icon(
+                      glyph,
+                      size: size * 0.5,
+                      color: DesignTokens.inkOn(color),
+                    ),
+                  ),
+          ),
         ),
       ),
     );

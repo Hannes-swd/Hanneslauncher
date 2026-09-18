@@ -194,6 +194,7 @@ void main() {
       webAppCount: 0,
       pinnedCount: 0,
       pinnedMax: 6,
+      gestureShortcutCount: 0,
       dataSourceCount: 0,
       codeWidgetCount: 2,
       deviceDataEnabled: false,

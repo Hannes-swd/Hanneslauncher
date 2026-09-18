@@ -52,6 +52,24 @@ a full text search across all apps, web apps and folders.
 **Long-pressing a pinned icon** opens its quick actions, swap the icon, or
 change the color of a folder, without the detour through the settings.
 
+**Shortcuts you draw.** Draw a shape on the home screen - a heart, a house,
+a circle, whatever you will remember - and it opens an app, an address, a
+countdown or the settings panel. A shape is recognised wherever it is drawn
+and at whatever size: only its outline counts, and which end it starts at.
+When a drawing is not clearly one saved shape rather than another, nothing
+happens rather than the wrong thing, and the settings warn while saving that
+two shapes look too much alike.
+
+One rule: draw it in a single stroke, without lifting the finger. And
+because a straight pull up or down is still how the settings panel is
+opened, start a shape sideways or on a curve. Shapes are set up under
+*Settings → Apps → Shortcuts*, where the whole thing can also be switched
+off without losing any of them.
+
+The line under the finger can be turned off, so a shape leaves no trace on
+the screen and still works, and while it is on its color is picked from the
+shared palette - or left following the theme's accent, which is the default.
+
 **Notification badges** on the pinned apps are off by default and can be
 switched to a plain dot ("something is waiting") or to the number of waiting
 notifications, in any color from the shared palette - a pinned folder adds up

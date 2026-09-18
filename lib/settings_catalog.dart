@@ -12,6 +12,7 @@ import 'design_settings_screen.dart';
 import 'design_tokens.dart';
 import 'device_data_screen.dart';
 import 'folders_settings_screen.dart';
+import 'gesture_shortcuts_settings_screen.dart';
 import 'icon_theme_controller.dart';
 import 'icon_theme_settings_screen.dart';
 import 'locale_controller.dart';
@@ -107,6 +108,7 @@ List<SettingsEntry> buildSettingsCatalog({
   required int webAppCount,
   required int pinnedCount,
   required int pinnedMax,
+  required int gestureShortcutCount,
   required int dataSourceCount,
   required int codeWidgetCount,
   required bool deviceDataEnabled,
@@ -279,6 +281,22 @@ List<SettingsEntry> buildSettingsCatalog({
         'unread', 'zähler', 'zaehler', 'whatsapp', 'farbe', 'color',
       ],
       onTap: (context) => _push(context, const PinnedAppsSettingsScreen()),
+    ),
+    SettingsEntry(
+      icon: Icons.gesture,
+      title: s.gestureShortcuts,
+      section: SettingsSection.apps,
+      subtitle: s.gestureShortcutsSubtitle(gestureShortcutCount),
+      keywords: const [
+        'shortcut', 'shortcuts', 'geste', 'gesten', 'gesture', 'gestures',
+        'zeichnen', 'zeichnung', 'draw', 'drawing', 'form', 'formen',
+        'shape', 'shapes', 'symbol', 'zeichen', 'herz', 'heart', 'kreis',
+        'circle', 'haus', 'house', 'wischen', 'swipe', 'homescreen',
+        'startbildschirm', 'schnellzugriff', 'quick', 'countdown', 'timer',
+        'kurzbefehl', 'abkürzung', 'abkuerzung',
+      ],
+      onTap: (context) =>
+          _push(context, const GestureShortcutsSettingsScreen()),
     ),
     SettingsEntry(
       icon: Icons.folder_outlined,

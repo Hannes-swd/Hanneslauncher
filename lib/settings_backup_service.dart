@@ -6,12 +6,14 @@ import 'app_list_settings_controller.dart';
 import 'app_overrides_controller.dart';
 import 'clock_settings_controller.dart';
 import 'code_widget_store.dart';
+import 'color_swatch_picker.dart' show autoColorIndex;
 import 'custom_colors_controller.dart';
 import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
 import 'design_controller.dart';
 import 'design_tokens.dart';
 import 'folders_controller.dart';
+import 'gesture_shortcuts_controller.dart';
 import 'icon_theme_controller.dart';
 import 'launcher_entries_controller.dart';
 import 'locale_controller.dart';
@@ -125,6 +127,18 @@ class SettingsBackupService {
       'pinnedAppsLeftMargin': PinnedAppsLayoutController.instance.value,
       'pinnedBadgeStyle': PinnedBadgeController.instance.value.style.name,
       'pinnedBadgeColorIndex': PinnedBadgeController.instance.value.colorIndex,
+      // The drawn shortcuts travel as-is: the shape is 64 pairs of numbers
+      // and the action names a package, an address or a number of seconds -
+      // nothing in there points at a file on this install.
+      'gestureShortcuts': [
+        for (final shortcut in GestureShortcutsController.instance.value)
+          shortcut.toJson(),
+      ],
+      'gestureDrawing': {
+        'enabled': GestureDrawingController.instance.value.enabled,
+        'showTrail': GestureDrawingController.instance.value.showTrail,
+        'colorIndex': GestureDrawingController.instance.value.colorIndex,
+      },
       'panelBlocks': [
         for (final block in PanelBlocksController.instance.value)
           block.toJson(),
@@ -405,6 +419,35 @@ class SettingsBackupService {
           // restore - the block is there either way, just empty.
         }
       }
+    }
+
+    final gestureShortcutsJson =
+        decoded['gestureShortcuts'] as List<dynamic>?;
+    if (gestureShortcutsJson != null) {
+      final shortcuts = <GestureShortcut>[];
+      for (final entry in gestureShortcutsJson) {
+        final shortcut = GestureShortcut.fromJson(entry);
+        // Skip just the unreadable one - a shape that won't parse costs that
+        // shortcut, not the rest of them.
+        if (shortcut != null) shortcuts.add(shortcut);
+      }
+      await GestureShortcutsController.instance.replaceAll(shortcuts);
+    }
+
+    final gestureDrawingJson = decoded['gestureDrawing'] as Map<String, dynamic>?;
+    if (gestureDrawingJson != null) {
+      await GestureDrawingController.instance.update(
+        GestureDrawingSettings(
+          enabled: gestureDrawingJson['enabled'] as bool? ?? true,
+          showTrail: gestureDrawingJson['showTrail'] as bool? ?? true,
+          // Restored after the custom colours above, like every other
+          // colorIndex in this file, so an index into the hand-picked part
+          // of the palette lands on the colour it was exported as.
+          colorIndex:
+              (gestureDrawingJson['colorIndex'] as num?)?.round() ??
+              autoColorIndex,
+        ),
+      );
     }
 
     final foldersJson = decoded['folders'] as List<dynamic>?;

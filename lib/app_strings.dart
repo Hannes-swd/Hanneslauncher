@@ -1322,6 +1322,130 @@ class AppStrings {
             'Wert" oben prüfen';
   String get advanced => _en ? 'Advanced' : 'Erweitert';
 
+  // Shortcuts drawn onto the home screen (gesture_*.dart). A shape, what it
+  // does, and the two sentences that explain why a straight swipe down still
+  // opens the panel instead of drawing a line.
+  String get gestureShortcuts => 'Shortcuts';
+  String gestureShortcutsSubtitle(int count) => _en
+      ? 'Draw a shape on the home screen ($count)'
+      : 'Formen auf den Homescreen zeichnen ($count)';
+  String get gestureAdd => _en ? 'New shape' : 'Neue Form';
+  String get gestureSavedShapes => _en ? 'Saved shapes' : 'Gespeicherte Formen';
+  String get gestureNoShortcuts => _en
+      ? 'Nothing saved yet. Draw a shape below, say what it should do, and '
+            'from then on drawing it on the home screen does exactly that.'
+      : 'Noch nichts gespeichert. Unten eine Form zeichnen, festlegen was '
+            'passieren soll - ab dann macht genau das, wer sie auf dem '
+            'Homescreen zeichnet.';
+  String gestureShortcutsFull(int max) => _en
+      ? 'Room for $max shapes - delete one first'
+      : 'Platz für $max Formen - erst eine löschen';
+  String get gestureDrawingEnabled =>
+      _en ? 'Draw on the home screen' : 'Auf dem Homescreen zeichnen';
+  String get gestureDrawingEnabledHint => _en
+      ? 'Off keeps every shape, it just stops them being watched for'
+      : 'Aus behält alle Formen, sie werden nur nicht mehr erkannt';
+  String get gestureHomeHint => _en
+      ? 'A shape is recognised wherever on the home screen it is drawn and '
+            'at whatever size - only its outline counts, and which end it '
+            'starts at. A straight pull up or down stays the settings panel, '
+            'so start a shape sideways or on a curve.'
+      : 'Eine Form wird überall auf dem Homescreen und in jeder Größe '
+            'erkannt - es zählt nur ihr Umriss und an welchem Ende sie '
+            'anfängt. Ein gerader Zug nach oben oder unten bleibt das '
+            'Einstellungs-Panel, fang eine Form also seitlich oder in einer '
+            'Kurve an.';
+  String get gestureShowTrail =>
+      _en ? 'Show the line' : 'Strich anzeigen';
+  String get gestureShowTrailHint => _en
+      ? 'Off still recognises the shape, it just leaves no trace on screen'
+      : 'Aus erkennt die Form trotzdem, sie hinterlässt nur keine Spur auf '
+            'dem Bildschirm';
+  String get gestureTrailColor => _en ? 'Line colour' : 'Farbe des Strichs';
+  String gestureLooksLike(String other) =>
+      _en ? 'Looks like "$other"' : 'Sieht aus wie "$other"';
+  String get gestureNameTitle => _en ? 'Name the shape' : 'Form benennen';
+  String get gestureRedraw => _en ? 'Draw shape again' : 'Form neu zeichnen';
+  String get gestureChangeAction =>
+      _en ? 'Change what it does' : 'Aktion ändern';
+  String get gestureDelete => _en ? 'Delete shortcut' : 'Shortcut löschen';
+  String get gestureTooSimilarTitle =>
+      _en ? 'Two shapes alike' : 'Zwei ähnliche Formen';
+  String gestureTooSimilarBody(String other) => _en
+      ? 'This is close enough to "$other" that the home screen may not be '
+            'able to tell them apart - it then does nothing rather than risk '
+            'the wrong one. Drawing it differently is the safer way out.'
+      : 'Das kommt "$other" so nahe, dass der Homescreen die beiden '
+            'vielleicht nicht auseinanderhalten kann - dann passiert lieber '
+            'nichts, als die falsche auszulösen. Anders zeichnen ist der '
+            'sicherere Weg.';
+  String get gestureSaveAnyway => _en ? 'Save anyway' : 'Trotzdem speichern';
+
+  // The blank sheet a shape is drawn on.
+  String get gestureDrawTitle => _en ? 'Draw a shape' : 'Form zeichnen';
+  String get gestureDrawHint => _en
+      ? 'Draw in one go, without lifting your finger - a heart, a house, a '
+            'circle, whatever you will remember.'
+      : 'In einem Zug zeichnen, ohne den Finger zu heben - ein Herz, ein '
+            'Haus, ein Kreis, was du dir merken kannst.';
+  String get gestureOneStrokeOnly => _en
+      ? 'One stroke only, so that one replaced the last'
+      : 'Nur ein Zug - der hier hat den vorherigen ersetzt';
+  String get gestureDrawAgain => _en ? 'Draw again' : 'Neu zeichnen';
+  String get gestureUseShape => _en ? 'Use this shape' : 'Form übernehmen';
+  String get gestureTooSmall => _en
+      ? 'Too small or too straight to tell apart later - draw it bigger'
+      : 'Zu klein oder zu gerade, um sie später zu erkennen - größer '
+            'zeichnen';
+
+  // What a shape does.
+  String get gestureWhatHappens =>
+      _en ? 'What should happen?' : 'Was soll passieren?';
+  String get gestureActionKindEntry => _en ? 'Open app' : 'App öffnen';
+  String get gestureActionKindEntryHint => _en
+      ? 'An app, a web app, a folder or one of the launcher\'s own screens'
+      : 'Eine App, eine Web-App, ein Ordner oder ein Screen des Launchers';
+  String get gestureActionKindAddress =>
+      _en ? 'Open an address' : 'Adresse öffnen';
+  String get gestureActionKindAddressHint => _en
+      ? 'A website, but also tel: to call someone or geo: for a place'
+      : 'Eine Webseite, aber auch tel: zum Anrufen oder geo: für einen Ort';
+  String get gestureActionKindTimer => _en ? 'Countdown' : 'Countdown';
+  String get gestureActionKindTimerHint => _en
+      ? 'Starts a timer in the phone\'s clock app, so it rings on its own'
+      : 'Startet einen Timer in der Uhren-App des Handys, er klingelt also '
+            'von selbst';
+  String get gestureActionKindSettings =>
+      _en ? 'Open settings' : 'Einstellungen öffnen';
+  String get gestureActionKindSettingsHint => _en
+      ? 'Pulls the settings panel down'
+      : 'Zieht das Einstellungs-Panel herunter';
+  String get gestureTimerLength => _en ? 'How long?' : 'Wie lange?';
+  String get gestureTimerMinutes => _en ? 'Minutes' : 'Minuten';
+  String get secondsShort => _en ? 'sec' : 'Sek';
+  String get minutesShort => _en ? 'min' : 'Min';
+  String gestureActionTimerFor(String duration) =>
+      _en ? 'Countdown $duration' : 'Countdown $duration';
+  String get gestureActionEntryMissing =>
+      _en ? 'App no longer here' : 'App nicht mehr da';
+
+  // What the home screen says about a drawing, and only ever briefly. A
+  // stroke that was never meant as a shape is answered with silence - see
+  // StrokeVerdict.notAShape.
+  String get gestureNotRecognized =>
+      _en ? 'Shape not recognised' : 'Form nicht erkannt';
+  String get gestureAmbiguous => _en
+      ? 'Fits several shapes - draw it more clearly'
+      : 'Passt auf mehrere Formen - deutlicher zeichnen';
+  String get gestureActionGone => _en
+      ? 'What this shape opened is gone'
+      : 'Was diese Form geöffnet hat, gibt es nicht mehr';
+  String gestureTimerStarted(String duration) =>
+      _en ? 'Countdown $duration started' : 'Countdown $duration gestartet';
+  String get gestureTimerNoClockApp => _en
+      ? 'No clock app that can run a timer'
+      : 'Keine Uhren-App, die einen Timer stellen kann';
+
   // What went wrong while fetching a source or firing an action
   // (data_sources_controller.dart, location_controller.dart,
   // widget_action.dart). These end up next to a data source or on a card, so

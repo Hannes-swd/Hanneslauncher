@@ -21,6 +21,7 @@ List<SettingsEntry> catalog({
     webAppCount: 0,
     pinnedCount: 0,
     pinnedMax: 6,
+    gestureShortcutCount: 0,
     dataSourceCount: 0,
     codeWidgetCount: 0,
     deviceDataEnabled: deviceDataEnabled,
@@ -65,6 +66,10 @@ void main() {
       'nachttisch': 'Offline-Modus',
       'querformat': 'Offline-Modus',
       'spotify': 'Offline-Modus',
+      'geste': 'Shortcuts',
+      'zeichnen': 'Shortcuts',
+      'herz': 'Shortcuts',
+      'kurzbefehl': 'Shortcuts',
     };
     for (final entry in cases.entries) {
       test('"${entry.key}" finds ${entry.value}', () {
@@ -81,6 +86,8 @@ void main() {
     expect(search('backup'), contains('Sicherung'));
     expect(search('dark mode'), contains('Design'));
     expect(search('rounding'), contains('Design'));
+    expect(search('gesture'), contains('Shortcuts'));
+    expect(search('draw'), contains('Shortcuts'));
   });
 
   test('the update row is findable by what people call it', () {

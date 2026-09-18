@@ -29,6 +29,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
+import android.provider.AlarmClock
 import android.provider.CalendarContract
 import android.provider.ContactsContract
 import android.provider.Settings
@@ -201,6 +202,30 @@ class MainActivity : FlutterActivity() {
                                 .addCategory(Intent.CATEGORY_APP_CALENDAR),
                         ),
                     )
+                    // A shape drawn on the home screen can start a
+                    // countdown. Handed to the phone's own clock app rather
+                    // than counted down in here: the launcher is not running
+                    // most of the time, and a timer that only rings while
+                    // its app happens to be open is not a timer.
+                    //
+                    // SKIP_UI so it starts straight away instead of opening
+                    // the clock app with the fields pre-filled - the whole
+                    // point of the gesture is not having to touch anything.
+                    "startTimer" -> {
+                        val seconds = call.argument<Int>("seconds") ?: 0
+                        result.success(
+                            seconds > 0 &&
+                                startIfResolvable(
+                                    Intent(AlarmClock.ACTION_SET_TIMER)
+                                        .putExtra(AlarmClock.EXTRA_LENGTH, seconds)
+                                        .putExtra(AlarmClock.EXTRA_SKIP_UI, true)
+                                        .putExtra(
+                                            AlarmClock.EXTRA_MESSAGE,
+                                            call.argument<String>("label") ?: "",
+                                        ),
+                                ),
+                        )
+                    }
                     "defaultLauncher" -> result.success(defaultLauncher())
                     "chooseDefaultLauncher" ->
                         result.success(chooseDefaultLauncher())
