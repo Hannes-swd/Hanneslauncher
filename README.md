@@ -144,6 +144,12 @@ screen and every dialog - is one theme, changed under
   Picking a theme is a crossfade through the colours in between rather than a
   cut, and the slider comes with something to tap, because a duration in
   milliseconds is a number nobody can picture
+- **Haptics**, off to firm: how hard the phone answers a touch. One tick per
+  letter while a finger runs down the alphabet bar, a heavier one when the
+  drag crosses into picking a row, one when the panel snaps, one when a shape
+  is recognised and a double when it isn't. The occasion is named in the code,
+  never the strength, so turning it up turns all of them up together - and the
+  slider itself fires what it is set to, so dragging it is the preview
 
 Every size is derived from the golden ratio rather than picked one at a time:
 the three corner radii are a golden step apart, the type ramp climbs by a half
@@ -248,9 +254,18 @@ The panel is made of **blocks**, which can be reordered freely:
 | **Calendar** | Events for the next few days, from the calendars already synced on the device. Tapping one opens it in the calendar app. |
 | **Notes** | A written note with formatting |
 | **Code** | A card you write yourself in HTML, CSS and JavaScript (see below) |
+| **Notifications** | What is waiting right now. Tap one to go where it points, swipe it away to clear it. |
 
-Data sources, the calendar and the update check are only refreshed **when
-the panel is opened**, a panel nobody pulls down costs no data at all.
+Data sources, the calendar, the notification list and the update check are
+only refreshed **when the panel is opened**, a panel nobody pulls down costs
+no data at all.
+
+**The notification block** uses the access the badges already need, and goes
+one step further than they do: the badge reads a number, this reads the title
+and the line under it so it can draw them. Nothing is stored, nothing leaves
+the phone, nothing is read while the panel is shut, and the list is dropped
+the moment it closes. Apps in the secret folder are not in it. It is off until
+a block is added.
 
 ---
 
@@ -332,8 +347,18 @@ in **[CODE_WIDGETS.md](CODE_WIDGETS.md)**.
   of them, or your own picture per app (see above)
 - **App list**: font, size, line spacing, color, sort order
 - **Language**: German or English, following the system language by default
-- **Backup**: export every setting as JSON and read it back in (kept
-  shortcuts included; their pictures are fetched again from the apps)
+- **App pairs**: two apps as one entry, opening side by side in split screen.
+  It goes in the app list, into folders, onto the home screen and onto a drawn
+  shape like anything else
+- **Search**: the magnifier ranks by how well a name matches rather than
+  filtering and sorting alphabetically - a name that starts with what was
+  typed beats one that merely contains it, `ytm` finds YouTube Music - and it
+  answers sums, finds settings, and optionally contacts and a web search
+- **Backup**: the app keeps its own, in `Download/hanneslauncher`, once a day
+  and always right before it installs an update - the folder survives
+  uninstalling the app, which is the moment the copy is for. Restore one with
+  a tap, or send a copy off the phone. Everything is in it, pictures included
+  (see below)
 - **Update**: the app checks GitHub for new releases and installs the APK
   directly (see [RELEASE.md](RELEASE.md))
 - **Settings search**: across every setting, in both languages at once, so
@@ -350,9 +375,14 @@ that on first launch and also keeps it under *Settings → App → Default home
 app*.
 
 > **Before updating by hand:** Android only installs over an existing app if
-> both are signed with the same key. If you ever do have to uninstall,
-> **every setting is gone**, so export it under *Settings → App → Backup*
-> first.
+> both are signed with the same key. If you ever do have to uninstall, every
+> setting goes with the app - which is why the launcher now writes a snapshot
+> into `Download/hanneslauncher` by itself, once a day and always right
+> before it installs an update. That folder is outside the app, so it is
+> still there afterwards; *Settings → App → Backup* lists what is in it and
+> puts one back. (On Android 9 and older the snapshots live in the app's own
+> external folder instead, which does not survive an uninstall - copy one off
+> the phone first there.)
 
 ## Building it yourself
 
@@ -389,7 +419,11 @@ All of them are optional; without one, exactly one feature is missing.
 
 Plain Flutter, no state management package: every area has a singleton
 `ValueNotifier` controller (`*_controller.dart`) keeping its state in
-`SharedPreferences`. What Flutter can't do itself, the app list, the
+`SharedPreferences`. Every key one of them writes is listed in
+`settings_keys.dart` with what a backup does with it, and
+`test/settings_keys_test.dart` reads the keys back out of the source and
+fails while one of them is unclassified - so a new setting cannot be added
+without the backup question being asked. What Flutter can't do itself, the app list, the
 calendar, device sensors, excluding the screen edge from the system
 gestures, runs through method channels in
 `android/app/src/main/kotlin/.../MainActivity.kt`.
@@ -403,6 +437,12 @@ Code widgets are the one part that doesn't live in `SharedPreferences`: each
 one keeps its HTML, CSS, JavaScript and uploaded files in its own folder
 under the app's documents directory, and runs in a WebView that reaches the
 app only through a named channel (`code_widget_bridge.dart`).
+
+The app list is read once and then only when Android says the installed apps
+changed (`installed_packages_watch.dart`); it used to be re-read, icons and
+all, every time the launcher came back to the foreground. Apps are started
+through `app_launcher.dart` with the rectangle of the icon that was tapped,
+which is what makes the window grow out of it.
 
 | File | Contents |
 |---|---|

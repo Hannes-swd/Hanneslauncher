@@ -23,6 +23,7 @@ final _distinctive = DesignSettings(
   font: 1.2,
   opacity: 0.55,
   motion: 1.4,
+  haptics: 1.7,
 );
 
 void main() {
@@ -614,6 +615,7 @@ void main() {
       'font': 'font',
       'opacity': 'opacity',
       'motion': 'motion',
+      'haptics': 'haptics',
     };
 
     expect(

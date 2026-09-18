@@ -97,6 +97,15 @@ void main() {
       // which the secret ones are already out of. Nothing comes back but
       // paths for packages that were sent in.
       'hanneslauncher/icon_packs',
+      // Takes a package name in and starts it; hands none back. The only
+      // packages that reach it come from an entry the user tapped, and the
+      // secret ones are not in that list.
+      'hanneslauncher/launch',
+      // Says *that* the installed apps changed and deliberately not which -
+      // see MainActivity.packageReceiver. A package name here would be a
+      // second route by which one reaches Dart outside the entries
+      // controller, and the folder depends on there being only one.
+      'hanneslauncher/packages',
       'hanneslauncher/offline_mode',
       'hanneslauncher/system_apps',
       'hanneslauncher/system_gestures',
@@ -144,9 +153,12 @@ void main() {
     //   getPackageInfo -> this app's own version, and a pack's, which keys
     //     the pack's rendered icons so an update isn't served from the old
     //     cache
-    //   getApplicationIcon/getLaunchIntentForPackage/
-    //     getResourcesForApplication -> IconPacks, all three only ever asked
-    //     about a package Dart named first
+    //   getApplicationIcon/getResourcesForApplication -> IconPacks, both
+    //     only ever asked about a package Dart named first
+    //   getLaunchIntentForPackage -> IconPacks, plus launchIntentFor() for
+    //     the animated start and the split-screen pair. Both of those are
+    //     handed a package by Dart and answer with an intent or nothing;
+    //     neither can be asked "which apps are there".
     //   getShortcuts/getShortcutIconDrawable/startShortcut/pinShortcuts ->
     //     AppShortcuts, likewise only ever about a package Dart named first.
     //     getShortcuts is the one to watch: dropped from the query, it
@@ -157,7 +169,7 @@ void main() {
       'getApplicationLabel': 2,
       'getApplicationInfo': 2,
       'getApplicationIcon': 1,
-      'getLaunchIntentForPackage': 1,
+      'getLaunchIntentForPackage': 2,
       'getResourcesForApplication': 1,
       'getPackageInfo': 2,
       'resolveActivity': 2,

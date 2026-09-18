@@ -57,6 +57,9 @@ class AppListSettings {
     this.hand = AppListHand.right,
     this.hideAlphabet = false,
     this.backgroundBlur = 14,
+    this.searchExtras = true,
+    this.searchContacts = false,
+    this.searchWebUrl = '',
   });
 
   final int colorIndex;
@@ -77,6 +80,24 @@ class AppListSettings {
   /// 0 switches the blur off entirely and leaves the wallpaper alone.
   final double backgroundBlur;
 
+  /// Whether the search answers sums and finds settings as well as apps.
+  ///
+  /// On by default, unlike the two below, because both are free: the
+  /// calculator is arithmetic and the settings list is already in the app.
+  /// Neither asks for a permission, sends anything anywhere, or costs a
+  /// frame when it finds nothing.
+  final bool searchExtras;
+
+  /// Whether the search also looks through the contacts. Off until it is
+  /// switched on: it needs a permission, and a launcher set up without it
+  /// should never be asked for one.
+  final bool searchContacts;
+
+  /// Where to send whatever was typed when nothing here matched it. Empty
+  /// leaves that row out entirely - the same address format the search
+  /// widget uses, with `{{suche}}` where the words go.
+  final String searchWebUrl;
+
   Color get color => appListColorPalette[colorIndex];
 
   /// True while the app list is mirrored for left-handed use.
@@ -92,6 +113,9 @@ class AppListSettings {
     AppListHand? hand,
     bool? hideAlphabet,
     double? backgroundBlur,
+    bool? searchExtras,
+    bool? searchContacts,
+    String? searchWebUrl,
   }) {
     return AppListSettings(
       colorIndex: colorIndex ?? this.colorIndex,
@@ -103,6 +127,9 @@ class AppListSettings {
       hand: hand ?? this.hand,
       hideAlphabet: hideAlphabet ?? this.hideAlphabet,
       backgroundBlur: backgroundBlur ?? this.backgroundBlur,
+      searchExtras: searchExtras ?? this.searchExtras,
+      searchContacts: searchContacts ?? this.searchContacts,
+      searchWebUrl: searchWebUrl ?? this.searchWebUrl,
     );
   }
 }
@@ -125,6 +152,9 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
   // Named for the search because that was all it applied to at first; kept
   // under the old key so a value already set survives the rename.
   static const _backgroundBlurKey = 'applist_search_blur';
+  static const _searchExtrasKey = 'applist_search_extras';
+  static const _searchContactsKey = 'applist_search_contacts';
+  static const _searchWebUrlKey = 'applist_search_web_url';
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -140,6 +170,9 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
       hand: AppListHand.values[prefs.getInt(_handKey) ?? 0],
       hideAlphabet: prefs.getBool(_hideAlphabetKey) ?? false,
       backgroundBlur: prefs.getDouble(_backgroundBlurKey) ?? 14,
+      searchExtras: prefs.getBool(_searchExtrasKey) ?? true,
+      searchContacts: prefs.getBool(_searchContactsKey) ?? false,
+      searchWebUrl: prefs.getString(_searchWebUrlKey) ?? '',
     );
   }
 
@@ -155,5 +188,8 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
     await prefs.setInt(_handKey, newValue.hand.index);
     await prefs.setBool(_hideAlphabetKey, newValue.hideAlphabet);
     await prefs.setDouble(_backgroundBlurKey, newValue.backgroundBlur);
+    await prefs.setBool(_searchExtrasKey, newValue.searchExtras);
+    await prefs.setBool(_searchContactsKey, newValue.searchContacts);
+    await prefs.setString(_searchWebUrlKey, newValue.searchWebUrl);
   }
 }

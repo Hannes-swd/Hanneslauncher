@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:installed_apps/installed_apps.dart';
 
 import 'app_icon.dart';
+import 'app_launcher.dart';
 import 'app_strings.dart';
 import 'builtin_entries.dart';
 import 'calendar_block_view.dart';
@@ -11,6 +11,7 @@ import 'folder_sheet.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'notes_block_view.dart';
+import 'notifications_block_view.dart';
 import 'panel_blocks_controller.dart';
 import 'widget_card_view.dart';
 
@@ -26,6 +27,7 @@ SurfaceLevel levelFor(PanelBlockType type) => switch (type) {
   PanelBlockType.widget ||
   PanelBlockType.notes ||
   PanelBlockType.code ||
+  PanelBlockType.notifications ||
   PanelBlockType.calendar => SurfaceLevel.hero,
   PanelBlockType.appRow => SurfaceLevel.normal,
 };
@@ -90,6 +92,10 @@ class PanelBlockCard extends StatelessWidget {
           PanelBlockType.widget => WidgetCardView(block: block, s: s),
           PanelBlockType.calendar => CalendarBlockView(block: block, s: s),
           PanelBlockType.notes => NotesBlockView(block: block, s: s),
+          PanelBlockType.notifications => NotificationsBlockView(
+            block: block,
+            s: s,
+          ),
           // Handled above, before the card is built.
           PanelBlockType.code => const SizedBox.shrink(),
         },
@@ -164,10 +170,10 @@ class _AppRowItem extends StatelessWidget {
           showFolderSheet(context, entry.folder!);
         } else if (entry.isBuiltIn) {
           openBuiltIn(context, entry.builtIn!);
-        } else if (entry.isWebApp) {
-          entry.launch();
         } else {
-          InstalledApps.startApp(entry.app!.packageName);
+          // One path for both now: an app row on the panel starts things the
+          // same way the home screen does, animation included.
+          entry.launch(from: AppLauncher.boundsOf(context));
         }
       },
       child: Column(

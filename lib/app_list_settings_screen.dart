@@ -65,6 +65,51 @@ class AppListSettingsScreen extends StatelessWidget {
                     },
                   ),
                   const SizedBox(height: 24),
+                  _SectionLabel(s.searchSection),
+                  Text(
+                    s.searchSectionHint,
+                    style: TextStyle(
+                      fontSize: context.design.typeCaption,
+                      color: context.design.textSecondary,
+                    ),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(s.searchExtras),
+                    subtitle: Text(
+                      s.searchExtrasHint,
+                      style: TextStyle(
+                        fontSize: context.design.typeCaption,
+                        color: context.design.textSecondary,
+                      ),
+                    ),
+                    value: settings.searchExtras,
+                    onChanged: (value) {
+                      AppListSettingsController.instance.update(
+                        settings.copyWith(searchExtras: value),
+                      );
+                    },
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(s.searchContacts),
+                    subtitle: Text(
+                      s.searchContactsHint,
+                      style: TextStyle(
+                        fontSize: context.design.typeCaption,
+                        color: context.design.textSecondary,
+                      ),
+                    ),
+                    value: settings.searchContacts,
+                    onChanged: (value) {
+                      AppListSettingsController.instance.update(
+                        settings.copyWith(searchContacts: value),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _WebSearchField(settings: settings, s: s),
+                  const SizedBox(height: 24),
                   _SectionLabel(
                     settings.backgroundBlur == 0
                         ? s.backgroundBlur(s.backgroundBlurOff)
@@ -278,6 +323,68 @@ class _FontFamilyPicker extends StatelessWidget {
               );
             },
           ),
+      ],
+    );
+  }
+}
+
+/// Where the search sends whatever it could not find here.
+///
+/// A plain field rather than a list of search engines to pick from: the
+/// address format is the one the search widget already uses, so an address
+/// that works in one works in the other, and a list would need maintaining
+/// every time one of them changed a parameter.
+class _WebSearchField extends StatefulWidget {
+  const _WebSearchField({required this.settings, required this.s});
+
+  final AppListSettings settings;
+  final AppStrings s;
+
+  @override
+  State<_WebSearchField> createState() => _WebSearchFieldState();
+}
+
+class _WebSearchFieldState extends State<_WebSearchField> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.settings.searchWebUrl,
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.s;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _controller,
+          keyboardType: TextInputType.url,
+          autocorrect: false,
+          decoration: InputDecoration(
+            labelText: s.searchWebUrl,
+            hintText: 'https://duckduckgo.com/?q={{suche}}',
+          ),
+          // On every keystroke rather than on submit: there is no submit
+          // button on this screen, and a setting that only takes effect if
+          // you happen to press the keyboard's return key is one that looks
+          // broken half the time.
+          onChanged: (value) => AppListSettingsController.instance.update(
+            widget.settings.copyWith(searchWebUrl: value),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          s.searchWebUrlHint,
+          style: TextStyle(
+            fontSize: context.design.typeCaption,
+            color: context.design.textSecondary,
+          ),
+        ),
       ],
     );
   }

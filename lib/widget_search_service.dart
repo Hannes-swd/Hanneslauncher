@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_strings.dart';
 import 'builtin_entries.dart';
 import 'contacts_controller.dart';
+import 'entry_match.dart';
 import 'expression_calculator.dart';
 import 'folder_sheet.dart';
 import 'launcher_entries_controller.dart';
@@ -56,13 +57,42 @@ Future<List<SearchHit>> runWidgetSearch({
   required String query,
   required WidgetElement element,
   required AppStrings s,
+}) => runSearch(
+  query: query,
+  s: s,
+  calculation: element.searchCalculation,
+  apps: element.searchApps,
+  settings: element.searchSettings,
+  contacts: element.searchContacts,
+  webSearchUrl: element.webSearchUrl,
+  limit: element.resultLimit,
+);
+
+/// The search itself, without a widget element in front of it.
+///
+/// Split out because the home screen's own search - the magnifier at the
+/// bottom of the alphabet bar - wants the same piles and had none of them.
+/// For a long time the best search in this app was the one you had to build
+/// a widget to get at: the magnifier could find an app by name and nothing
+/// else, while a search element on the panel could do sums, find a contact
+/// and jump to a setting. There was no reason for that beyond where the code
+/// happened to live.
+Future<List<SearchHit>> runSearch({
+  required String query,
+  required AppStrings s,
+  required bool calculation,
+  required bool apps,
+  required bool settings,
+  required bool contacts,
+  required String webSearchUrl,
+  required int limit,
 }) async {
   final trimmed = query.trim();
   if (trimmed.isEmpty) return const [];
 
   final hits = <SearchHit>[];
 
-  if (element.searchCalculation) {
+  if (calculation) {
     final answer = calculateExpression(trimmed);
     if (answer != null) {
       hits.add(
@@ -78,21 +108,21 @@ Future<List<SearchHit>> runWidgetSearch({
     }
   }
 
-  if (element.searchApps) {
-    hits.addAll(_appHits(trimmed, element.resultLimit));
+  if (apps) {
+    hits.addAll(_appHits(trimmed, limit));
   }
 
-  if (element.searchSettings) {
-    hits.addAll(_settingHits(trimmed, s, element.resultLimit));
+  if (settings) {
+    hits.addAll(_settingHits(trimmed, s, limit));
   }
 
-  if (element.searchContacts) {
-    hits.addAll(await _contactHits(trimmed, element.resultLimit));
+  if (contacts) {
+    hits.addAll(await _contactHits(trimmed, limit));
   }
 
   // Always last, and never cut off by the limit: it is the row that says
   // "nothing here matched, but this will find something".
-  final webUrl = element.webSearchUrl.trim();
+  final webUrl = webSearchUrl.trim();
   if (webUrl.isNotEmpty) {
     hits.add(
       SearchHit(
@@ -116,19 +146,19 @@ Future<List<SearchHit>> runWidgetSearch({
 }
 
 List<SearchHit> _appHits(String query, int limit) {
-  final lowered = query.toLowerCase();
-  final matches = [
-    for (final entry in LauncherEntriesController.instance.entries)
-      if (entry.name.toLowerCase().contains(lowered)) entry,
-  ];
-  // A name that starts with what was typed is what was meant far more often
-  // than one that merely contains it somewhere.
-  matches.sort((a, b) {
-    final aStarts = a.name.toLowerCase().startsWith(lowered);
-    final bStarts = b.name.toLowerCase().startsWith(lowered);
-    if (aStarts != bStarts) return aStarts ? -1 : 1;
-    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  // The same ranking the home screen's list uses - see entry_match.dart.
+  // Two searches in one app that disagree about which app "ytm" means is a
+  // worse fault than either of them being imperfect.
+  final scored = <({LauncherEntry entry, int score})>[];
+  for (final entry in LauncherEntriesController.instance.entries) {
+    final score = rankName(entry.name, query);
+    if (score != null) scored.add((entry: entry, score: score));
+  }
+  scored.sort((a, b) {
+    if (a.score != b.score) return b.score - a.score;
+    return a.entry.name.toLowerCase().compareTo(b.entry.name.toLowerCase());
   });
+  final matches = [for (final hit in scored) hit.entry];
 
   return [
     for (final entry in matches.take(limit))

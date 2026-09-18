@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_icon.dart';
+import 'app_launcher.dart';
 import 'app_strings.dart';
 import 'builtin_entries.dart';
 import 'design_tokens.dart';
@@ -215,12 +216,16 @@ class _FolderItem extends StatelessWidget {
           showFolderSheet(context, entry.folder!);
         } else {
           final messenger = ScaffoldMessenger.of(context);
+          // Both read before the pop, for the same reason: this widget is
+          // out of the tree straight afterwards and has neither a messenger
+          // above it nor a rectangle of its own any more.
+          final from = AppLauncher.boundsOf(context);
           // The window has done its job once something is launched.
           Navigator.of(context).pop();
           if (entry.isBuiltIn) {
             openBuiltIn(context, entry.builtIn!);
           } else {
-            _launch(entry, messenger);
+            _launch(entry, messenger, from: from);
           }
         }
       },
@@ -252,9 +257,10 @@ class _FolderItem extends StatelessWidget {
   /// sheet closes, because this widget's context is gone by then.
   Future<void> _launch(
     LauncherEntry entry,
-    ScaffoldMessengerState messenger,
-  ) async {
-    if (await entry.launch()) return;
+    ScaffoldMessengerState messenger, {
+    Rect? from,
+  }) async {
+    if (await entry.launch(from: from)) return;
     messenger.showSnackBar(
       SnackBar(
         content: Text(

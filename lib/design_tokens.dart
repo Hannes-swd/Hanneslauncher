@@ -214,6 +214,17 @@ const opacityRange = DesignRange(0.4, 1, 0.85);
 /// to where it can be watched.
 const motionRange = DesignRange(0, 1.6, 1);
 
+/// How hard the phone answers a touch. 0 switches haptics off outright, 1 is
+/// the designed default, 2 is for a phone in a pocket or a case that swallows
+/// most of it.
+///
+/// A scalar rather than a switch for the same reason [motionRange] is one:
+/// how much of this is pleasant and how much is annoying differs per phone -
+/// the vibrator in one is a tap and in the next a buzz - so the app cannot
+/// pick the right amount, only the right proportions between the occasions.
+/// See `haptics.dart` for what the value actually does.
+const hapticsRange = DesignRange(0, 2, 1);
+
 /// Everything the user has set about the look, and nothing derived from it.
 /// This is what gets persisted and what goes into a backup.
 @immutable
@@ -229,8 +240,10 @@ class DesignSettings {
     double? font,
     double? opacity,
     double? motion,
+    double? haptics,
   }) : overrides = Map.unmodifiable(overrides),
        motion = motionRange.clamp(motion ?? motionRange.initial),
+       haptics = hapticsRange.clamp(haptics ?? hapticsRange.initial),
        radius = radiusRange.clamp(radius ?? radiusRange.initial),
        shadow = shadowRange.clamp(shadow ?? shadowRange.initial),
        spacing = spacingRange.clamp(spacing ?? spacingRange.initial),
@@ -258,6 +271,10 @@ class DesignSettings {
   /// Multiplies every animation's length. See [DesignTokens.duration].
   final double motion;
 
+  /// How hard the phone answers a touch. See `haptics.dart`, which is the
+  /// only thing that reads it.
+  final double haptics;
+
   Color color(DesignColorRole role) =>
       overrides[role] ?? presetColor(preset, role);
 
@@ -272,12 +289,14 @@ class DesignSettings {
     double? font,
     double? opacity,
     double? motion,
+    double? haptics,
   }) {
     return DesignSettings(
       preset: preset ?? this.preset,
       fieldStyle: fieldStyle ?? this.fieldStyle,
       overrides: overrides ?? this.overrides,
       motion: motion ?? this.motion,
+      haptics: haptics ?? this.haptics,
       radius: radius ?? this.radius,
       shadow: shadow ?? this.shadow,
       spacing: spacing ?? this.spacing,
@@ -301,6 +320,7 @@ class DesignSettings {
     font: font,
     opacity: opacity,
     motion: motion,
+    haptics: haptics,
   );
 
   DesignSettings withColor(DesignColorRole role, Color? value) {
@@ -325,6 +345,7 @@ class DesignSettings {
       other.font == font &&
       other.opacity == opacity &&
       other.motion == motion &&
+      other.haptics == haptics &&
       _sameOverrides(other.overrides);
 
   bool _sameOverrides(Map<DesignColorRole, Color> other) {

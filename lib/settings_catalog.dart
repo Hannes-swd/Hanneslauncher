@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_customize_screen.dart';
 import 'app_list_settings_screen.dart';
+import 'app_pairs_settings_screen.dart';
 import 'app_strings.dart';
 import 'clock_settings_screen.dart';
 import 'code_widgets_settings_screen.dart';
@@ -320,6 +321,18 @@ List<SettingsEntry> buildSettingsCatalog({
         'browser', 'chrome', 'firefox',
       ],
       onTap: (context) => _push(context, const WebAppsSettingsScreen()),
+    ),
+    SettingsEntry(
+      icon: Icons.vertical_split_outlined,
+      title: s.appPairs,
+      section: SettingsSection.apps,
+      subtitle: s.appPairsSubtitle,
+      keywords: const [
+        'paar', 'paare', 'pair', 'pairs', 'split', 'splitscreen',
+        'geteilt', 'geteilter', 'bildschirm', 'screen', 'nebeneinander',
+        'zwei', 'two', 'multitasking', 'mehrfenster',
+      ],
+      onTap: (context) => _push(context, const AppPairsSettingsScreen()),
     ),
     SettingsEntry(
       icon: Icons.apps_outlined,

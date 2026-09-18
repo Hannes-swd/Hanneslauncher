@@ -869,6 +869,21 @@ class AppStrings {
       : 'Wie lange ein Themenwechsel, eine Seite oder eine Karte zum Bewegen '
             'braucht. Aus schaltet alles sofort um.';
 
+  String designHaptics(String strength) =>
+      _en ? 'Haptics ($strength)' : 'Haptik ($strength)';
+  String get designHapticsOff => _en ? 'off' : 'aus';
+  String get designHapticsSoft => _en ? 'soft' : 'sanft';
+  String get designHapticsNormal => _en ? 'normal' : 'normal';
+  String get designHapticsFirm => _en ? 'firm' : 'kräftig';
+  String get designHapticsLabel => _en ? 'Haptics' : 'Haptik';
+  String get designHapticsHint => _en
+      ? 'How hard the phone answers a touch: the letter bar, a long press, '
+            'the panel snapping open. The slider itself uses it, so dragging '
+            'it is the preview.'
+      : 'Wie stark das Handy auf eine Berührung antwortet: die '
+            'Buchstabenleiste, ein langer Druck, das einrastende Panel. Der '
+            'Regler selbst nutzt sie, Ziehen ist also die Vorschau.';
+
   String get designTypography => _en ? 'Type' : 'Schrift';
   String get designTypeSample =>
       _en ? 'The clock on the home screen' : 'Die Uhr auf dem Homescreen';
@@ -1049,21 +1064,97 @@ class AppStrings {
   String get backupSubtitle => _en
       ? 'Export or import all settings as a file'
       : 'Alle Einstellungen als Datei exportieren oder importieren';
+  // The notification block on the panel (notifications_block_view.dart).
+  String get notifications => _en ? 'Notifications' : 'Benachrichtigungen';
+  String get notificationsHint => _en
+      ? 'What is waiting, on the panel. Tap one to go where it points, swipe '
+            'to clear it. Nothing is stored and nothing leaves the phone - '
+            'the list is read when the panel opens and dropped when it '
+            'closes.'
+      : 'Was wartet, im Panel. Antippen führt dorthin, wo sie hinzeigt, '
+            'Wischen räumt sie weg. Nichts wird gespeichert und nichts '
+            'verlässt das Handy - die Liste wird beim Öffnen des Panels '
+            'gelesen und beim Schließen verworfen.';
+  String get notificationsNoneWaiting =>
+      _en ? 'Nothing waiting' : 'Nichts wartet';
+  String notificationsMore(int count) =>
+      _en ? '+$count more' : '+$count weitere';
+  String get notificationsCount => _en ? 'How many to show' : 'Wie viele zeigen';
+
+  // App pairs: two apps side by side, as one entry
+  // (app_pairs_settings_screen.dart).
+  String get appPairs => _en ? 'App pairs' : 'App-Paare';
+  /// The one-liner for the settings list. [appPairsHint] is the long form,
+  /// and it stays on the pairs screen itself.
+  String get appPairsSubtitle => _en
+      ? 'Two apps side by side, as one entry'
+      : 'Zwei Apps nebeneinander, als ein Eintrag';
+  String get appPairsHint => _en
+      ? 'Two apps that open side by side in split screen, as one entry. It '
+            'goes in the app list, into folders, onto the home screen and '
+            'onto a drawn shape, like anything else.'
+      : 'Zwei Apps, die nebeneinander im geteilten Bildschirm aufgehen, als '
+            'ein Eintrag. Er kommt in die App-Liste, in Ordner, auf den '
+            'Homescreen und auf eine gezeichnete Form, wie alles andere '
+            'auch.';
+  String get appPairsNone =>
+      _en ? 'No pairs yet' : 'Noch keine Paare';
+  String get appPairsUnsupported => _en
+      ? 'This phone has no split screen, so a pair would only open the first '
+            'of the two apps.'
+      : 'Dieses Handy hat keinen geteilten Bildschirm - ein Paar würde nur '
+            'die erste der beiden Apps öffnen.';
+  String get appPairPickFirst => _en ? 'First app' : 'Erste App';
+  String get appPairPickSecond => _en ? 'Second app' : 'Zweite App';
+  String get appPairName => _en ? 'Name' : 'Name';
+
+  // The magnifier at the bottom of the alphabet bar - which piles it looks
+  // through besides the apps (app_list_settings_screen.dart).
+  String get searchSection => _en ? 'Search' : 'Suche';
+  String get searchSectionHint => _en
+      ? 'What the magnifier looks through besides your apps, folders and web '
+            'apps.'
+      : 'Was die Lupe außer Apps, Ordnern und Web-Apps noch durchsucht.';
+  String get searchExtras =>
+      _en ? 'Sums and settings' : 'Rechnen und Einstellungen';
+  String get searchExtrasHint => _en
+      ? 'Type 35*1.19 for the answer, or part of a setting name to jump '
+            'straight to it. Neither needs a permission or the internet.'
+      : 'Tippe 35*1.19 für das Ergebnis, oder einen Teil eines '
+            'Einstellungsnamens, um direkt dorthin zu springen. Beides '
+            'braucht weder Berechtigung noch Internet.';
+  String get searchContacts => _en ? 'Contacts' : 'Kontakte';
+  String get searchContactsHint => _en
+      ? 'Finds a person by name and taps through to the dialer. Asks for the '
+            'contacts permission the first time it is used, not now.'
+      : 'Findet eine Person über den Namen und geht per Tipp zum Wähler. '
+            'Fragt beim ersten Benutzen nach der Kontakt-Berechtigung, nicht '
+            'jetzt.';
+  String get searchWebUrl => _en ? 'Web search' : 'Web-Suche';
+  String get searchWebUrlHint => _en
+      ? 'The last row, when nothing here matched. Put {{suche}} where the '
+            'typed words belong. Empty leaves the row out.'
+      : 'Die letzte Zeile, wenn hier nichts passt. {{suche}} dort '
+            'hinschreiben, wo die getippten Wörter hingehören. Leer lässt die '
+            'Zeile weg.';
+
   String get backupHint => _en
-      ? 'Exports the clock, widgets, panel, pinned apps, folders, web apps, '
+      ? 'Holds the clock, widgets, panel, pinned apps, folders, web apps, '
             'kept shortcuts, data sources, device data packages, custom '
-            'colors, app renames and language into one file. The code widgets come '
-            'along with their HTML, CSS and JavaScript, and with the files '
-            'uploaded into them up to 512 KB each. Custom pictures '
-            '(wallpaper, replaced icons) aren\'t included - their '
-            'files stay behind on this install.'
-      : 'Exportiert Uhr, Widgets, Panel, angepinnte Apps, Ordner, Web-Apps, '
+            'colors, app renames, the design and the language. The code '
+            'widgets come along with their HTML, CSS and JavaScript, and with '
+            'the files uploaded into them up to 512 KB each. Your own '
+            'pictures - the wallpaper, replaced icons - travel as the '
+            'pictures themselves, up to 8 MB each; a wallpaper video is past '
+            'that and stays behind.'
+      : 'Enthält Uhr, Widgets, Panel, angepinnte Apps, Ordner, Web-Apps, '
             'behaltene Verknüpfungen, Datenquellen, Gerätedaten-Pakete, '
-            'eigene Farben, App-Umbenennungen und Sprache in eine Datei. Die Code-Widgets '
-            'kommen mit ihrem HTML, CSS und JavaScript mit, und mit den '
-            'hochgeladenen Dateien bis 512 KB pro Stück. '
-            'Eigene Bilder (Hintergrund, ersetzte Icons) sind nicht '
-            'enthalten - deren Dateien bleiben auf diesem Gerät.';
+            'eigene Farben, App-Umbenennungen, das Design und die Sprache. '
+            'Die Code-Widgets kommen mit ihrem HTML, CSS und JavaScript mit, '
+            'und mit den hochgeladenen Dateien bis 512 KB pro Stück. Eigene '
+            'Bilder - Hintergrund, ersetzte Icons - reisen als Bild mit, bis '
+            '8 MB pro Stück; ein Hintergrund-Video liegt darüber und bleibt '
+            'zurück.';
   String get backupExport => _en ? 'Export' : 'Exportieren';
   String get backupImport => _en ? 'Import' : 'Importieren';
   String get backupImportConfirm => _en
@@ -1078,6 +1169,45 @@ class AppStrings {
       _en ? 'Settings imported' : 'Einstellungen importiert';
   String get backupImportFailed =>
       _en ? 'Not a readable backup file' : 'Keine lesbare Sicherungsdatei';
+  String backupImportSuccessWithoutPictures(int count) => _en
+      ? 'Settings imported - $count picture(s) were too large to travel'
+      : 'Einstellungen importiert - $count Bild(er) waren zu groß zum '
+            'Mitnehmen';
+
+  // The snapshots the app writes by itself (auto_backup_service.dart).
+  String get backupAutomatic => _en ? 'On this phone' : 'Auf diesem Handy';
+  String get backupAutomaticHint => _en
+      ? 'The app saves a copy into Download/hanneslauncher by itself: once a '
+            'day, and always right before it installs an update. That folder '
+            'survives uninstalling the app, which is the moment the copy is '
+            'for. Tap one to put it back.'
+      : 'Die App legt selbst eine Kopie in Download/hanneslauncher ab: '
+            'einmal am Tag, und immer direkt vor dem Installieren eines '
+            'Updates. Dieser Ordner überlebt das Deinstallieren der App - '
+            'genau dafür ist die Kopie da. Zum Zurückholen antippen.';
+  String get backupSaveNow => _en ? 'Save now' : 'Jetzt sichern';
+  String backupSavedTo(String name) =>
+      _en ? 'Saved as $name' : 'Gesichert als $name';
+  String get backupNoneYet =>
+      _en ? 'Nothing saved yet' : 'Noch nichts gesichert';
+  String get backupRestore => _en ? 'Restore' : 'Zurückholen';
+  String backupRestoreConfirm(String when) => _en
+      ? 'This replaces all current settings with the ones from $when. '
+            'Continue?'
+      : 'Das ersetzt alle aktuellen Einstellungen durch die von $when. '
+            'Fortfahren?';
+  String get backupShare => _en ? 'Send a copy' : 'Kopie senden';
+  String get backupToday => _en ? 'Today' : 'Heute';
+  String get backupYesterday => _en ? 'Yesterday' : 'Gestern';
+  String get backupReasonDaily => _en ? 'daily' : 'täglich';
+  String get backupReasonUpdate => _en ? 'before update' : 'vor Update';
+  String get backupReasonManual => _en ? 'by hand' : 'von Hand';
+  String get backupManual => _en ? 'To another phone' : 'Auf ein anderes Handy';
+  String get backupManualHint => _en
+      ? 'Send the file somewhere off this phone, or read one back in from '
+            'wherever it was put.'
+      : 'Die Datei irgendwohin außerhalb dieses Handys schicken - oder eine '
+            'von dort wieder einlesen.';
 
   // The update check (update_screen.dart) - this app doesn't come from a
   // store, so new versions arrive as an APK attached to a GitHub release

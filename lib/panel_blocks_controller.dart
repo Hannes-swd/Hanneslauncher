@@ -28,6 +28,14 @@ enum PanelBlockType {
   /// block holds only what the card around it needs: the name, the height
   /// and whether it is drawn on a card at all.
   code,
+
+  /// The notifications currently waiting, with [PanelBlock.daysAhead]
+  /// standing in for how many rows to show - the field is "how much of it",
+  /// which is what it already means for the calendar.
+  ///
+  /// Nothing about them is held in the block or anywhere else; see
+  /// `notifications_controller.dart`.
+  notifications,
 }
 
 /// One entry on the panel. The blocks are shown in list order.
@@ -310,6 +318,19 @@ class PanelBlocksController extends ValueNotifier<List<PanelBlock>> {
 
   Future<PanelBlock> addCalendar() async {
     final block = PanelBlock(id: _newId(), type: PanelBlockType.calendar);
+    await _save([...value, block]);
+    return block;
+  }
+
+  /// The notifications block. [PanelBlock.daysAhead] carries how many rows
+  /// it shows, the way it carries how many days the calendar shows - five is
+  /// enough to see what is there without the panel becoming the shade.
+  Future<PanelBlock> addNotifications() async {
+    final block = PanelBlock(
+      id: _newId(),
+      type: PanelBlockType.notifications,
+      daysAhead: 5,
+    );
     await _save([...value, block]);
     return block;
   }

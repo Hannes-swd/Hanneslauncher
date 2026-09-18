@@ -5,6 +5,7 @@ import 'color_swatch_picker.dart';
 import 'design_controller.dart';
 import 'design_tokens.dart';
 import 'design_widgets.dart';
+import 'haptics.dart';
 import 'locale_controller.dart';
 
 /// Where the look is changed: a theme, the six colors it is made of, and the
@@ -73,6 +74,9 @@ class DesignSettingsScreen extends StatelessWidget {
 
                   SettingsHeading(s.designMotionLabel),
                   _MotionSection(settings: settings, s: s),
+
+                  SettingsHeading(s.designHapticsLabel),
+                  _HapticsSection(settings: settings, s: s),
 
                   SizedBox(height: design.spaceSm),
                   ListTile(
@@ -548,6 +552,48 @@ class _MotionSection extends StatelessWidget {
               DesignController.instance.update(settings.copyWith(motion: v)),
         ),
         Text(s.designMotionHint, style: design.textStyle(TypeRole.caption)),
+      ],
+    );
+  }
+}
+
+/// The counterpart to [_MotionSection] for touch. It needs no demo widget:
+/// the slider fires the setting while it is being dragged, so the answer to
+/// "what does 1.4 feel like" is under the finger that is asking.
+class _HapticsSection extends StatelessWidget {
+  const _HapticsSection({required this.settings, required this.s});
+
+  final DesignSettings settings;
+  final AppStrings s;
+
+  String _word(double value) {
+    if (value <= 0.01) return s.designHapticsOff;
+    if (value < 0.75) return s.designHapticsSoft;
+    if (value < 1.5) return s.designHapticsNormal;
+    return s.designHapticsFirm;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final design = context.design;
+    return _Panel(
+      children: [
+        FieldLabel(s.designHaptics(_word(settings.haptics))),
+        _Slider(
+          range: hapticsRange,
+          value: settings.haptics,
+          // Eight rather than the motion slider's sixteen: the phone can
+          // only tell three of these apart, so a finer slider would be a row
+          // of positions that feel the same.
+          divisions: 8,
+          onChanged: (v) {
+            DesignController.instance.update(settings.copyWith(haptics: v));
+            // Fired after the update, so it is the new value being felt and
+            // not the one being left behind.
+            Haptics.fire(HapticEvent.selection);
+          },
+        ),
+        Text(s.designHapticsHint, style: design.textStyle(TypeRole.caption)),
       ],
     );
   }

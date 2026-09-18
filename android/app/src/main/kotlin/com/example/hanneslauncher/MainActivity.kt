@@ -2,11 +2,14 @@ package com.example.hanneslauncher
 
 import android.Manifest
 import android.app.Activity
+import android.app.ActivityOptions
 import android.app.AppOpsManager
 import android.app.role.RoleManager
 import android.app.usage.UsageStatsManager
 import android.content.ComponentName
+import android.content.BroadcastReceiver
 import android.content.ContentUris
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -25,13 +28,16 @@ import android.net.ConnectivityManager
 import android.net.Uri
 import android.net.NetworkCapabilities
 import android.os.BatteryManager
+import android.os.Bundle
 import android.os.Build
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.provider.AlarmClock
 import android.provider.CalendarContract
 import android.provider.ContactsContract
+import android.provider.MediaStore
 import android.provider.Settings
 import android.service.notification.NotificationListenerService
 import android.view.WindowManager
@@ -58,6 +64,8 @@ class MainActivity : FlutterActivity() {
     private val notificationsChannelName = "hanneslauncher/notifications"
     private val iconPacksChannelName = "hanneslauncher/icon_packs"
     private val appShortcutsChannelName = "hanneslauncher/app_shortcuts"
+    private val launchChannelName = "hanneslauncher/launch"
+    private val packagesChannelName = "hanneslauncher/packages"
     private val calendarPermissionRequestCode = 4201
     private val importFileRequestCode = 4202
     private val stepsPermissionRequestCode = 4203
@@ -254,6 +262,89 @@ class MainActivity : FlutterActivity() {
                         }
                         startActivityForResult(intent, importFileRequestCode)
                     }
+                    "saveToDownloads" -> {
+                        val json = call.argument<String>("json")
+                        val name = call.argument<String>("name")
+                        result.success(
+                            if (json == null || name == null) null
+                            else saveToDownloads(name, json)
+                        )
+                    }
+                    "listDownloads" -> result.success(listDownloadBackups())
+                    "readDownload" -> {
+                        val name = call.argument<String>("name")
+                        result.success(if (name == null) null else readDownloadBackup(name))
+                    }
+                    "deleteDownload" -> {
+                        val name = call.argument<String>("name")
+                        result.success(name != null && deleteDownloadBackup(name))
+                    }
+                    "shareFile" -> {
+                        val path = call.argument<String>("path")
+                        result.success(path != null && shareLocalFile(path))
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        // Tells Dart when the set of installed apps changes, so the app
+        // list never has to go and find out for itself.
+        //
+        // Before this, the launcher re-read every installed app - icons
+        // included, which is megabytes of bitmaps over the channel - each
+        // time it came back to the foreground, i.e. after every single app
+        // the user opened and closed. Almost always to learn that nothing
+        // had changed. Android will simply say when something does.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, packagesChannelName)
+            .also { packagesChannel = it }
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    // Dart asks for this once it is listening, so a change
+                    // that arrived during startup is not lost.
+                    "ready" -> {
+                        val pending = pendingPackageChange
+                        pendingPackageChange = false
+                        result.success(pending)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        // Starting apps, with two things the plain launch intent cannot do.
+        //
+        // The first is the animation. Android will grow the opening app out
+        // of a rectangle on screen if it is handed one, which is what makes a
+        // tapped icon feel like the thing that opened rather than like a
+        // button that happened to be nearby. Without it every app arrives
+        // with the same system cross-fade from nowhere.
+        //
+        // The second is the pair: FLAG_ACTIVITY_LAUNCH_ADJACENT asks for the
+        // app to open beside whatever is already up, which is how two apps
+        // get on screen together without going through the recents screen.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, launchChannelName)
+            .also { launchChannel = it }
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "launch" -> {
+                        val packageName = call.argument<String>("package")
+                        result.success(
+                            packageName != null && launchPackage(
+                                packageName,
+                                sourceBoundsOf(call),
+                                adjacent = false,
+                            )
+                        )
+                    }
+                    "launchPair" -> {
+                        val first = call.argument<String>("first")
+                        val second = call.argument<String>("second")
+                        result.success(
+                            first != null && second != null &&
+                                launchPair(first, second, sourceBoundsOf(call))
+                        )
+                    }
+                    "supportsSplitScreen" ->
+                        result.success(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
                     else -> result.notImplemented()
                 }
             }
@@ -409,6 +500,17 @@ class MainActivity : FlutterActivity() {
                     "requestPermission" -> result.success(requestNotificationAccess())
                     "openAppSettings" -> result.success(openAppDetails())
                     "counts" -> result.success(notificationCounts())
+                    "list" -> result.success(notificationList())
+                    "dismiss" -> {
+                        val key = call.argument<String>("key")
+                        result.success(
+                            key != null && MediaNotificationListener.dismiss(key)
+                        )
+                    }
+                    "open" -> {
+                        val key = call.argument<String>("key")
+                        result.success(key != null && openNotification(key))
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -523,6 +625,10 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        // Last, once every channel above exists: the receiver can fire the
+        // moment it is registered.
+        registerPackageReceiver()
     }
 
     // Empty whenever the permission is missing, which the Dart side tells
@@ -532,6 +638,30 @@ class MainActivity : FlutterActivity() {
     // an update, or after Android stopped this app's process. requestRebind
     // is the documented way to ask for it back; this call still answers
     // empty, and the next poll a few seconds later finds it connected.
+    private fun notificationList(): List<Map<String, Any?>> {
+        if (!hasNotificationAccess()) return emptyList()
+        if (!MediaNotificationListener.isConnected) {
+            requestListenerRebind()
+            return emptyList()
+        }
+        return MediaNotificationListener.activeNotifications()
+    }
+
+    // Fires the notification's own intent, which is what tapping it in the
+    // system shade does - straight into the chat it came from rather than
+    // just into the app.
+    private fun openNotification(key: String): Boolean {
+        val intent = MediaNotificationListener.contentIntent(key) ?: return false
+        return try {
+            intent.send()
+            true
+        } catch (e: Exception) {
+            // A cancelled PendingIntent throws; the notification is stale and
+            // there is nothing to open.
+            false
+        }
+    }
+
     private fun notificationCounts(): Map<String, Int> {
         if (!hasNotificationAccess()) return emptyMap()
         if (!MediaNotificationListener.isConnected) {
@@ -1006,6 +1136,361 @@ class MainActivity : FlutterActivity() {
         } catch (e: Exception) {
             false
         }
+    }
+
+    // Where the automatic snapshots go: the shared Downloads folder, under a
+    // subfolder of our own.
+    //
+    // The app's own filesDir would be the obvious place and is the wrong one.
+    // Everything in there is deleted with the app, and "the app is gone" is
+    // exactly the situation a backup exists for - an uninstall, or an APK
+    // that refuses to install over the old one because it was signed with
+    // another key, which is how this launcher actually gets updated. A copy
+    // that dies with the thing it protects protects nothing.
+    //
+    // Downloads needs no permission for files we put there ourselves on any
+    // Android this app runs on, and it survives the uninstall.
+    private val backupFolderName = "hanneslauncher"
+
+    private fun backupCollection(): Uri =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        } else {
+            MediaStore.Files.getContentUri("external")
+        }
+
+    // Android 9 and older, where MediaStore will not take a file of ours
+    // without WRITE_EXTERNAL_STORAGE.
+    //
+    // This app's own external directory rather than the public Downloads
+    // folder, because the public one would mean asking for a storage
+    // permission - and a launcher that opens with a permission dialog about
+    // a backup nobody asked for is a launcher that gets the backup switched
+    // off. The trade is real and worth naming: this folder is deleted with
+    // the app, so on those versions a snapshot survives an update but not an
+    // uninstall. It is reachable over USB either way, which is where a copy
+    // would be taken from before a deliberate uninstall.
+    private fun legacyBackupDir(): File =
+        File(
+            getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: filesDir,
+            backupFolderName,
+        )
+
+    // Finds an existing snapshot by file name, so writing the same name twice
+    // replaces it instead of leaving "backup (1).json" behind. The rotation in
+    // auto_backup_service.dart owns the naming and counts on that.
+    private fun findDownload(name: String): Uri? {
+        return try {
+            contentResolver.query(
+                backupCollection(),
+                arrayOf(MediaStore.MediaColumns._ID),
+                MediaStore.MediaColumns.DISPLAY_NAME + " = ? AND " +
+                    MediaStore.MediaColumns.RELATIVE_PATH + " LIKE ?",
+                arrayOf(name, "%" + backupFolderName + "%"),
+                null,
+            )?.use { cursor ->
+                if (!cursor.moveToFirst()) return@use null
+                ContentUris.withAppendedId(backupCollection(), cursor.getLong(0))
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun saveToDownloads(name: String, json: String): String? {
+        return try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                val dir = legacyBackupDir()
+                if (!dir.exists()) dir.mkdirs()
+                val file = File(dir, name)
+                file.writeText(json)
+                return file.absolutePath
+            }
+            val existing = findDownload(name)
+            val uri = existing ?: contentResolver.insert(
+                backupCollection(),
+                ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+                    put(MediaStore.MediaColumns.MIME_TYPE, "application/json")
+                    put(
+                        MediaStore.MediaColumns.RELATIVE_PATH,
+                        Environment.DIRECTORY_DOWNLOADS + "/" + backupFolderName,
+                    )
+                },
+            ) ?: return null
+            // Truncating mode on purpose: reopening an existing row for
+            // writing leaves whatever was longer than the new content sitting
+            // at the end, and a backup with JSON glued to the tail of an
+            // older, larger one parses as neither.
+            contentResolver.openOutputStream(uri, "wt")?.use {
+                it.write(json.toByteArray())
+            } ?: return null
+            uri.toString()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // Every snapshot in that folder, newest first: name, size, and when it was
+    // written. The contents are left alone - listing twenty backups would
+    // otherwise mean reading twenty documents for a screen that shows dates.
+    private fun listDownloadBackups(): List<Map<String, Any?>> {
+        return try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                return (legacyBackupDir().listFiles() ?: emptyArray())
+                    .filter { it.isFile && it.name.endsWith(".json") }
+                    .sortedByDescending { it.lastModified() }
+                    .map {
+                        mapOf(
+                            "name" to it.name,
+                            "bytes" to it.length(),
+                            "modifiedAt" to it.lastModified(),
+                        )
+                    }
+            }
+            val rows = mutableListOf<Map<String, Any?>>()
+            contentResolver.query(
+                backupCollection(),
+                arrayOf(
+                    MediaStore.MediaColumns.DISPLAY_NAME,
+                    MediaStore.MediaColumns.SIZE,
+                    MediaStore.MediaColumns.DATE_MODIFIED,
+                ),
+                MediaStore.MediaColumns.RELATIVE_PATH + " LIKE ?",
+                arrayOf("%" + backupFolderName + "%"),
+                MediaStore.MediaColumns.DATE_MODIFIED + " DESC",
+            )?.use { cursor ->
+                while (cursor.moveToNext()) {
+                    val name = cursor.getString(0) ?: continue
+                    if (!name.endsWith(".json")) continue
+                    rows.add(
+                        mapOf(
+                            "name" to name,
+                            "bytes" to cursor.getLong(1),
+                            // MediaStore counts in seconds, the rest of the
+                            // app in milliseconds.
+                            "modifiedAt" to cursor.getLong(2) * 1000L,
+                        )
+                    )
+                }
+            }
+            rows
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun readDownloadBackup(name: String): String? {
+        return try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                val file = File(legacyBackupDir(), name)
+                return if (file.exists()) file.readText() else null
+            }
+            val uri = findDownload(name) ?: return null
+            contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun deleteDownloadBackup(name: String): Boolean {
+        return try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                return File(legacyBackupDir(), name).delete()
+            }
+            val uri = findDownload(name) ?: return false
+            contentResolver.delete(uri, null, null) > 0
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    // Hands one already-written snapshot to the share sheet, so a file the app
+    // wrote by itself can still be sent somewhere off the phone.
+    private fun shareLocalFile(path: String): Boolean {
+        return try {
+            val uri = if (path.startsWith("content://")) {
+                Uri.parse(path)
+            } else {
+                FileProvider.getUriForFile(this, packageName + ".fileprovider", File(path))
+            }
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/json"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(intent, null))
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private var packagesChannel: MethodChannel? = null
+
+    // Set when a package changed before Dart was listening - during a cold
+    // start, or while the engine was being rebuilt. Handed over by "ready".
+    private var pendingPackageChange = false
+
+    // ACTION_PACKAGE_* cannot be declared in the manifest since Android 8;
+    // a receiver registered by a running process still gets them, which is
+    // all a launcher needs - if the process was gone, it reads the full list
+    // when it starts again anyway.
+    private val packageReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val action = intent?.action ?: return
+            // REPLACED arrives alongside REMOVED+ADDED for an update; all
+            // three mean the same thing here, and the debounce on the Dart
+            // side collapses them into one reload.
+            if (action != Intent.ACTION_PACKAGE_ADDED &&
+                action != Intent.ACTION_PACKAGE_REMOVED &&
+                action != Intent.ACTION_PACKAGE_REPLACED &&
+                action != Intent.ACTION_PACKAGE_CHANGED
+            ) {
+                return
+            }
+            val channel = packagesChannel
+            if (channel == null) {
+                pendingPackageChange = true
+                return
+            }
+            // Deliberately without the package name. Which one changed is
+            // not enough to update the list correctly anyway - a rename, a
+            // new icon and a new launchable activity all arrive as
+            // "changed" - so the answer is always to re-read. Sending it
+            // would only be one more route by which a package name reaches
+            // Dart outside the entries controller, and that is the route the
+            // secret folder depends on there being only one of.
+            channel.invokeMethod("packagesChanged", null)
+        }
+    }
+
+    private fun registerPackageReceiver() {
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED)
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addAction(Intent.ACTION_PACKAGE_REPLACED)
+            addAction(Intent.ACTION_PACKAGE_CHANGED)
+            // Without this the filter matches nothing: every one of these
+            // carries the package as a package: uri.
+            addDataScheme("package")
+        }
+        try {
+            registerReceiver(packageReceiver, filter)
+        } catch (e: Exception) {
+            // A phone that refuses the registration falls back to the old
+            // behaviour on the Dart side, which still reloads on resume when
+            // it has heard nothing.
+        }
+    }
+
+    private var launchChannel: MethodChannel? = null
+
+    // The rectangle the tap came from, in screen pixels, or null when the
+    // caller had none to give (a drawn shape, a panel block off screen).
+    private fun sourceBoundsOf(call: io.flutter.plugin.common.MethodCall): Rect? {
+        val left = call.argument<Double>("left") ?: return null
+        val top = call.argument<Double>("top") ?: return null
+        val width = call.argument<Double>("width") ?: return null
+        val height = call.argument<Double>("height") ?: return null
+        if (width <= 0 || height <= 0) return null
+        return Rect(
+            left.toInt(),
+            top.toInt(),
+            (left + width).toInt(),
+            (top + height).toInt(),
+        )
+    }
+
+    // makeScaleUpAnimation, not makeClipRevealAnimation: an icon is small and
+    // square and the app is the whole screen, so growing the window out of it
+    // reads as the same object getting bigger. A clip reveal wipes the app in
+    // from that corner instead, which at icon size looks like a glitch.
+    private fun animationFor(bounds: Rect?): Bundle? {
+        val rect = bounds ?: return null
+        val root = window?.decorView ?: return null
+        return try {
+            ActivityOptions.makeScaleUpAnimation(
+                root,
+                rect.left,
+                rect.top,
+                rect.width(),
+                rect.height(),
+            ).toBundle()
+        } catch (e: Exception) {
+            // A phone that will not make one still has to start the app.
+            null
+        }
+    }
+
+    private fun launchIntentFor(packageName: String): Intent? =
+        packageManager.getLaunchIntentForPackage(packageName)?.apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+        }
+
+    private fun launchPackage(packageName: String, bounds: Rect?, adjacent: Boolean): Boolean {
+        val intent = launchIntentFor(packageName) ?: return false
+        if (adjacent && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT)
+            intent.addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+        }
+        // sourceBounds as well as the animation: some system animations and a
+        // few apps read it to know where they were opened from.
+        intent.sourceBounds = bounds
+        return try {
+            startActivity(intent, animationFor(bounds))
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    // Two apps side by side. The first goes up on its own and the second is
+    // asked for adjacent to it, which is the only order Android accepts:
+    // there is nothing to be adjacent *to* until the first one is showing.
+    //
+    // The delay is the awkward part and cannot be avoided. The window manager
+    // needs the first app to actually be up before it will split for the
+    // second, and there is no callback for "it is up" available to a launcher
+    // - so this waits a beat, which is long enough on every phone tried and
+    // costs nothing but a moment if it was already enough.
+    private fun launchPair(first: String, second: String, bounds: Rect?): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            // No split screen: opening the first one alone is a better answer
+            // than doing nothing, and it is what the entry says it does.
+            return launchPackage(first, bounds, adjacent = false)
+        }
+        if (launchIntentFor(second) == null) return false
+        if (!launchPackage(first, bounds, adjacent = false)) return false
+        Handler(Looper.getMainLooper()).postDelayed({
+            launchPackage(second, null, adjacent = true)
+        }, 700)
+        return true
+    }
+
+    // Pressing home while already home. Android delivers it here rather than
+    // restarting the activity, so without this the launcher answers the home
+    // button by doing nothing at all - the panel stays open, the app list
+    // stays scrolled where it was. Everywhere else, home means "back to the
+    // start", and the one app that is supposed to *be* the start was the one
+    // app that ignored it.
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.action == Intent.ACTION_MAIN &&
+            intent.hasCategory(Intent.CATEGORY_HOME)
+        ) {
+            launchChannel?.invokeMethod("homePressed", null)
+        }
+    }
+
+    override fun onDestroy() {
+        try {
+            unregisterReceiver(packageReceiver)
+        } catch (e: Exception) {
+            // Never registered, or already gone.
+        }
+        super.onDestroy()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

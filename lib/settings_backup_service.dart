@@ -1,9 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart' show Color;
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import 'app_list_settings_controller.dart';
 import 'app_overrides_controller.dart';
+import 'app_pairs_controller.dart';
 import 'clock_settings_controller.dart';
 import 'code_widget_store.dart';
 import 'color_swatch_picker.dart' show autoColorIndex;
@@ -23,6 +27,7 @@ import 'panel_blocks_controller.dart';
 import 'pinned_apps_controller.dart';
 import 'secret_apps_controller.dart';
 import 'saved_shortcuts_controller.dart';
+import 'wallpaper_controller.dart';
 import 'web_apps_controller.dart';
 
 /// Everything the user has configured, as one JSON document: colors,
@@ -33,13 +38,28 @@ import 'web_apps_controller.dart';
 /// The code widgets are the one part that isn't held by a block: their
 /// files are written alongside the document by [buildWithFiles].
 ///
-/// Custom pictures (the wallpaper, replaced app icons, web app icons) are
-/// left out on purpose - their files live in this install's own private
-/// storage, so a path to one would point nowhere once carried into a
-/// different install, and everything that reads them already falls back
-/// cleanly when the file is missing.
+/// Custom pictures - the wallpaper, replaced app icons, web app icons -
+/// travel as the pictures themselves, base64 in the 'pictures' section, not
+/// as paths. A path would point into this install's private storage and
+/// therefore at nothing after a reinstall, which is how a restored launcher
+/// used to come back correct in every respect except that it looked wrong.
+///
+/// They are also the only part with a size limit. A wallpaper can be a
+/// video, and a backup nobody can send anywhere because it is 300 MB is one
+/// that stops being made; anything over [maxPictureBytes] is named in the
+/// document without its contents, so a restore can at least say what is
+/// missing rather than silently dropping it.
 class SettingsBackupService {
-  static const _formatVersion = 1;
+  // 2 adds the 'pictures' section. Nothing else changed shape, so a
+  // version-1 document still restores completely - it simply has no
+  // pictures in it, which is what those installs had.
+  static const _formatVersion = 2;
+
+  /// Per picture, not for the document as a whole: 8 MB covers any still
+  /// wallpaper at any screen size this runs on, and every icon many times
+  /// over, while leaving a video out - which is the one case where the file
+  /// is large enough to matter and easy enough to set again.
+  static const maxPictureBytes = 8 * 1024 * 1024;
 
   static Map<String, dynamic> build() {
     final clock = ClockSettingsController.instance.value;
@@ -97,6 +117,9 @@ class SettingsBackupService {
         'hand': appList.hand.name,
         'hideAlphabet': appList.hideAlphabet,
         'backgroundBlur': appList.backgroundBlur,
+        'searchExtras': appList.searchExtras,
+        'searchContacts': appList.searchContacts,
+        'searchWebUrl': appList.searchWebUrl,
       },
       'iconTheme': {
         'style': iconTheme.style.name,
@@ -123,6 +146,7 @@ class SettingsBackupService {
         'font': design.font,
         'opacity': design.opacity,
         'motion': design.motion,
+        'haptics': design.haptics,
       },
       'pinnedApps': PinnedAppsController.instance.value,
       'pinnedAppsLeftMargin': PinnedAppsLayoutController.instance.value,
@@ -161,6 +185,11 @@ class SettingsBackupService {
       // install's own cache, so the path would point nowhere after a
       // restore. The refresh on the next load fetches it again from the app
       // that published the shortcut, which is where it came from anyway.
+      // Two package names and a name of your own - nothing in there points
+      // at a file or at this install.
+      'appPairs': [
+        for (final pair in AppPairsController.instance.value) pair.toJson(),
+      ],
       'savedShortcuts': [
         for (final shortcut in SavedShortcutsController.instance.value)
           {
@@ -224,7 +253,98 @@ class SettingsBackupService {
       widgets[block.id] = await CodeWidgetStore.instance.exportBlock(block.id);
     }
     if (widgets.isNotEmpty) document['codeWidgets'] = widgets;
+    final pictures = await _buildPictures();
+    if (pictures.isNotEmpty) document['pictures'] = pictures;
     return document;
+  }
+
+  /// Every picture the user chose, as bytes.
+  ///
+  /// Three kinds, each keyed by what it belongs to so a restore can put it
+  /// back without the old path meaning anything: the wallpaper, one icon per
+  /// app package, one icon per web app id.
+  static Future<Map<String, dynamic>> _buildPictures() async {
+    final pictures = <String, dynamic>{};
+
+    final wallpaper = WallpaperController.instance.value;
+    if (wallpaper != null) {
+      final entry = await _encodePicture(wallpaper.file);
+      if (entry != null) pictures['wallpaper'] = entry;
+    }
+
+    final appIcons = <String, dynamic>{};
+    for (final entry in AppOverridesController.instance.value.entries) {
+      final path = entry.value.iconPath;
+      if (path == null) continue;
+      final encoded = await _encodePicture(File(path));
+      if (encoded != null) appIcons[entry.key] = encoded;
+    }
+    if (appIcons.isNotEmpty) pictures['appIcons'] = appIcons;
+
+    final webIcons = <String, dynamic>{};
+    for (final app in WebAppsController.instance.value) {
+      final path = app.iconPath;
+      if (path == null) continue;
+      final encoded = await _encodePicture(File(path));
+      if (encoded != null) webIcons[app.id] = encoded;
+    }
+    if (webIcons.isNotEmpty) pictures['webAppIcons'] = webIcons;
+
+    return pictures;
+  }
+
+  /// One picture as `{extension, bytes}`, or `{extension, tooLarge}` when it
+  /// is past [maxPictureBytes].
+  ///
+  /// The extension travels because it is what decides how the picture is
+  /// drawn again - `wallpaper_controller.dart` reads the kind (still, GIF,
+  /// video) off it and nothing else.
+  static Future<Map<String, dynamic>?> _encodePicture(File file) async {
+    try {
+      if (!file.existsSync()) return null;
+      final extension = p.extension(file.path);
+      final length = await file.length();
+      if (length > maxPictureBytes) {
+        return {'extension': extension, 'tooLarge': length};
+      }
+      return {
+        'extension': extension,
+        'bytes': base64Encode(await file.readAsBytes()),
+      };
+    } catch (_) {
+      // One unreadable picture shouldn't cost the rest of the backup.
+      return null;
+    }
+  }
+
+  /// What a restore could not bring back because it was too big to carry.
+  /// Named so the screen can say which, instead of the user finding out by
+  /// looking at their home screen.
+  static List<String> oversizedPicturesIn(String jsonText) {
+    try {
+      final decoded = jsonDecode(jsonText);
+      if (decoded is! Map<String, dynamic>) return const [];
+      final pictures = decoded['pictures'];
+      if (pictures is! Map<String, dynamic>) return const [];
+      final names = <String>[];
+      if (pictures['wallpaper'] is Map &&
+          (pictures['wallpaper'] as Map).containsKey('tooLarge')) {
+        names.add('wallpaper');
+      }
+      for (final group in const ['appIcons', 'webAppIcons']) {
+        final entries = pictures[group];
+        if (entries is! Map<String, dynamic>) continue;
+        for (final entry in entries.entries) {
+          final value = entry.value;
+          if (value is Map && value.containsKey('tooLarge')) {
+            names.add(entry.key);
+          }
+        }
+      }
+      return names;
+    } catch (_) {
+      return const [];
+    }
   }
 
   static Future<String> exportJsonWithFiles() async =>
@@ -351,6 +471,9 @@ class SettingsBackupService {
           hideAlphabet: appListJson['hideAlphabet'] as bool? ?? false,
           backgroundBlur:
               (appListJson['backgroundBlur'] as num?)?.toDouble() ?? 14,
+          searchExtras: appListJson['searchExtras'] as bool? ?? true,
+          searchContacts: appListJson['searchContacts'] as bool? ?? false,
+          searchWebUrl: appListJson['searchWebUrl'] as String? ?? '',
         ),
       );
     }
@@ -385,6 +508,7 @@ class SettingsBackupService {
           font: (designJson['font'] as num?)?.toDouble(),
           opacity: (designJson['opacity'] as num?)?.toDouble(),
           motion: (designJson['motion'] as num?)?.toDouble(),
+          haptics: (designJson['haptics'] as num?)?.toDouble(),
         ),
       );
     }
@@ -501,6 +625,15 @@ class SettingsBackupService {
       await WebAppsController.instance.replaceAll(apps);
     }
 
+    // Same reason as the web apps above: a pin naming a pair is only kept
+    // if the pair it names is back by the time the pins are pruned.
+    final appPairsJson = decoded['appPairs'] as List<dynamic>?;
+    if (appPairsJson != null) {
+      await AppPairsController.instance.replaceAll([
+        for (final entry in appPairsJson) ?AppPair.fromJson(entry),
+      ]);
+    }
+
     // Before the pinned apps below, like the web apps and folders above: a
     // pin pointing at a shortcut is only kept if the shortcut it names
     // already exists again by then.
@@ -532,6 +665,11 @@ class SettingsBackupService {
           entry.key: entry.value as String,
       });
     }
+
+    // After the names, the web apps and the folders, because each picture is
+    // put back onto something those restored - and before the pinned apps,
+    // which are pruned against entries that by then have to be complete.
+    await _applyPictures(decoded['pictures']);
 
     // Before the pinned apps below: those are pruned against the entry list,
     // which a restored secret app is not part of - so a key that is in both
@@ -604,6 +742,68 @@ class SettingsBackupService {
           colorIndex: badgeColor ?? PinnedBadgeSettings.defaultColorIndex,
         ),
       );
+    }
+  }
+
+  /// Writes the pictures out of a backup back into this install's own
+  /// storage and points the settings at them.
+  ///
+  /// Anything missing is simply skipped: a version-1 document has no
+  /// pictures at all, a picture too large to carry has no bytes, and an app
+  /// or web app that no longer exists here has nothing to put one on. None
+  /// of those is a failed restore - everything else in the document is still
+  /// correct, and a picture is the one part the user can put back in a tap.
+  static Future<void> _applyPictures(Object? pictures) async {
+    if (pictures is! Map<String, dynamic>) return;
+
+    final wallpaper = await _decodePicture(pictures['wallpaper'], 'wallpaper');
+    if (wallpaper != null) {
+      await WallpaperController.instance.restoreFile(wallpaper);
+    }
+
+    final appIcons = pictures['appIcons'];
+    if (appIcons is Map<String, dynamic>) {
+      for (final entry in appIcons.entries) {
+        final file = await _decodePicture(entry.value, 'icon_${entry.key}');
+        if (file != null) {
+          await AppOverridesController.instance.restoreIcon(entry.key, file);
+        }
+      }
+    }
+
+    final webIcons = pictures['webAppIcons'];
+    if (webIcons is Map<String, dynamic>) {
+      for (final entry in webIcons.entries) {
+        final file = await _decodePicture(entry.value, 'web_${entry.key}');
+        if (file != null) {
+          await WebAppsController.instance.restoreIcon(entry.key, file);
+        }
+      }
+    }
+  }
+
+  /// One picture back onto disk, under a name of this install's choosing.
+  ///
+  /// The timestamp is not decoration: `Image.file` caches decoded bitmaps by
+  /// path, so restoring twice onto the same path would keep showing the
+  /// first picture - the same trap `pickImageInto` documents.
+  static Future<File?> _decodePicture(Object? entry, String baseName) async {
+    if (entry is! Map) return null;
+    final encoded = entry['bytes'];
+    if (encoded is! String) return null;
+    try {
+      final extension = entry['extension'] as String? ?? '';
+      final dir = Directory(
+        p.join((await getApplicationDocumentsDirectory()).path, 'restored'),
+      );
+      if (!dir.existsSync()) await dir.create(recursive: true);
+      final safeName = baseName.replaceAll(RegExp(r'[^\w.]'), '_');
+      final stamp = DateTime.now().microsecondsSinceEpoch;
+      final file = File(p.join(dir.path, '$safeName.$stamp$extension'));
+      await file.writeAsBytes(base64Decode(encoded));
+      return file;
+    } catch (_) {
+      return null;
     }
   }
 

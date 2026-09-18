@@ -2,8 +2,9 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// Everything the badges need from Android goes over one method channel, and
-/// a method the Kotlin side does not answer fails in the quietest way there
+/// Everything the notifications channel carries - the badge counts and the
+/// panel's list of what is waiting - goes over one method channel, and a
+/// method the Kotlin side does not answer fails in the quietest way there
 /// is: `notImplemented` comes back as a `MissingPluginException`, the Dart
 /// side catches it the way it catches a missing permission, and the result
 /// is a launcher with no badges and no complaint anywhere.
@@ -12,16 +13,39 @@ import 'package:flutter_test/flutter_test.dart';
 /// so the two sides are checked against each other here rather than left to
 /// whoever remembers to rename both.
 void main() {
-  final dart = File('lib/notification_badges_controller.dart').readAsStringSync();
+  /// Both Dart files on this channel. It was one for a long time; the
+  /// notification block on the panel is the second, and a guard that kept
+  /// reading only the first would have called every one of its methods dead
+  /// code on the Kotlin side.
+  const dartFiles = [
+    'lib/notification_badges_controller.dart',
+    'lib/notifications_controller.dart',
+  ];
+
+  final dart = [
+    for (final path in dartFiles) File(path).readAsStringSync(),
+  ].join('\n');
   final kotlin = File(
     'android/app/src/main/kotlin/com/example/hanneslauncher/MainActivity.kt',
   ).readAsStringSync();
 
-  /// The method names the controller asks the channel for.
+  /// The method names the Dart side asks the channel for.
+  ///
+  /// Two spellings, because the two files reach the channel differently:
+  /// the badges call `_channel.invokeMethod` straight, while the panel's
+  /// list goes through a small `_invoke` helper so a test can stand in for
+  /// the platform. Both end at the same channel, so both count.
   List<String> invokedMethods() {
     return [
       for (final match in RegExp(
-        r"_channel\.invoke(?:Map)?Method<[^>]*>\('([^']+)'\)",
+        r"_channel\.invoke(?:Map)?Method<[^>]*>\('([^']+)'",
+      ).allMatches(dart))
+        match.group(1)!,
+      // [^(]* rather than [^>]*: the type argument can itself contain a
+      // closing angle bracket - `_invoke<List<Object?>>` - and stopping at
+      // the first one silently matched nothing at all.
+      for (final match in RegExp(
+        r"_invoke<[^(]*>\('([^']+)'",
       ).allMatches(dart))
         match.group(1)!,
     ];
@@ -61,14 +85,15 @@ void main() {
         body.contains('"$method" ->'),
         isTrue,
         reason:
-            'NotificationCounts calls "$method" on hanneslauncher/notifications, '
-            'but MainActivity.kt does not answer it - badges would silently '
-            'stay empty',
+            'The Dart side calls "$method" on '
+            'hanneslauncher/notifications, but MainActivity.kt does not '
+            'answer it - badges and the panel list would silently stay '
+            'empty',
       );
     }
   });
 
-  test('the Android side answers nothing the badges never ask for', () {
+  test('the Android side answers nothing the Dart side never asks for', () {
     final methods = invokedMethods().toSet();
     final answered = [
       for (final match in RegExp(r'"([^"]+)" ->').allMatches(handlerBody()))

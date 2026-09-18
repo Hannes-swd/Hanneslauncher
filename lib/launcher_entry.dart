@@ -1,14 +1,18 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/widgets.dart' show Rect;
 import 'package:installed_apps/app_info.dart';
 import 'package:installed_apps/installed_apps.dart';
 
+import 'app_launcher.dart';
 import 'app_overrides_controller.dart';
+import 'app_pairs_controller.dart';
 import 'app_shortcuts.dart';
 import 'app_strings.dart';
 import 'builtin_entries.dart';
 import 'folders_controller.dart';
+import 'haptics.dart';
 import 'locale_controller.dart';
 import 'saved_shortcuts_controller.dart';
 import 'web_apps_controller.dart';
@@ -22,27 +26,38 @@ class LauncherEntry {
     : webApp = null,
       shortcut = null,
       folder = null,
-      builtIn = null;
+      builtIn = null,
+      pair = null;
   const LauncherEntry.web(this.webApp)
     : app = null,
       shortcut = null,
       folder = null,
-      builtIn = null;
+      builtIn = null,
+      pair = null;
   const LauncherEntry.shortcut(this.shortcut)
     : app = null,
       webApp = null,
       folder = null,
-      builtIn = null;
+      builtIn = null,
+      pair = null;
   const LauncherEntry.folder(this.folder)
     : app = null,
       webApp = null,
       shortcut = null,
-      builtIn = null;
+      builtIn = null,
+      pair = null;
   const LauncherEntry.builtIn(this.builtIn)
     : app = null,
       webApp = null,
       shortcut = null,
-      folder = null;
+      folder = null,
+      pair = null;
+  const LauncherEntry.pair(this.pair)
+    : app = null,
+      webApp = null,
+      shortcut = null,
+      folder = null,
+      builtIn = null;
 
   final AppInfo? app;
   final WebApp? webApp;
@@ -50,7 +65,12 @@ class LauncherEntry {
   final LauncherFolder? folder;
   final BuiltInEntry? builtIn;
 
+  /// Two apps opened side by side - see [AppPair].
+  final AppPair? pair;
+
   bool get isWebApp => webApp != null;
+
+  bool get isPair => pair != null;
 
   /// A shortcut an app published about itself, kept by the user. Launching
   /// one can fail in ways an app can't - see [launch].
@@ -75,6 +95,7 @@ class LauncherEntry {
       return SavedShortcutsController.pinKeyFor(shortcut!.id);
     }
     if (builtIn != null) return builtIn!.key;
+    if (pair != null) return AppPairsController.pinKeyFor(pair!.id);
     return FoldersController.keyFor(folder!.id);
   }
 
@@ -90,6 +111,14 @@ class LauncherEntry {
   Iterable<String> get hidingKeys sync* {
     yield key;
     if (shortcut != null) yield shortcut!.package;
+    // A pair is two package names in a trench coat. Hiding either of the
+    // apps it opens has to take the pair with it, or the hidden app is one
+    // tap away under a name of the user's own choosing - which is worse than
+    // it simply still being in the list.
+    if (pair != null) {
+      yield pair!.first;
+      yield pair!.second;
+    }
   }
 
   /// When this was installed (an app) or added to the launcher (a web app or
@@ -105,6 +134,7 @@ class LauncherEntry {
     if (shortcut != null) return (int.tryParse(shortcut!.id) ?? 0) ~/ 1000;
     // A built-in has always been there, so "newest first" puts it last.
     if (builtIn != null) return 0;
+    if (pair != null) return (int.tryParse(pair!.id) ?? 0) ~/ 1000;
     return (int.tryParse(folder!.id) ?? 0) ~/ 1000;
   }
 
@@ -130,6 +160,7 @@ class LauncherEntry {
     if (shortcut != null) {
       return AppOverridesController.instance.nameFor(key, shortcut!.name);
     }
+    if (pair != null) return pair!.name;
     return webApp?.name ?? folder!.name;
   }
 
@@ -152,6 +183,12 @@ class LauncherEntry {
     if (shortcut != null) {
       return AppOverridesController.instance.forPackage(key)?.iconFile;
     }
+    // Same store again, under the pair's own key. Worth having here more
+    // than anywhere else: without a picture a pair draws whatever the
+    // fallback is, and two pairs of the same app then look alike.
+    if (pair != null) {
+      return AppOverridesController.instance.forPackage(key)?.iconFile;
+    }
     return webApp?.iconFile;
   }
 
@@ -167,9 +204,20 @@ class LauncherEntry {
   /// didn't: a shortcut whose app has dropped it, or that Android won't hand
   /// out because this launcher isn't the home app any more. An app or a web
   /// app has no such failure to report.
-  Future<bool> launch() async {
+  /// [from] is the rectangle on screen the start came from, usually the icon
+  /// that was tapped - Android grows the app out of it. Left out where there
+  /// is nothing to grow out of: a drawn shape, a restored session.
+  Future<bool> launch({Rect? from}) async {
+    // Fires for every kind below, before any of them: the point of it is
+    // that the tap registered, which is true whether or not the thing then
+    // opens.
+    Haptics.fire(HapticEvent.confirm);
     if (app != null) {
-      await InstalledApps.startApp(app!.packageName);
+      // Falls back to the plugin only if the channel could not start it -
+      // an app that is there but whose launch intent Android would not hand
+      // over is worth one more try before giving up on it.
+      final started = await AppLauncher.launch(app!.packageName, from: from);
+      if (!started) await InstalledApps.startApp(app!.packageName);
       return true;
     }
     if (webApp != null) {
@@ -178,6 +226,9 @@ class LauncherEntry {
     }
     if (shortcut != null) {
       return AppShortcuts.launch(shortcut!.package, shortcut!.shortcutId);
+    }
+    if (pair != null) {
+      return AppLauncher.launchPair(pair!.first, pair!.second, from: from);
     }
     // Folders and built-ins are handled by the caller (see [isFolder] and
     // [isBuiltIn]).

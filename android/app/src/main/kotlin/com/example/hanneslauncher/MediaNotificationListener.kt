@@ -87,5 +87,84 @@ class MediaNotificationListener : NotificationListenerService() {
             }
             return children
         }
+
+        /// Everything currently waiting, newest first: which app, what it
+        /// says, and the key needed to swipe it away again.
+        ///
+        /// A deliberate step past [countsByPackage], and worth being clear
+        /// about. The badge only ever needed a number, and the app has said
+        /// all along that a number is all it reads. This reads the title and
+        /// the text too - but only to draw them, in this process, for the one
+        /// person holding the phone, for as long as the panel is open.
+        /// Nothing is written anywhere, nothing is kept once the panel shuts,
+        /// and nothing leaves the device. The block that shows it is off
+        /// until switched on.
+        fun activeNotifications(): List<Map<String, Any?>> {
+            val service = connected ?: return emptyList()
+            val active = try {
+                service.activeNotifications
+            } catch (_: Exception) {
+                null
+            } ?: return emptyList()
+
+            val rows = mutableListOf<Map<String, Any?>>()
+            for (notification in active) {
+                val details = notification.notification ?: continue
+                // Same rule as the badge: anything that cannot be swiped away
+                // is a standing status line - a player, a download, a VPN -
+                // not something waiting to be read.
+                if (!notification.isClearable) continue
+                // The summary is the wrapper around the ones below it. Shown
+                // as well, it would print "3 new messages" above the three
+                // messages themselves.
+                if (details.flags and Notification.FLAG_GROUP_SUMMARY != 0) continue
+
+                val extras = details.extras
+                val title = extras?.getCharSequence(Notification.EXTRA_TITLE)
+                val text = extras?.getCharSequence(Notification.EXTRA_TEXT)
+                    ?: extras?.getCharSequence(Notification.EXTRA_BIG_TEXT)
+                rows.add(
+                    mapOf(
+                        "key" to notification.key,
+                        "package" to notification.packageName,
+                        "title" to title?.toString(),
+                        "text" to text?.toString(),
+                        "postedAt" to notification.postTime,
+                    )
+                )
+            }
+            rows.sortByDescending { it["postedAt"] as Long }
+            return rows
+        }
+
+        /// Swipes one away, exactly as pulling it off the system shade would.
+        fun dismiss(key: String): Boolean {
+            val service = connected ?: return false
+            return try {
+                service.cancelNotification(key)
+                true
+            } catch (_: Exception) {
+                false
+            }
+        }
+
+        /// The intent the notification itself carries - what tapping it in
+        /// the system shade would fire. Returned rather than fired here so
+        /// the caller decides, and null when the notification has none,
+        /// which is ordinary: plenty are purely informational.
+        fun contentIntent(key: String): android.app.PendingIntent? {
+            val service = connected ?: return null
+            val active = try {
+                service.activeNotifications
+            } catch (_: Exception) {
+                null
+            } ?: return null
+            for (notification in active) {
+                if (notification.key == key) {
+                    return notification.notification?.contentIntent
+                }
+            }
+            return null
+        }
     }
 }

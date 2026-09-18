@@ -105,6 +105,21 @@ class AppOverridesController extends ValueNotifier<Map<String, AppOverride>> {
     return true;
   }
 
+  /// Puts a picture back from a backup, which carries the bytes rather than
+  /// a path - the path in the file points into the install that wrote it and
+  /// means nothing here.
+  ///
+  /// Merges rather than replaces: names were restored a moment earlier by
+  /// [restoreNames], and an icon arriving afterwards must not take the name
+  /// back off the app.
+  Future<void> restoreIcon(String packageName, File file) async {
+    await deleteStoredImage(value[packageName]?.iconPath);
+    await _write(
+      packageName,
+      AppOverride(name: value[packageName]?.name, iconPath: file.path),
+    );
+  }
+
   /// Sets an entry's picture from a file that is already on disk. Stands in
   /// for [pickIcon] in tests, which have no gallery to pick from.
   @visibleForTesting

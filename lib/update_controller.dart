@@ -7,6 +7,8 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'auto_backup_service.dart';
+
 /// Where the release APKs are published. Everything else about the check is
 /// derived from this - the API call, the release page, the download link.
 const String kUpdateRepo = 'Hannes-swd/Hanneslauncher';
@@ -372,6 +374,18 @@ class UpdateController extends ValueNotifier<UpdateState> {
         value = value.copyWith(downloadedFraction: received / total);
       }
       await sink.close();
+
+      // The last moment this install is certainly still intact. An APK
+      // signed with a different key cannot go over the old app, and the way
+      // out of that - uninstall, then install - takes every setting with it;
+      // by then there is nothing left to export from. Written here rather
+      // than when the update is merely offered, because that is a screen
+      // people open to read the changelog and close again.
+      //
+      // Not awaited for its result and never allowed to stop the install:
+      // this is a safety net, and a safety net that can block the thing it
+      // is protecting is a worse deal than no net.
+      await AutoBackupService.instance.write(BackupReason.update);
 
       final started = await _installApk(file.path);
       value = value.copyWith(

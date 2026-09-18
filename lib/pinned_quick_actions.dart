@@ -5,6 +5,7 @@ import 'app_shortcuts.dart';
 import 'app_strings.dart';
 import 'color_swatch_picker.dart';
 import 'folders_controller.dart';
+import 'haptics.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
 import 'saved_shortcuts_controller.dart';
@@ -23,6 +24,10 @@ Future<void> showPinnedQuickActions(
   LauncherEntry entry,
 ) async {
   final s = AppStrings(LocaleController.instance.value);
+  // The one confirmation a long press ever gets: the finger is still down
+  // and the dialog has not drawn yet, so without this the only sign that the
+  // press was long enough arrives a frame later.
+  Haptics.fire(HapticEvent.grab);
 
   final action = await showDialog<_QuickAction>(
     context: context,

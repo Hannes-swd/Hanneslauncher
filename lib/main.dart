@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'app_launcher.dart';
 import 'app_list_settings_controller.dart';
 import 'app_list_view.dart';
+import 'auto_backup_service.dart';
 import 'calendar_controller.dart';
 import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
@@ -10,9 +12,12 @@ import 'default_launcher_screen.dart';
 import 'design_controller.dart';
 import 'design_tokens.dart';
 import 'device_stats_controller.dart';
+import 'haptics.dart';
+import 'home_reset.dart';
 import 'icon_pack_controller.dart';
 import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
+import 'notifications_controller.dart';
 import 'offline_mode_controller.dart';
 import 'panel_view.dart';
 import 'panel_visibility.dart';
@@ -110,7 +115,25 @@ class _LauncherRootState extends State<LauncherRoot>
     // the settings button already carries the update mark on the first
     // frame. The check itself waits for the panel to be opened.
     UpdateController.instance.load();
+    // Pressing home while already on the home screen. Android delivers it as
+    // a new intent to the running activity, so this is the only place it can
+    // be heard at all - see home_reset.dart.
+    AppLauncher.onHomePressed = _onHomePressed;
     _maybeAskAboutDefaultLauncher();
+  }
+
+  /// Everything back to where the home screen starts.
+  ///
+  /// The panel is snapped shut rather than animated when it is barely open,
+  /// and animated when it is properly open, which is the difference between
+  /// dismissing something and watching it leave. The app list resets itself
+  /// off the same signal.
+  void _onHomePressed() {
+    if (_controller.value > 0) {
+      Haptics.fire(HapticEvent.snap);
+      _closePanel();
+    }
+    signalHomeReset();
   }
 
   /// A launcher that was installed but never made the home app never opens
@@ -175,6 +198,10 @@ class _LauncherRootState extends State<LauncherRoot>
     // the last query on the next pull-down just has to be emptied by hand
     // before anything new can go in.
     WidgetInputStore.instance.clearAll();
+    // The notifications go the same way, and for a stronger reason: a list
+    // of what was waiting an hour ago is both wrong and more than this app
+    // has any business holding on to.
+    NotificationsController.instance.clear();
     // And nothing in the panel may keep the keyboard up once the panel is
     // gone. The panel is never torn down - it is only moved off-screen - so
     // a text field on one of its cards holds on to the focus, and the
@@ -246,6 +273,9 @@ class _LauncherRootState extends State<LauncherRoot>
   void _refreshPanelData() {
     DataSourcesController.instance.refreshStale();
     CalendarController.instance.refresh();
+    // Only while the panel is open. There is no listener and no poll behind
+    // this - see notifications_controller.dart for why that matters.
+    NotificationsController.instance.refresh();
     // Same reasoning, and the settings button that carries the mark is
     // right there in the panel's header.
     UpdateController.instance.refreshStale();
@@ -253,6 +283,11 @@ class _LauncherRootState extends State<LauncherRoot>
       wantsSteps: DeviceDataController.instance.value,
       wantsMostUsedApp: DeviceDataController.instance.value,
     );
+    // Once a day, and here rather than on a timer for the same reason as
+    // everything above it: this is a moment the app is already awake and
+    // already being waited on for a fraction of a second, so a file write
+    // costs nothing anyone can see. See auto_backup_service.dart.
+    AutoBackupService.instance.ensureDaily();
   }
 
   void _onDragEnd(DragEndDetails details) {
@@ -279,6 +314,12 @@ class _LauncherRootState extends State<LauncherRoot>
       // closer.
       open = _controller.value > 0.5;
     }
+    // The panel leaves the finger here and finishes on its own, which is
+    // exactly the moment the decision was made - waiting for the animation
+    // to land would put the sensation a quarter of a second after the cause.
+    // Only when it actually changes sides: releasing a panel back where it
+    // started decided nothing.
+    if (open != (_controller.value >= 0.5)) Haptics.fire(HapticEvent.snap);
     _controller.animateTo(open ? 1 : 0, curve: Curves.easeOut);
     if (open) _refreshPanelData();
   }

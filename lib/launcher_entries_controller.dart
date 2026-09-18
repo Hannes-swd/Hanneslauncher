@@ -5,6 +5,7 @@ import 'package:installed_apps/app_info.dart';
 import 'package:installed_apps/installed_apps.dart';
 
 import 'app_overrides_controller.dart';
+import 'app_pairs_controller.dart';
 import 'builtin_entries.dart';
 import 'folders_controller.dart';
 import 'launcher_entry.dart';
@@ -31,6 +32,7 @@ class LauncherEntriesController extends ChangeNotifier {
   LauncherEntriesController._() {
     AppOverridesController.instance.addListener(_rebuild);
     WebAppsController.instance.addListener(_rebuild);
+    AppPairsController.instance.addListener(_rebuild);
     SavedShortcutsController.instance.addListener(_rebuild);
     FoldersController.instance.addListener(_rebuild);
     // Hiding an app has to take effect everywhere at once, the same way a
@@ -107,6 +109,7 @@ class LauncherEntriesController extends ChangeNotifier {
     await Future.wait([
       AppOverridesController.instance.load(),
       WebAppsController.instance.load(),
+      AppPairsController.instance.load(),
       SavedShortcutsController.instance.load(),
       FoldersController.instance.load(),
       // Before the apps are turned into entries, otherwise the first build
@@ -127,6 +130,8 @@ class LauncherEntriesController extends ChangeNotifier {
       for (final app in _apps) LauncherEntry.app(app),
       for (final webApp in WebAppsController.instance.value)
         LauncherEntry.web(webApp),
+      for (final pair in AppPairsController.instance.value)
+        LauncherEntry.pair(pair),
       for (final shortcut in SavedShortcutsController.instance.value)
         LauncherEntry.shortcut(shortcut),
       for (final folder in FoldersController.instance.value)

@@ -7,6 +7,7 @@ import 'gesture_action.dart';
 import 'gesture_shortcuts_controller.dart';
 import 'gesture_stroke.dart';
 import 'gesture_stroke_view.dart';
+import 'haptics.dart';
 import 'locale_controller.dart';
 
 /// Drawing a shape straight onto the home screen.
@@ -253,14 +254,20 @@ Future<void> handleHomeStroke(
     case StrokeVerdict.notAShape:
       return;
     case StrokeVerdict.unknown:
+      Haptics.fire(HapticEvent.reject);
       _flash(context, s.gestureNotRecognized);
       return;
     case StrokeVerdict.ambiguous:
+      Haptics.fire(HapticEvent.reject);
       _flash(context, s.gestureAmbiguous);
       return;
     case StrokeVerdict.match:
       final shortcut = controller.byId(result.id!);
       if (shortcut == null) return;
+      // Before the action runs, not after: a drawing that opens an app has
+      // the launcher leaving the screen as its next event, and a buzz that
+      // lands after the app is up reads as the app's, not the shape's.
+      Haptics.fire(HapticEvent.confirm);
       final outcome = await runGestureAction(
         context,
         shortcut.action,

@@ -173,6 +173,21 @@ class WebAppsController extends ValueNotifier<List<WebApp>> {
     return true;
   }
 
+  /// Puts a picture back from a backup - see
+  /// [AppOverridesController.restoreIcon] for why the bytes travel and the
+  /// path does not.
+  Future<void> restoreIcon(String id, File file) async {
+    if (byId(id) == null) return;
+    await deleteStoredImage(byId(id)?.iconPath);
+    await _replace(id, (app) => WebApp(
+      id: app.id,
+      name: app.name,
+      url: app.url,
+      iconPath: file.path,
+      browserPackage: app.browserPackage,
+    ));
+  }
+
   /// Deletes a web app, unpinning it so it doesn't keep occupying one of the
   /// home screen's slots invisibly. Folders holding it skip it on their own.
   Future<void> remove(String id) async {

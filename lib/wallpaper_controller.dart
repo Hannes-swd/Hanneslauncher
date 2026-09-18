@@ -92,6 +92,22 @@ class WallpaperController extends ValueNotifier<Wallpaper?> {
     }
   }
 
+  /// Makes an already-saved file the wallpaper, without a picker.
+  ///
+  /// What a restore needs: the backup carries the picture's bytes, the
+  /// caller has written them somewhere durable, and all that is left is the
+  /// same bookkeeping [pickAndSet] does afterwards - persist the path, swap
+  /// the value, throw the old file away.
+  Future<void> restoreFile(File file) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefsKey, file.path);
+    final previous = value;
+    value = Wallpaper.of(file);
+    if (previous != null && previous.file.path != file.path) {
+      await _discard(previous);
+    }
+  }
+
   Future<void> clear() async {
     final current = value;
     final prefs = await SharedPreferences.getInstance();

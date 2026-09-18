@@ -330,8 +330,8 @@ void main() {
       ['com.example.diary'],
     );
 
-    // Typing on from there searches across both, in one alphabetical run
-    // rather than visible-then-secret.
+    // Typing on from there searches across both as one list, rather than
+    // running the visible ones and then appending the hidden ones.
     final both = searchResults(
       query: 'a',
       visible: visible,
@@ -340,7 +340,18 @@ void main() {
     ).map((entry) => entry.name).toList();
     expect(both, contains('Diary'));
     expect(both, contains('Mail'));
-    expect(both, orderedEquals([...both]..sort()));
+
+    // The order is the match order (see entry_match.dart), and it is decided
+    // per name with no regard for which of the two lists a name came out of.
+    // Checked by asking for a hidden app by name: if the two lists were
+    // being concatenated, it could never come first.
+    final byName = searchResults(
+      query: 'diar',
+      visible: visible,
+      secret: secret,
+      sortMode: AppListSortMode.alphabetical,
+    ).map((entry) => entry.name).toList();
+    expect(byName.first, 'Diary');
   });
 
   test('the most-used app is not reported while it is secret', () async {

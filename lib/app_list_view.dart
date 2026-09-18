@@ -7,15 +7,20 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import 'app_icon.dart';
+import 'app_launcher.dart';
 import 'app_list_settings_controller.dart';
 import 'app_strings.dart';
 import 'clock_settings_controller.dart';
 import 'clock_widget.dart';
 import 'custom_colors_controller.dart';
 import 'design_tokens.dart';
+import 'entry_match.dart';
 import 'folder_sheet.dart';
 import 'gesture_home_layer.dart';
 import 'gesture_shortcuts_controller.dart';
+import 'haptics.dart';
+import 'home_reset.dart';
+import 'installed_packages_watch.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
@@ -23,6 +28,7 @@ import 'notification_badges_controller.dart';
 import 'pinned_apps_controller.dart';
 import 'pinned_quick_actions.dart';
 import 'secret_apps_controller.dart';
+import 'widget_search_service.dart';
 
 /// What the search lists: every visible entry whose name contains [query],
 /// plus the [secret] ones - which are empty until the folder's password has
@@ -40,23 +46,50 @@ List<LauncherEntry> searchResults({
   // Straight after the password (the field is cleared then) the hidden apps
   // are the answer on their own: mixing them into all several hundred
   // installed ones would mean hunting for them.
-  final results = secret.isNotEmpty && needle.isEmpty
-      ? [...secret]
-      : [
-          for (final entry in [...visible, ...secret])
-            if (needle.isEmpty || entry.name.toLowerCase().contains(needle))
-              entry,
-        ];
+  if (secret.isNotEmpty && needle.isEmpty) {
+    // Alphabetical, like the list they were taken out of: the two halves are
+    // each sorted on their own, and one of them shown alone is still a list
+    // somebody has to find something in.
+    return [...secret]
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  }
+
+  final all = [...visible, ...secret];
+  if (needle.isEmpty) {
+    final results = [...all];
+    if (sortMode == AppListSortMode.newestFirst) {
+      results.sort((a, b) => b.addedAt.compareTo(a.addedAt));
+    } else if (secret.isNotEmpty) {
+      // Each list is alphabetical on its own, but stuck together they
+      // aren't.
+      results.sort(
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      );
+    }
+    return results;
+  }
+
+  // Scored rather than filtered - see entry_match.dart for what the score
+  // means. Sorting by name once something has been typed puts "Adobe
+  // Acrobat" above "Acrobat" for the query "acro", which is the wrong way
+  // round every time.
+  final scored = <({LauncherEntry entry, int score})>[];
+  for (final entry in all) {
+    final score = rankName(entry.name, needle);
+    if (score != null) scored.add((entry: entry, score: score));
+  }
 
   if (sortMode == AppListSortMode.newestFirst) {
-    results.sort((a, b) => b.addedAt.compareTo(a.addedAt));
-  } else if (secret.isNotEmpty) {
-    // Each list is alphabetical on its own, but stuck together they aren't.
-    results.sort(
-      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-    );
+    // The chosen order still wins - it is a setting, not a suggestion - but
+    // only among things that matched at all.
+    scored.sort((a, b) => b.entry.addedAt.compareTo(a.entry.addedAt));
+  } else {
+    scored.sort((a, b) {
+      if (a.score != b.score) return b.score - a.score;
+      return a.entry.name.toLowerCase().compareTo(b.entry.name.toLowerCase());
+    });
   }
-  return results;
+  return [for (final hit in scored) hit.entry];
 }
 
 /// Full app list for the home screen with an A-Z index bar on the right.
@@ -194,6 +227,8 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     // for, so this is where the saved ones are read.
     GestureShortcutsController.instance.load();
     GestureDrawingController.instance.load();
+    homeResetSignal.addListener(_onHomeReset);
+    _watchInstalledPackages();
     // The home screen is the only place a badge is drawn, so this is where
     // the counting starts - and stops again the moment it isn't visible.
     NotificationCounts.instance.setVisible(true);
@@ -229,18 +264,27 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     _listScrollController.dispose();
     _bubblePosition.dispose();
     _strokeTrail.dispose();
+    homeResetSignal.removeListener(_onHomeReset);
+    _packagesSubscription?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
   }
 
-  // The home screen typically stays alive in the background rather than
-  // restarting, so a freshly installed (or uninstalled) app would otherwise
-  // never show up until hanneslauncher itself is restarted.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      LauncherEntriesController.instance.load();
+      // Deliberately *not* a reload of the app list any more. This runs
+      // after every app the user opens and closes, and the reload it used to
+      // do read every installed app with its icon - megabytes of bitmaps
+      // over the platform channel, several times an hour, almost always to
+      // find that nothing had changed. Android reports installs and removals
+      // instead; see installed_packages_watch.dart.
+      //
+      // The one case that left behind: a phone that refuses the receiver
+      // registration. [_packagesWatchWorking] stays false there, and the old
+      // behaviour comes back for it alone.
+      if (!_packagesWatchWorking) LauncherEntriesController.instance.load();
       // Notifications arrive while another app is in front, so coming back
       // is exactly the moment the badges are most likely to be stale.
       NotificationCounts.instance.setVisible(true);
@@ -343,6 +387,23 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
         ? _targetIndexFor(letter, localDy, draggedOut)
         : null;
     _updateAutoScroll(targeting ? localDy : null);
+    // The bar is a scrubber, and a scrubber that moves in steps without
+    // saying so is the one interaction here that the eye has to keep
+    // checking. One tick per step is what turns it into something the
+    // finger can work on its own.
+    //
+    // Crossing out of the bar into row-targeting is a change of mode rather
+    // than another step, so it gets its own, heavier sensation - otherwise
+    // the moment the drag starts meaning something different is the only
+    // moment that feels like nothing.
+    if (targeting != _wasTargeting) {
+      _wasTargeting = targeting;
+      Haptics.fire(HapticEvent.snap);
+    } else if (targeting) {
+      Haptics.selectionChanged(_targetAppIndex, target);
+    } else {
+      Haptics.selectionChanged(_activeLetter, letter);
+    }
     if (letter != _activeLetter || target != _targetAppIndex) {
       // Stays synchronous: the release handler reads _targetAppIndex right
       // away to decide what to launch, so it must always reflect the latest
@@ -352,6 +413,82 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
         _targetAppIndex = target;
       });
     }
+  }
+
+  // Whether the last scrub was already past [_listTargetThreshold]. Only the
+  // crossing is interesting, not the state, so it lives here rather than in
+  // the build state.
+  bool _wasTargeting = false;
+
+  /// Whether Android is telling us about installs, which is what makes the
+  /// reload-on-resume above unnecessary. False until proven otherwise, so a
+  /// phone where the receiver never registers keeps working the old way
+  /// rather than quietly showing a stale list forever.
+  bool _packagesWatchWorking = false;
+  StreamSubscription<void>? _packagesSubscription;
+
+  Future<void> _watchInstalledPackages() async {
+    _packagesSubscription = InstalledPackagesWatch.instance.changes.listen((_) {
+      LauncherEntriesController.instance.load();
+    });
+    final missed = await InstalledPackagesWatch.instance.start();
+    if (!mounted) return;
+    // Null means the platform never answered - see the doc on start(). The
+    // fallback has to stay on for that phone, or its app list would never
+    // notice an install again.
+    if (missed == null) return;
+    _packagesWatchWorking = true;
+    // Something was installed while the engine was starting up. The list
+    // read in initState was taken before that, so it is already wrong.
+    if (missed) LauncherEntriesController.instance.load();
+  }
+
+  /// Everything the search found that isn't an entry: a sum, a setting, a
+  /// contact, the web row. Recomputed off the typed text rather than built
+  /// during the build, because two of the four can take a moment - the
+  /// contacts go through a platform channel - and a list that rebuilds at
+  /// keystroke speed cannot wait on that.
+  List<SearchHit> _extraHits = const [];
+
+  /// Which query [_extraHits] belongs to. Answers arriving out of order is
+  /// the ordinary case here, not an edge one: two keystrokes start two
+  /// lookups and the slower one can land last while holding older results.
+  String _extraHitsQuery = '';
+
+  Future<void> _updateExtraHits(String query) async {
+    final settings = _settings;
+    if (query.isEmpty ||
+        (!settings.searchExtras &&
+            !settings.searchContacts &&
+            settings.searchWebUrl.trim().isEmpty)) {
+      if (_extraHits.isEmpty) return;
+      setState(() {
+        _extraHits = const [];
+        _extraHitsQuery = '';
+      });
+      return;
+    }
+
+    final hits = await runSearch(
+      query: query,
+      s: AppStrings(LocaleController.instance.value),
+      calculation: settings.searchExtras,
+      // Never here: the entry rows above already are the apps, in the
+      // ranking this screen's own list uses. Asking for them again would
+      // print every app twice.
+      apps: false,
+      settings: settings.searchExtras,
+      contacts: settings.searchContacts,
+      webSearchUrl: settings.searchWebUrl,
+      limit: 5,
+    );
+    if (!mounted || _searchController.text.trim().toLowerCase() != query) {
+      return;
+    }
+    setState(() {
+      _extraHits = hits;
+      _extraHitsQuery = query;
+    });
   }
 
   void _resetScroll() {
@@ -437,13 +574,18 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
 
   /// Launches an entry, or - for a folder or one of the launcher's own
   /// screens - opens that on top instead.
-  void _open(LauncherEntry entry) {
+  ///
+  /// [from] is where on screen the tap landed, so the app can be grown out
+  /// of the icon that started it. Null for a release off the alphabet bar:
+  /// there the finger is over the list, not over an icon, and an app growing
+  /// out of a row it was never on is worse than no animation at all.
+  void _open(LauncherEntry entry, {Rect? from}) {
     if (entry.isFolder) {
       showFolderSheet(context, entry.folder!);
     } else if (entry.isBuiltIn) {
       openBuiltIn(context, entry.builtIn!);
     } else {
-      _launch(entry);
+      _launch(entry, from: from);
     }
   }
 
@@ -451,9 +593,9 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
   /// came from is free to drop it, and Android stops handing them out the
   /// moment another launcher becomes the home app. Both leave a tap looking
   /// ignored unless it is said out loud.
-  Future<void> _launch(LauncherEntry entry) async {
+  Future<void> _launch(LauncherEntry entry, {Rect? from}) async {
     final messenger = ScaffoldMessenger.of(context);
-    if (await entry.launch()) return;
+    if (await entry.launch(from: from)) return;
     messenger.showSnackBar(
       SnackBar(
         content: Text(AppStrings(LocaleController.instance.value)
@@ -827,6 +969,10 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
           : LauncherEntriesController.instance.secretEntries(unlock),
       sortMode: _settings.sortMode,
     );
+    // Only shown while they belong to what is currently typed. Without that
+    // check, backspacing would leave the previous query's answer standing
+    // under the new results until the next lookup lands.
+    final extras = _extraHitsQuery == query ? _extraHits : const <SearchHit>[];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -894,7 +1040,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
           ),
         ),
         Expanded(
-          child: results.isEmpty
+          child: results.isEmpty && extras.isEmpty
               ? Center(
                   child: Text(
                     s.noSearchResults,
@@ -902,13 +1048,40 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
                   ),
                 )
               : ListView.builder(
-                  itemCount: results.length,
+                  // The apps first, then whatever else was found. The order
+                  // is by how sure a hit is, which is the same rule the
+                  // search element on the panel goes by: an app matched by
+                  // name is unambiguous, a sum has one right answer but was
+                  // probably not what a launcher search was opened for, and
+                  // the web row is the fallback that always applies.
+                  itemCount: results.length + extras.length,
                   itemBuilder: (context, index) {
+                    if (index >= results.length) {
+                      final hit = extras[index - results.length];
+                      return _ExtraHitRow(
+                        hit: hit,
+                        color: _settings.color,
+                        fontSize: _settings.fontSize,
+                        height: _settings.rowHeight,
+                        onTap: () {
+                          // The calculation row opens nothing - its answer
+                          // is the whole point - so the search stays put
+                          // for it and closes for everything else.
+                          if (hit.kind == SearchHitKind.calculation) return;
+                          final target = context;
+                          _closeSearch();
+                          hit.onTap(target);
+                        },
+                      );
+                    }
                     final entry = results[index];
                     return GestureDetector(
                       onTap: () {
+                        // Read before the search closes: once it is gone the
+                        // row is out of the tree and has no rectangle left.
+                        final from = AppLauncher.boundsOf(context);
                         _closeSearch();
-                        _open(entry);
+                        _open(entry, from: from);
                       },
                       // The way to reach an app's own shortcuts without
                       // pinning it first: the search is one gesture from the
@@ -939,6 +1112,9 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
       }
     }
     setState(() {});
+    // The entry rows above come out of a plain function and are on screen in
+    // this frame; these can take a channel round trip, so they follow.
+    _updateExtraHits(_searchController.text.trim().toLowerCase());
   }
 
   void _closeSearch() {
@@ -949,6 +1125,26 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     setState(() {
       _searchMode = false;
       _searchController.clear();
+      _extraHits = const [];
+      _extraHitsQuery = '';
+    });
+  }
+
+  /// The home button, pressed while this screen was already the one showing.
+  ///
+  /// Puts the list back to how it looks when the home screen is arrived at
+  /// rather than returned to: no search open, nothing scrolled, no letter
+  /// held. Silent when there was nothing to undo - a home press on an
+  /// already-clean home screen should feel like nothing happened, because
+  /// nothing did.
+  void _onHomeReset() {
+    final hadSomething = _searchMode || _scrollOffset > 0;
+    if (_searchMode) _closeSearch();
+    _resetScroll();
+    if (!mounted || !hadSomething) return;
+    setState(() {
+      _activeLetter = null;
+      _targetAppIndex = null;
     });
   }
 
@@ -992,12 +1188,20 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
                 for (final entry in pinnedApps)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: GestureDetector(
-                      onTap: () => _open(entry),
-                      // Long press edits the pin itself (icon, or a folder's
-                      // color) instead of opening it.
-                      onLongPress: () => showPinnedQuickActions(context, entry),
-                      child: _PinnedIcon(entry: entry, badge: badge),
+                    // Its own Builder so the context below belongs to this
+                    // one icon rather than to the whole column - the
+                    // rectangle handed to Android has to be the icon that
+                    // was actually tapped.
+                    child: Builder(
+                      builder: (context) => GestureDetector(
+                        onTap: () =>
+                            _open(entry, from: AppLauncher.boundsOf(context)),
+                        // Long press edits the pin itself (icon, or a
+                        // folder's color) instead of opening it.
+                        onLongPress: () =>
+                            showPinnedQuickActions(context, entry),
+                        child: _PinnedIcon(entry: entry, badge: badge),
+                      ),
                     ),
                   ),
               ],
@@ -1306,6 +1510,84 @@ class _LetterBubble extends StatelessWidget {
         fontSize: 32,
         fontWeight: FontWeight.bold,
         color: textColor,
+      ),
+    );
+  }
+}
+
+/// One row of the search that isn't an app: a sum, a setting, a contact, the
+/// web fallback.
+///
+/// Drawn like the app rows next to it - same colour, same font, same height,
+/// set from the app list's own settings - because it is the same list. The
+/// difference is one glyph in place of the icon, and a second line saying
+/// where the row leads, which is what keeps "Music" the app and "Music" the
+/// setting apart at a glance.
+class _ExtraHitRow extends StatelessWidget {
+  const _ExtraHitRow({
+    required this.hit,
+    required this.color,
+    required this.fontSize,
+    required this.height,
+    required this.onTap,
+  });
+
+  final SearchHit hit;
+  final Color color;
+  final double fontSize;
+  final double height;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox(
+        height: height,
+        child: Row(
+          children: [
+            const SizedBox(width: 16),
+            SizedBox(
+              width: 48,
+              // Two thirds of the type size, the same relation the icons in
+              // the rows above end up at - a glyph set to the full line
+              // height reads as louder than the app icons, which it is not.
+              child: Icon(hit.icon, color: color, size: fontSize * 1.4),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    hit.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: color, fontSize: fontSize),
+                  ),
+                  if (hit.subtitle.isNotEmpty)
+                    Text(
+                      hit.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        // The same colour at two thirds opacity rather than
+                        // a grey: this sits on the wallpaper, where a fixed
+                        // grey disappears against half the pictures there
+                        // are.
+                        color: color.withValues(alpha: 0.66),
+                        fontSize: fontSize * 0.78,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+          ],
+        ),
       ),
     );
   }

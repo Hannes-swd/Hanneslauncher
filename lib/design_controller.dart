@@ -24,6 +24,7 @@ class DesignController extends ValueNotifier<DesignSettings> {
   static const _fontKey = 'design_font';
   static const _opacityKey = 'design_opacity';
   static const _motionKey = 'design_motion';
+  static const _hapticsKey = 'design_haptics';
 
   /// One key per role rather than one encoded blob, so a single color can be
   /// removed again (back to what the preset says) by deleting its key.
@@ -47,6 +48,7 @@ class DesignController extends ValueNotifier<DesignSettings> {
       font: prefs.getDouble(_fontKey),
       opacity: prefs.getDouble(_opacityKey),
       motion: prefs.getDouble(_motionKey),
+      haptics: prefs.getDouble(_hapticsKey),
     );
   }
 
@@ -62,6 +64,7 @@ class DesignController extends ValueNotifier<DesignSettings> {
     await prefs.setDouble(_fontKey, newValue.font);
     await prefs.setDouble(_opacityKey, newValue.opacity);
     await prefs.setDouble(_motionKey, newValue.motion);
+    await prefs.setDouble(_hapticsKey, newValue.haptics);
     for (final role in DesignColorRole.values) {
       final color = newValue.overrides[role];
       if (color == null) {

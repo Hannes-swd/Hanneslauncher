@@ -14,6 +14,7 @@ import 'locale_controller.dart';
 import 'location_controller.dart';
 import 'note_block_settings_screen.dart';
 import 'note_editor_screen.dart';
+import 'notifications_block_settings_screen.dart';
 import 'panel_block_card.dart';
 import 'panel_blocks_controller.dart';
 import 'settings_screen.dart';
@@ -162,6 +163,20 @@ class _PanelViewState extends State<PanelView> {
               ),
             ),
             SimpleDialogOption(
+              onPressed: () =>
+                  Navigator.of(context).pop(PanelBlockType.notifications),
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.notifications_none),
+                // Just the name. What the block does, and the part about
+                // what it reads and does not keep, is worth a paragraph -
+                // and a paragraph in a list you are picking from is only in
+                // the way. It is on the block's own screen instead, which is
+                // where somebody is actually reading rather than choosing.
+                title: Text(s.notifications),
+              ),
+            ),
+            SimpleDialogOption(
               onPressed: () => Navigator.of(context).pop(PanelBlockType.code),
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -215,6 +230,12 @@ class _PanelViewState extends State<PanelView> {
             builder: (context) => NoteEditorScreen(blockId: block.id),
           ),
         );
+      case PanelBlockType.notifications:
+        final block = await controller.addNotifications();
+        if (!mounted) return;
+        // Straight into settings: this is also where the notification
+        // access gets asked for, if it isn't granted yet.
+        await _edit(block);
       case PanelBlockType.code:
         // The template picker creates the block, so nothing is added here
         // when it is dismissed - an empty code widget on the panel would be
@@ -239,6 +260,8 @@ class _PanelViewState extends State<PanelView> {
       PanelBlockType.notes => (context) => NoteBlockSettingsScreen(
         blockId: block.id,
       ),
+      PanelBlockType.notifications => (context) =>
+          NotificationsBlockSettingsScreen(blockId: block.id),
       PanelBlockType.code => (context) => CodeWidgetEditorScreen(
         blockId: block.id,
       ),
