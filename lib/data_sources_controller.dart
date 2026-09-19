@@ -406,6 +406,55 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
     ];
   }
 
+  /// The built-in placeholders that cannot answer without a position, under
+  /// both spellings.
+  ///
+  /// Whoever is about to draw these has to fetch a position first, and the
+  /// only thing that knows which ones they are is the switch in [_builtIn] -
+  /// so the list lives here, next to it, rather than in the panel that asks.
+  /// It was in the panel before, and it listed the four obvious ones and not
+  /// sunrise or sunset: a card showing nothing but `{{sonnenauf}}` never
+  /// caused a position to be fetched and showed a dash for good.
+  /// `test/location_placeholders_guard_test.dart` compares this list against
+  /// the switch in both directions, so the next one cannot be forgotten
+  /// either.
+  static const Set<String> locationBuiltInKeys = {
+    'ort',
+    'city',
+    'lat',
+    'lon',
+    'sonnenauf',
+    'sunrise',
+    'sonnenunter',
+    'sunset',
+  };
+
+  /// Whether anything in [template] needs a position before it can be
+  /// drawn.
+  ///
+  /// Reads the placeholders the same way [resolve] does rather than looking
+  /// for `'{{lat}}'` as a piece of text: [resolve] trims and understands
+  /// `|url`, so `{{ lat }}` and `{{lat|url}}` are placeholders it fills and
+  /// a plain substring test missed both.
+  static bool templateNeedsLocation(String template) {
+    for (final match in _placeholder.allMatches(template)) {
+      if (locationBuiltInKeys.contains(_keyOf(match.group(1)!))) return true;
+    }
+    return false;
+  }
+
+  /// The source key a `{{...}}` body addresses: the part before the first
+  /// dot, with any modifier and the spaces around it taken off.
+  static String _keyOf(String body) {
+    var reference = body.trim();
+    final pipe = reference.lastIndexOf('|');
+    if (pipe != -1 && reference.substring(pipe + 1).trim().toLowerCase() == 'url') {
+      reference = reference.substring(0, pipe).trim();
+    }
+    final dot = reference.indexOf('.');
+    return dot == -1 ? reference : reference.substring(0, dot);
+  }
+
   /// Whether `{{zeit}}` is written 24-hour. Mirrors the phone's own clock
   /// setting, so the card and the status bar never disagree; set from the
   /// widget tree, which is where that setting can be read.
@@ -453,29 +502,8 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
             ? '${now.year}-$month-$day'
             : '$day.$month.${now.year}';
       case 'wochentag' || 'weekday':
-        // DateTime.weekday is 1..7 starting on Monday.
-        const german = [
-          'Montag',
-          'Dienstag',
-          'Mittwoch',
-          'Donnerstag',
-          'Freitag',
-          'Samstag',
-          'Sonntag',
-        ];
-        const english = [
-          'Monday',
-          'Tuesday',
-          'Wednesday',
-          'Thursday',
-          'Friday',
-          'Saturday',
-          'Sunday',
-        ];
-        final names = LocaleController.instance.value == AppLanguage.en
-            ? english
-            : german;
-        return names[now.weekday - 1];
+        return AppStrings(LocaleController.instance.value)
+            .weekdayName(now.weekday);
       case 'akku' || 'battery':
         final percent = DeviceStatsController.instance.batteryPercent;
         return percent == null ? '-' : '$percent%';
@@ -601,17 +629,15 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
   String resolve(String template) {
     return template.replaceAllMapped(_placeholder, (match) {
       var reference = match.group(1)!.trim();
-      var encode = false;
       // Only a known modifier is stripped, so a `|` that is simply part of
       // a path stays part of it.
       final pipe = reference.lastIndexOf('|');
-      if (pipe != -1 &&
-          reference.substring(pipe + 1).trim().toLowerCase() == 'url') {
-        encode = true;
-        reference = reference.substring(0, pipe).trim();
-      }
+      final encode =
+          pipe != -1 &&
+          reference.substring(pipe + 1).trim().toLowerCase() == 'url';
+      if (encode) reference = reference.substring(0, pipe).trim();
+      final key = _keyOf(reference);
       final dot = reference.indexOf('.');
-      final key = dot == -1 ? reference : reference.substring(0, dot);
       final path = dot == -1 ? '' : reference.substring(dot + 1);
       final text = _format(valueOf(key, path));
       return encode ? Uri.encodeQueryComponent(text) : text;
@@ -641,8 +667,9 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
   ) async {
     final s = AppStrings(LocaleController.instance.value);
     // The URL goes through the same placeholders as the cards, so a source
-    // can follow the current position with `latitude={{lat}}`.
-    if (rawUrl.contains('{{lat}}') || rawUrl.contains('{{lon}}')) {
+    // can follow the current position with `latitude={{lat}}` - and asks
+    // the same question about it, rather than matching the text itself.
+    if (templateNeedsLocation(rawUrl)) {
       await LocationController.instance.ensureFresh();
       if (LocationController.instance.value == null) {
         final why = LocationController.instance.error;

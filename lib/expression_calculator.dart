@@ -1,5 +1,5 @@
-/// Works out `12*7`, `(3+4)/2`, `20% von 80` and the like, so a search
-/// field can answer a sum without leaving the launcher.
+/// Works out `12*7`, `(3+4)/2`, `20% von 80`, `100-20%` and the like, so a
+/// search field can answer a sum without leaving the launcher.
 ///
 /// Hand-written rather than pulled from a package: the grammar is four
 /// operators and a bracket, and a dependency for that would be more code to
@@ -10,8 +10,15 @@ library;
 
 import 'dart:math' as math;
 
+/// A time, not a sum. `:` is accepted as a division sign further down (it
+/// is how a division is written by hand), which turned every "12:30" typed
+/// into the search field into the answer 0.4. A one- or two-digit hour, a
+/// colon and exactly two digits is a clock, and nobody divides that way.
+final RegExp _clockTime = RegExp(r'^\d{1,2}:\d{2}(:\d{2})?$');
+
 /// The result of a sum, formatted the way it should be read.
 String? calculateExpression(String input) {
+  if (_clockTime.hasMatch(input.trim())) return null;
   final tokens = _tokenize(input);
   if (tokens == null) return null;
   // A bare number is not a sum. Without this every "2" typed while looking
@@ -136,21 +143,42 @@ class _Parser {
       if (token is! _OperatorToken) return left;
       if (token.symbol != '+' && token.symbol != '-') return left;
       _at++;
+      // Where the right-hand side starts, so that once it has been parsed
+      // it can be asked whether it was nothing but "20%".
+      final from = _at;
       final right = _parseTerm();
       if (right == null) return null;
-      left = token.symbol == '+' ? left! + right : left! - right;
+      // "100 - 20%" is twenty percent *of the hundred*, not the number 0.2 -
+      // which is what every pocket calculator does and what anybody typing
+      // it means. Only for a percentage standing entirely on its own:
+      // "100 - 20% * 3" has done something else with the percentage and is
+      // left alone.
+      final share = _barePercentBetween(from, _at);
+      final value = share == null ? right : left! * share;
+      left = token.symbol == '+' ? left! + value : left! - value;
     }
   }
 
+  /// The fraction a run of tokens stands for when it is exactly a number
+  /// followed by a percent sign, and null for anything else.
+  double? _barePercentBetween(int from, int to) {
+    if (to - from != 2) return null;
+    final number = _tokens[from];
+    final percent = _tokens[from + 1];
+    if (number is! _NumberToken) return null;
+    if (percent is! _OperatorToken || percent.symbol != '%') return null;
+    return number.value / 100;
+  }
+
   double? _parseTerm() {
-    var left = _parsePower();
+    var left = _parseUnary();
     if (left == null) return null;
     while (true) {
       final token = _current;
       if (token is! _OperatorToken) return left;
       if (token.symbol != '*' && token.symbol != '/') return left;
       _at++;
-      final right = _parsePower();
+      final right = _parseUnary();
       if (right == null) return null;
       // Dividing by zero gives infinity, which calculateExpression drops -
       // an answer of "Infinity" would look like the sum worked.
@@ -158,20 +186,8 @@ class _Parser {
     }
   }
 
-  double? _parsePower() {
-    final base = _parseUnary();
-    if (base == null) return null;
-    final token = _current;
-    if (token is _OperatorToken && token.symbol == '^') {
-      _at++;
-      // Right-associative, so 2^3^2 is 2^9 and not 8^2.
-      final exponent = _parsePower();
-      if (exponent == null) return null;
-      return _pow(base, exponent);
-    }
-    return base;
-  }
-
+  /// A leading sign, above the power rather than below it: `-2^2` is
+  /// -(2^2) = -4, the way it is written everywhere else, and not (-2)^2 = 4.
   double? _parseUnary() {
     final token = _current;
     if (token is _OperatorToken && (token.symbol == '-' || token.symbol == '+')) {
@@ -180,11 +196,27 @@ class _Parser {
       if (value == null) return null;
       return token.symbol == '-' ? -value : value;
     }
-    return _parsePercent();
+    return _parsePower();
+  }
+
+  double? _parsePower() {
+    final base = _parsePercent();
+    if (base == null) return null;
+    final token = _current;
+    if (token is _OperatorToken && token.symbol == '^') {
+      _at++;
+      // The exponent goes back through the sign, so `2^-3` works; and
+      // right-associative, so 2^3^2 is 2^9 and not 8^2.
+      final exponent = _parseUnary();
+      if (exponent == null) return null;
+      return _pow(base, exponent);
+    }
+    return base;
   }
 
   /// A percent sign after a number turns it into a hundredth, so "20% * 80"
-  /// - which is what "20% von 80" becomes - is 16.
+  /// - which is what "20% von 80" becomes - is 16. Next to a plus or a
+  /// minus it means something else again; [parseExpression] handles that.
   double? _parsePercent() {
     final value = _parseAtom();
     if (value == null) return null;

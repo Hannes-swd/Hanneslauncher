@@ -75,7 +75,10 @@ class NotificationsController extends ValueNotifier<List<WaitingNotification>> {
       value = const [];
       return;
     }
-    final secret = SecretAppsController.instance.value;
+    // Awaited, not read: the panel can be pulled down before the secret
+    // list has been read off disk, and this is the one path in the app that
+    // shows a notification's text rather than only counting it.
+    final secret = await SecretAppsController.instance.loadedKeys();
     final waiting = <WaitingNotification>[];
     for (final row in rows) {
       if (row is! Map) continue;

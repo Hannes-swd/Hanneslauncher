@@ -51,10 +51,20 @@ double _approxTransit(double ht, double lw, double n) =>
 double _solarTransitJ(double ds, double m, double l) =>
     _j2000 + ds + 0.0053 * math.sin(m) - 0.0069 * math.sin(2 * l);
 
-double _hourAngle(double h, double phi, double d) {
+/// Half the length of the day at altitude [h], in radians - the angle the
+/// earth still has to turn between sunrise and solar noon.
+///
+/// Null when there is no such angle: at a high enough latitude the sun can
+/// stay above the horizon all day or below it all day, and then the cosine
+/// this comes from lands outside [-1, 1] and has no arccosine. That case is
+/// a polar day or night rather than an error, so it is returned rather than
+/// clamped away - clamping it would answer "sunrise at noon" for a day that
+/// has no sunrise at all.
+double? _hourAngle(double h, double phi, double d) {
   final cosH =
       (math.sin(h) - math.sin(phi) * math.sin(d)) / (math.cos(phi) * math.cos(d));
-  return math.acos(cosH.clamp(-1.0, 1.0));
+  if (cosH < -1 || cosH > 1) return null;
+  return math.acos(cosH);
 }
 
 /// Computes today's sunrise/sunset for the given position. Both fields are
@@ -71,17 +81,14 @@ SunTimes sunTimesFor(DateTime date, double latitude, double longitude) {
   final dec = _declination(l);
   final jNoon = _solarTransitJ(ds, m, l);
 
+  // The centre of the sun 0.833 degrees below the horizon: half a degree of
+  // the disc's own radius, plus the refraction that lifts the image of it.
   const h0 = -0.833 * _rad;
-  final cosH =
-      (math.sin(h0) - math.sin(phi) * math.sin(dec)) /
-      (math.cos(phi) * math.cos(dec));
-  if (cosH < -1 || cosH > 1) {
-    // The sun stays above (cosH < -1) or below (cosH > 1) the horizon all
-    // day at this latitude/date.
-    return const SunTimes();
-  }
-
   final w = _hourAngle(h0, phi, dec);
+  // No hour angle means the sun never crosses that altitude today - a polar
+  // day or a polar night, depending on which side it stays on.
+  if (w == null) return const SunTimes();
+
   final a = _approxTransit(w, lw, n);
   final jSet = _solarTransitJ(a, m, l);
   final jRise = jNoon - (jSet - jNoon);

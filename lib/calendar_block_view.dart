@@ -4,7 +4,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'app_strings.dart';
 import 'calendar_controller.dart';
 import 'design_tokens.dart';
-import 'locale_controller.dart';
 import 'panel_blocks_controller.dart';
 import 'system_app_launcher.dart';
 
@@ -173,28 +172,7 @@ class _CalendarBlockViewState extends State<CalendarBlockView> {
     final diff = day.difference(todayDate).inDays;
     if (diff == 0) return s.today;
     if (diff == 1) return s.tomorrow;
-    const weekdaysDe = [
-      'Montag',
-      'Dienstag',
-      'Mittwoch',
-      'Donnerstag',
-      'Freitag',
-      'Samstag',
-      'Sonntag',
-    ];
-    const weekdaysEn = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
-    final names = LocaleController.instance.value == AppLanguage.en
-        ? weekdaysEn
-        : weekdaysDe;
-    final weekday = names[day.weekday - 1];
+    final weekday = s.weekdayName(day.weekday);
     final date =
         '${day.day.toString().padLeft(2, '0')}.'
         '${day.month.toString().padLeft(2, '0')}.';

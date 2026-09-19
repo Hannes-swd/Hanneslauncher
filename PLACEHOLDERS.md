@@ -41,15 +41,26 @@ in der Datenquellen-Liste; antippen zeigt die aktuellen Werte live und den
 | `{{speicher_frei}}` | Freier interner Speicher in GB | keine |
 | `{{speicher_gesamt}}` | Gesamter interner Speicher in GB | keine |
 | `{{verbindung}}` | "WLAN" / "Mobil" / "Ethernet" / "Andere" / "Kein Netz" | keine |
-| `{{sonnenauf}}` | Sonnenaufgang heute, am Standort | keine (nutzt `{{ort}}`s Koordinaten) |
-| `{{sonnenunter}}` | Sonnenuntergang heute | keine |
+| `{{sonnenauf}}` | Sonnenaufgang heute, am Standort | Standort |
+| `{{sonnenunter}}` | Sonnenuntergang heute, am Standort | Standort |
 | `{{mondphase}}` | Mondphase als Emoji (🌑🌒🌓🌔🌕🌖🌗🌘) | keine |
-| `{{schritte}}` | Schritte seit Mitternacht | Aktivitätserkennung (Systemdialog) |
+| `{{schritte}}` | Schritte heute (siehe unten) | Aktivitätserkennung (Systemdialog) |
 | `{{meistgenutzt}}` | Name der App mit der meisten Nutzungszeit heute | "Nutzungszugriff" (manuell in den Android-Einstellungen) |
 
-Sonnenauf-/-untergang und Mondphase sind reine Berechnung (keine
-Internetverbindung, kein Standort-Zugriff über das ohnehin schon
-vorhandene `{{ort}}` hinaus nötig).
+Sonnenauf-/-untergang und Mondphase sind reine Berechnung — keine
+Internetverbindung. Die Mondphase braucht auch keinen Standort; Sonnenauf-
+und -untergang brauchen einen, und zwar denselben, den `{{ort}}` benutzt:
+steht auf einer Karte nur `{{sonnenauf}}` und sonst nichts Ortsbezogenes,
+wird die Position trotzdem geholt.
+
+`{{schritte}}` zählt so nah an Mitternacht, wie der Sensor es hergibt.
+Android liefert nur einen Gesamtstand seit dem letzten Neustart, nie einen
+Verlauf — die App merkt sich deshalb bei jedem Blick auf das Panel den
+aktuellen Stand und zieht am nächsten Tag den letzten Wert von *vor*
+Mitternacht ab. Was dazwischen liegt (üblicherweise eine Nacht Schlaf),
+fehlt. Ein Neustart des Handys setzt den Sensor auf null zurück; danach
+wird ab dem Neustart gezählt, die Schritte davor sind für den Sensor
+nicht mehr vorhanden.
 
 ## Eigene Datenquellen (APIs)
 

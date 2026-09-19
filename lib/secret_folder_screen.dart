@@ -42,7 +42,7 @@ Future<void> openSecretFolder(BuildContext context) async {
     return;
   }
 
-  final unlock = controller.unlock(result.password);
+  final unlock = await controller.unlock(result.password);
   if (!context.mounted) return;
   if (unlock == null) {
     _say(context, s.wrongPassword);
@@ -91,7 +91,9 @@ Future<void> _recover(BuildContext context, AppStrings s) async {
   );
   if (code == null || !context.mounted) return;
 
-  final unlock = SecretAppsController.instance.unlockWithRecoveryCode(code);
+  final unlock = await SecretAppsController.instance.unlockWithRecoveryCode(
+    code,
+  );
   if (!context.mounted) return;
   if (unlock == null) {
     _say(context, s.wrongRecoveryCode);

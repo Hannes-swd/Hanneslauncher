@@ -168,6 +168,17 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
   /// launcher going to the background.
   SecretUnlock? _searchUnlock;
 
+  /// Waits out the typing before what has been typed is tried as the
+  /// password.
+  ///
+  /// It used to be tried on the keystroke itself, which a single hash pass
+  /// could keep up with. Checking a password now costs a hundred thousand
+  /// of them - see [SecretAppsController] for why it has to - and one of
+  /// those per letter would be an isolate per letter, nearly all of them
+  /// for text that was never a password. One attempt per pause instead.
+  Timer? _unlockAttempt;
+  static const _unlockAttemptDelay = Duration(milliseconds: 350);
+
   // Scrolls the current letter's apps in single-column mode. Driven only by
   // the drag on the alphabet bar (the list itself is never touched directly,
   // it's only on screen while that drag lasts).
@@ -261,6 +272,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     AppListSettingsController.instance.removeListener(_onSettingsChanged);
     LauncherEntriesController.instance.removeListener(_onEntriesChanged);
     _autoScrollTimer?.cancel();
+    _unlockAttempt?.cancel();
     _listScrollController.dispose();
     _bubblePosition.dispose();
     _strokeTrail.dispose();
@@ -1102,23 +1114,41 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
   /// which is what keeps this invisible to someone who doesn't know the
   /// password - there is no button and no hint that it exists.
   void _onSearchChanged(String value) {
-    if (_searchUnlock == null) {
-      final unlock = SecretAppsController.instance.unlock(value.trim());
-      if (unlock != null) {
-        _searchUnlock = unlock;
-        // Cleared straight away: this field is not obscured, so the password
-        // must not stay standing in it.
-        _searchController.clear();
-      }
-    }
+    _scheduleUnlockAttempt(value.trim());
     setState(() {});
     // The entry rows above come out of a plain function and are on screen in
     // this frame; these can take a channel round trip, so they follow.
     _updateExtraHits(_searchController.text.trim().toLowerCase());
   }
 
+  /// Queues one attempt at the password for [typed], replacing any attempt
+  /// still waiting. Nothing is queued once the folder is already open, or
+  /// for an empty field.
+  void _scheduleUnlockAttempt(String typed) {
+    _unlockAttempt?.cancel();
+    if (_searchUnlock != null || typed.isEmpty) return;
+    _unlockAttempt = Timer(_unlockAttemptDelay, () => _tryUnlock(typed));
+  }
+
+  Future<void> _tryUnlock(String typed) async {
+    final unlock = await SecretAppsController.instance.unlock(typed);
+    if (unlock == null || !mounted) return;
+    // The derivation takes about a second, and in that second the field can
+    // have moved on - the password typed and then typed past is not an
+    // unlock, and clearing the field then would wipe out whatever is being
+    // searched for now.
+    if (_searchController.text.trim() != typed) return;
+    setState(() {
+      _searchUnlock = unlock;
+      // This field is not obscured, so the password must not stay standing
+      // in it.
+      _searchController.clear();
+    });
+  }
+
   void _closeSearch() {
     _searchFocusNode.unfocus();
+    _unlockAttempt?.cancel();
     // Closing the search closes the folder with it - the next search starts
     // locked again.
     _lockSecretApps();
@@ -1149,6 +1179,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
   }
 
   void _lockSecretApps() {
+    _unlockAttempt?.cancel();
     if (_searchUnlock == null) return;
     _searchUnlock = null;
     SecretAppsController.instance.lock();

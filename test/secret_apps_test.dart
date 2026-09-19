@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hanneslauncher/app_list_settings_controller.dart';
@@ -30,6 +33,13 @@ AppInfo _app(String name, String package) => AppInfo(
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  // The stored hash is deliberately expensive to compute - see
+  // SecretAppsController. None of these tests are about that cost, and at
+  // the real round count they would spend most of a second per password.
+  // Each test file runs in an isolate of its own, so lowering it here does
+  // not reach any other suite.
+  setUpAll(() => SecretAppsController.debugIterations = 1000);
 
   /// A fresh unlock for every test: the controller is a singleton, so a
   /// leftover one from the test before would let the next test pass without
@@ -87,8 +97,8 @@ void main() {
     expect(entries.secretEntries(unlock), isEmpty);
 
     // And a wrong password produces no token at all.
-    expect(SecretAppsController.instance.unlock('wrong'), isNull);
-    final again = SecretAppsController.instance.unlock('1234');
+    expect(await SecretAppsController.instance.unlock('wrong'), isNull);
+    final again = await SecretAppsController.instance.unlock('1234');
     expect(again, isNotNull);
     expect(entries.secretEntries(again!), hasLength(1));
     // The stale one stays worthless even though a later unlock succeeded.
@@ -105,7 +115,7 @@ void main() {
       isFalse,
     );
 
-    final fresh = SecretAppsController.instance.unlock('1234')!;
+    final fresh = (await SecretAppsController.instance.unlock('1234'))!;
     await SecretAppsController.instance.add(fresh, 'com.example.diary');
     expect(SecretAppsController.instance.contains('com.example.diary'), isTrue);
 
@@ -197,8 +207,8 @@ void main() {
     // A restore locks the folder, and the restored password is the one that
     // opens it again.
     expect(SecretAppsController.instance.isUnlocked, isFalse);
-    expect(SecretAppsController.instance.unlock('wrong'), isNull);
-    expect(SecretAppsController.instance.unlock('1234'), isNotNull);
+    expect(await SecretAppsController.instance.unlock('wrong'), isNull);
+    expect(await SecretAppsController.instance.unlock('1234'), isNotNull);
   });
 
   test('half a restored password leaves the folder without one', () async {
@@ -233,12 +243,12 @@ void main() {
     // Exported but not imported is the failure this catches - the folder would
     // silently come back empty and un-hide every app in it.
     expect(SecretAppsController.instance.contains('com.example.diary'), isTrue);
-    expect(SecretAppsController.instance.unlock('1234'), isNotNull);
+    expect(await SecretAppsController.instance.unlock('1234'), isNotNull);
     // And the recovery code has to come along too, or a restore would leave
     // the folder with no way back in.
     SecretAppsController.instance.lock();
     expect(
-      SecretAppsController.instance.unlockWithRecoveryCode(code),
+      await SecretAppsController.instance.unlockWithRecoveryCode(code),
       isNotNull,
     );
   });
@@ -250,7 +260,7 @@ void main() {
     SecretAppsController.instance.lock();
 
     expect(
-      SecretAppsController.instance.unlockWithRecoveryCode('NOPE'),
+      await SecretAppsController.instance.unlockWithRecoveryCode('NOPE'),
       isNull,
     );
 
@@ -258,7 +268,7 @@ void main() {
     // line break. All of that has to be accepted, or a code on paper is
     // worthless.
     final sloppy = code!.toLowerCase().replaceAll('-', ' ');
-    final recovered = SecretAppsController.instance.unlockWithRecoveryCode(
+    final recovered = await SecretAppsController.instance.unlockWithRecoveryCode(
       ' $sloppy\n',
     );
     expect(recovered, isNotNull);
@@ -270,8 +280,8 @@ void main() {
       isTrue,
     );
     SecretAppsController.instance.lock();
-    expect(SecretAppsController.instance.unlock('1234'), isNull);
-    expect(SecretAppsController.instance.unlock('neu'), isNotNull);
+    expect(await SecretAppsController.instance.unlock('1234'), isNull);
+    expect(await SecretAppsController.instance.unlock('neu'), isNotNull);
   });
 
   test('a new recovery code retires the one before it', () async {
@@ -282,11 +292,11 @@ void main() {
 
     SecretAppsController.instance.lock();
     expect(
-      SecretAppsController.instance.unlockWithRecoveryCode(first!),
+      await SecretAppsController.instance.unlockWithRecoveryCode(first!),
       isNull,
     );
     expect(
-      SecretAppsController.instance.unlockWithRecoveryCode(second!),
+      await SecretAppsController.instance.unlockWithRecoveryCode(second!),
       isNotNull,
     );
   });
@@ -298,6 +308,68 @@ void main() {
     // Otherwise the way in would be: ask for a code, read it, use it.
     expect(await SecretAppsController.instance.newRecoveryCode(unlock), isNull);
     expect(SecretAppsController.instance.hasRecoveryCode, isFalse);
+  });
+
+  group('how the password is stored', () {
+    test('a stored hash says what it cost, and is not the password', () async {
+      await reset();
+      final stored = SecretAppsController.instance.passwordHash!;
+      expect(stored, startsWith('pbkdf2\$1000\$'));
+      expect(stored, isNot(contains('1234')));
+    });
+
+    test('a password from before the stretching still opens the folder', () async {
+      // What an install from before this change left on disk: one pass of
+      // SHA-256 over 'salt:password', carrying no marker of any kind.
+      SharedPreferences.setMockInitialValues({});
+      SecretAppsController.instance.lock();
+      const salt = 'oldsalt';
+      final legacy = sha256.convert(utf8.encode('$salt:1234')).toString();
+      await SecretAppsController.instance.restore(
+        keys: const [],
+        hash: legacy,
+        salt: salt,
+      );
+
+      expect(await SecretAppsController.instance.unlock('wrong'), isNull);
+      expect(await SecretAppsController.instance.unlock('1234'), isNotNull);
+    });
+
+    test('and is rewritten in the new format the first time it is used', () async {
+      SharedPreferences.setMockInitialValues({});
+      SecretAppsController.instance.lock();
+      const salt = 'oldsalt';
+      final legacy = sha256.convert(utf8.encode('$salt:1234')).toString();
+      await SecretAppsController.instance.restore(
+        keys: const [],
+        hash: legacy,
+        salt: salt,
+      );
+
+      // The wrong password must not trigger the rewrite - there would be
+      // nothing to rewrite it from.
+      expect(await SecretAppsController.instance.unlock('nope'), isNull);
+      expect(SecretAppsController.instance.passwordHash, legacy);
+
+      expect(await SecretAppsController.instance.unlock('1234'), isNotNull);
+      expect(
+        SecretAppsController.instance.passwordHash,
+        startsWith('pbkdf2\$'),
+      );
+      // And the upgraded one opens it just the same, next time round.
+      SecretAppsController.instance.lock();
+      expect(await SecretAppsController.instance.unlock('1234'), isNotNull);
+    });
+
+    test('a hash keeps working after the round count changes', () async {
+      // The count a hash was written with travels with it, so raising the
+      // constant later must not lock anybody out.
+      await reset();
+      SecretAppsController.debugIterations = 2000;
+      addTearDown(() => SecretAppsController.debugIterations = 1000);
+      SecretAppsController.instance.lock();
+      expect(await SecretAppsController.instance.unlock('1234'), isNotNull);
+    });
   });
 
   test('the search lists the secret apps once the password is in', () async {

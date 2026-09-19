@@ -132,5 +132,17 @@ void main() {
     test('digits count as part of a word', () {
       expect(rankName('2FAS Auth', '2fas'), isNotNull);
     });
+
+    test('an accent is a letter, not a word boundary', () {
+      // The split used to name the letters it accepted, and the list was
+      // a-z plus the German ones - so "Pokemon" came apart at the e-acute
+      // into "pok" and "mon", and neither the word nor the initials worked.
+      expect(rankName('Pokémon GO', 'pokémon'), isNotNull);
+      expect(rankName('Pokémon GO', 'pg'), isNotNull);
+      expect(rankName('Señal', 'señal'), isNotNull);
+      expect(rankName('Café Rezepte', 'rezepte'), isNotNull);
+      // A whole name in another alphabet used to split into no words at all.
+      expect(rankName('Телеграм Мессенджер', 'мессенджер'), isNotNull);
+    });
   });
 }

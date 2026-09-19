@@ -139,8 +139,17 @@ class CalendarController extends ChangeNotifier {
     color: raw['color'] as int?,
   );
 
-  /// Every event across [calendarIds] (all calendars if empty) starting
-  /// within the next [days] days, earliest first.
+  /// Every event across [calendarIds] (all calendars if empty) that is still
+  /// to come or still running within the next [days] days, earliest first.
+  ///
+  /// The query window has to start at midnight rather than at *now*: an
+  /// event that began yesterday evening and runs into this afternoon is
+  /// still happening and has to be found, and Android only hands back the
+  /// instances overlapping the window it is given. The same window also
+  /// hands back everything earlier today that is long over, so what is past
+  /// is dropped here - a block titled "upcoming", whose empty state says
+  /// "no upcoming events", cannot lead with this morning's meeting until
+  /// midnight.
   Future<List<CalendarEvent>> upcomingEvents({
     required List<String> calendarIds,
     required int days,
@@ -157,15 +166,42 @@ class CalendarController extends ChangeNotifier {
         'start': start.millisecondsSinceEpoch,
         'end': end.millisecondsSinceEpoch,
       });
-      final events = [
-        for (final entry in raw ?? const []) _eventFrom(entry as Map),
-      ];
+      final events = <CalendarEvent>[];
+      for (final entry in raw ?? const []) {
+        final event = _eventFrom(entry as Map);
+        if (isStillToCome(event, now)) events.add(event);
+      }
       events.sort((a, b) => a.start.compareTo(b.start));
       return events;
     } catch (e) {
       error = e.toString();
       return const [];
     }
+  }
+
+  /// Whether [event] has not finished yet at [now]. Public so a test can
+  /// reach it without a calendar on the device.
+  ///
+  /// An all-day event is not over until its last day is, which is a
+  /// different question from "is its end timestamp in the past": it carries
+  /// UTC midnight, so the comparison is between dates rather than moments.
+  /// Android writes an all-day event's end as midnight of the day *after*
+  /// the last one, so the event runs while today is still before that date.
+  @visibleForTesting
+  static bool isStillToCome(CalendarEvent event, DateTime now) {
+    if (event.allDay) {
+      final today = DateTime(now.year, now.month, now.day);
+      final end = event.end;
+      if (end == null) {
+        final day = DateTime(event.start.year, event.start.month, event.start.day);
+        return !day.isBefore(today);
+      }
+      final lastDayExclusive = DateTime(end.year, end.month, end.day);
+      return today.isBefore(lastDayExclusive);
+    }
+    // A timed event with no end is a moment rather than a span.
+    final finishes = event.end ?? event.start;
+    return !finishes.isBefore(now);
   }
 
   static CalendarEvent _eventFrom(Map raw) {

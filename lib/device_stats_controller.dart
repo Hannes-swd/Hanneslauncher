@@ -23,6 +23,14 @@ class DeviceStatsController extends ChangeNotifier {
   static const _minInterval = Duration(minutes: 2);
   DateTime? _lastRefresh;
 
+  // And what that last read actually fetched. The two extras are optional,
+  // so "it was read two minutes ago" is only an answer to a caller asking
+  // for no more than the last one did: the device-data screen always wants
+  // the steps, and after any panel refresh with the device-data switch off
+  // it used to show a dash for two minutes with no way to force the issue.
+  bool _lastIncludedSteps = false;
+  bool _lastIncludedMostUsedApp = false;
+
   int? batteryPercent;
   bool batteryCharging = false;
   double? storageFreeGb;
@@ -59,13 +67,20 @@ class DeviceStatsController extends ChangeNotifier {
 
   static const _stepsBaselineKey = 'steps_baseline_count';
   static const _stepsBaselineDateKey = 'steps_baseline_date';
+  static const _stepsLastRawKey = 'steps_last_raw';
+  static const _stepsLastRawDateKey = 'steps_last_raw_date';
 
   Future<void> ensureFresh({
     bool wantsSteps = false,
     bool wantsMostUsedApp = false,
   }) async {
     final now = DateTime.now();
-    if (_lastRefresh != null && now.difference(_lastRefresh!) < _minInterval) {
+    final alreadyCovered =
+        (!wantsSteps || _lastIncludedSteps) &&
+        (!wantsMostUsedApp || _lastIncludedMostUsedApp);
+    if (alreadyCovered &&
+        _lastRefresh != null &&
+        now.difference(_lastRefresh!) < _minInterval) {
       return;
     }
     await refresh(wantsSteps: wantsSteps, wantsMostUsedApp: wantsMostUsedApp);
@@ -76,6 +91,8 @@ class DeviceStatsController extends ChangeNotifier {
     bool wantsMostUsedApp = false,
   }) async {
     _lastRefresh = DateTime.now();
+    _lastIncludedSteps = wantsSteps;
+    _lastIncludedMostUsedApp = wantsMostUsedApp;
     await Future.wait([
       _refreshBattery(),
       _refreshStorage(),
@@ -142,9 +159,26 @@ class DeviceStatsController extends ChangeNotifier {
     return stepsPermissionGranted;
   }
 
-  /// The sensor only ever reports a cumulative count since the device last
-  /// booted, so "steps today" is that count minus whatever it read at the
-  /// first check today - reset automatically once the date moves on.
+  /// Steps since midnight, as closely as the sensor allows.
+  ///
+  /// Android's step counter only ever reports a running total since the
+  /// device last booted, so "today" is that total minus what it stood at
+  /// midnight - a number nobody was awake to write down. Which reading
+  /// stands in for it is the whole of this method, and it used to be "the
+  /// first reading of the day", i.e. whenever the panel happened to be
+  /// pulled down: opening it at two in the afternoon answered 0 and threw
+  /// the morning away.
+  ///
+  /// So every reading is now kept, and the one from *before* midnight is
+  /// what the new day subtracts. The error left is whatever was walked
+  /// between the last time the panel was open and midnight, which is
+  /// normally a night's sleep and nothing.
+  ///
+  /// A reboot is the case that cannot be recovered: the sensor starts again
+  /// from zero and no longer knows what it counted before. Counting from
+  /// the reboot is then the most that can honestly be claimed, and it is
+  /// also the closest - a phone restarted overnight or in the morning has
+  /// its own count running from roughly the start of the day anyway.
   Future<void> _refreshSteps() async {
     if (!await hasStepsPermission()) {
       stepsToday = null;
@@ -160,20 +194,55 @@ class DeviceStatsController extends ChangeNotifier {
       stepsToday = null;
       return;
     }
+
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
     final todayKey = '${today.year}-${today.month}-${today.day}';
-    final storedDate = prefs.getString(_stepsBaselineDateKey);
-    if (storedDate != todayKey) {
+
+    if (prefs.getString(_stepsBaselineDateKey) != todayKey) {
+      await prefs.setInt(
+        _stepsBaselineKey,
+        _baselineForNewDay(prefs, raw, todayKey),
+      );
       await prefs.setString(_stepsBaselineDateKey, todayKey);
-      await prefs.setInt(_stepsBaselineKey, raw);
-      stepsToday = 0;
-      return;
     }
-    final baseline = prefs.getInt(_stepsBaselineKey) ?? raw;
-    // A reboot resets the sensor's own counter below the stored baseline -
-    // treated as a fresh start for today rather than a negative count.
-    stepsToday = raw >= baseline ? raw - baseline : 0;
+
+    var baseline = prefs.getInt(_stepsBaselineKey) ?? raw;
+    if (raw < baseline) {
+      // The sensor restarted under us - only a reboot does that. Written
+      // back rather than just used: without it every later reading today
+      // keeps comparing against a number the counter will not reach again,
+      // and the count sits at zero for the rest of the day.
+      baseline = 0;
+      await prefs.setInt(_stepsBaselineKey, 0);
+    }
+    stepsToday = raw - baseline;
+
+    // Kept for tomorrow's first reading, which is the whole point: it is
+    // the last number from before midnight.
+    await prefs.setInt(_stepsLastRawKey, raw);
+    await prefs.setString(_stepsLastRawDateKey, todayKey);
+  }
+
+  /// What the counter is taken to have stood at last midnight.
+  ///
+  /// The last reading from an earlier day, when there is one the sensor
+  /// could still be counting up from. A reading higher than the current one
+  /// means the device rebooted in between, and then the counter's own zero
+  /// is the only honest floor.
+  static int _baselineForNewDay(
+    SharedPreferences prefs,
+    int raw,
+    String todayKey,
+  ) {
+    final lastRaw = prefs.getInt(_stepsLastRawKey);
+    final lastDate = prefs.getString(_stepsLastRawDateKey);
+    if (lastRaw == null || lastDate == null || lastDate == todayKey) {
+      // Nothing from before today - the first day after an install, or
+      // after an update that introduced these. Today starts here.
+      return raw;
+    }
+    return lastRaw <= raw ? lastRaw : 0;
   }
 
   Future<bool> hasUsageAccess() async {
@@ -200,7 +269,7 @@ class DeviceStatsController extends ChangeNotifier {
     // Before the value exists at all: pulling the panel down during a cold
     // start would otherwise read a value while the secret list is still being
     // loaded, and [mostUsedApp] would have nothing to filter against.
-    await SecretAppsController.instance.load();
+    await SecretAppsController.instance.loadedKeys();
     if (!await hasUsageAccess()) {
       _mostUsedAppPackage = null;
       _mostUsedAppLabel = null;

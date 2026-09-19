@@ -65,4 +65,37 @@ void main() {
   test('dividing by zero is not an answer', () {
     expect(calculateExpression('5/0'), isNull);
   });
+
+  test('a clock is not a division', () {
+    // ':' is a division sign here, which used to make every time typed into
+    // the search field answer itself: "12:30" came back as 0.4.
+    expect(calculateExpression('12:30'), isNull);
+    expect(calculateExpression('9:05'), isNull);
+    expect(calculateExpression('12:30:45'), isNull);
+    // Still a division everywhere it is not a clock.
+    expect(calculateExpression('100:4'), '25');
+    expect(calculateExpression('12:30+1'), isNotNull);
+  });
+
+  test('a sign in front binds looser than the power', () {
+    // -2^2 is -(2^2), the way it is written everywhere else, not (-2)^2.
+    expect(calculateExpression('-2^2'), '-4');
+    expect(calculateExpression('(-2)^2'), '4');
+    // And the exponent can carry its own sign.
+    expect(calculateExpression('2^-2'), '0.25');
+    // Right-associative, unchanged.
+    expect(calculateExpression('2^3^2'), '512');
+  });
+
+  test('a percentage next to a plus or minus is of the number before it', () {
+    // What every pocket calculator does, and what anybody typing it means.
+    expect(calculateExpression('100-20%'), '80');
+    expect(calculateExpression('80+25%'), '100');
+    expect(calculateExpression('200-10%-10%'), '162');
+    // On its own it is still just a hundredth, so "20% von 80" is unchanged.
+    expect(calculateExpression('20% von 80'), '16');
+    expect(calculateExpression('20%*80'), '16');
+    // And a percentage that is part of a bigger term is left alone.
+    expect(calculateExpression('100-20%*3'), '99.4');
+  });
 }

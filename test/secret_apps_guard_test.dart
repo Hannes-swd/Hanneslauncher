@@ -68,6 +68,50 @@ void main() {
     );
   });
 
+  test('the secret list is never filtered against before it is read', () {
+    // The list starts as an empty set and is filled from disk. Everything
+    // that filters against it outside the entries controller runs off the
+    // panel being pulled down or off a timer, either of which can happen
+    // first - and a filter against an empty set is not a filter. Awaiting
+    // loadedKeys() is the same question with the load in front of it, so
+    // that is the only door; the two below are already inside one.
+    const allowed = {
+      // Owns it.
+      'secret_apps_controller.dart',
+      // Reads it from inside its own load(), which awaits the secret one
+      // before touching it.
+      'launcher_entries_controller.dart',
+      // mostUsedApp is a synchronous getter on purpose: it re-filters every
+      // time it is read, so an app hidden after the value was fetched is
+      // hidden too. It can only answer non-null once _refreshMostUsedApp
+      // has awaited loadedKeys(), so the load is always in front of it.
+      'device_stats_controller.dart',
+      // build() is synchronous and reads the list to write it into the
+      // file. Both ways a backup is actually written go through
+      // buildWithFiles(), which awaits loadedKeys() first - an empty list
+      // in the file would not read as a fault but as an empty secret
+      // folder, and restoring it would un-hide everything in there.
+      'settings_backup_service.dart',
+    };
+
+    final pattern = RegExp(r'SecretAppsController\.instance\.(value|contains)');
+    final offenders = [
+      for (final file in dartFiles)
+        if (!allowed.contains(named(file)))
+          if (pattern.hasMatch(file.readAsStringSync())) named(file),
+    ];
+
+    expect(
+      offenders,
+      isEmpty,
+      reason:
+          'These files read the secret list without waiting for it to be '
+          'loaded: $offenders. Await '
+          'SecretAppsController.instance.loadedKeys() instead - read too '
+          'early, the set is empty and every hidden app shows.',
+    );
+  });
+
   test('no new platform channel slipped in unnoticed', () {
     // A native channel is the second way an app name can reach the launcher
     // (it is how both leaks found when the secret folder was built got in:

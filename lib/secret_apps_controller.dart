@@ -7,6 +7,73 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'pinned_apps_controller.dart';
 
+/// How many times a password is run through the hash before what comes out
+/// is stored.
+///
+/// Measured rather than picked: 100,000 rounds is a fifth of a second on a
+/// desktop and near a second on a phone, which is the most that can be
+/// spent without the unlock feeling broken. Every round is a round an
+/// attacker holding the backup file has to spend on each guess too, and
+/// that is the whole of what this buys - see [SecretAppsController].
+const int _pbkdf2Iterations = 100000;
+
+/// What marks a stored hash as the stretched kind. A stored value carries
+/// its own round count after it, so this number can be raised later without
+/// invalidating anything already written.
+const String _pbkdf2Prefix = 'pbkdf2';
+
+/// The stored form of a secret: the marker, the rounds it took, and the key.
+///
+/// Top-level and pure so it can be handed to [compute] - most of a second
+/// of arithmetic on the thread that draws the home screen would be a
+/// visible freeze every time a password is checked.
+String derivePasswordHash((String, String, int) input) {
+  final (secret, salt, rounds) = input;
+  final key = _pbkdf2(
+    password: utf8.encode(secret),
+    salt: utf8.encode(salt),
+    iterations: rounds,
+    length: 32,
+  );
+  return '$_pbkdf2Prefix\$$rounds\$${base64Url.encode(key)}';
+}
+
+/// PBKDF2-HMAC-SHA256, written out rather than pulled from a package: it is
+/// twenty lines of the standard, and the two packages that offer it bring a
+/// whole cipher suite along for them.
+///
+/// Each block is the first HMAC of the salt, then that HMAC of itself
+/// [iterations] times over, with everything along the way XORed together -
+/// which is what stops the chain being shortcut.
+List<int> _pbkdf2({
+  required List<int> password,
+  required List<int> salt,
+  required int iterations,
+  required int length,
+}) {
+  final hmac = Hmac(sha256, password);
+  final out = <int>[];
+  for (var block = 1; out.length < length; block++) {
+    // The block number goes on the end of the salt, big-endian.
+    var u = hmac.convert([
+      ...salt,
+      (block >> 24) & 0xff,
+      (block >> 16) & 0xff,
+      (block >> 8) & 0xff,
+      block & 0xff,
+    ]).bytes;
+    final accumulated = List<int>.from(u);
+    for (var round = 1; round < iterations; round++) {
+      u = hmac.convert(u).bytes;
+      for (var i = 0; i < accumulated.length; i++) {
+        accumulated[i] ^= u[i];
+      }
+    }
+    out.addAll(accumulated);
+  }
+  return out.sublist(0, length);
+}
+
 /// Proof that the secret folder's password was entered.
 ///
 /// The constructor is private to this library, so the only way to hold one is
@@ -35,6 +102,18 @@ class SecretUnlock {
 /// This hides apps, it does not protect them: they stay installed and remain
 /// visible in Android's own settings, the recents switcher, the share sheet
 /// and the notification shade.
+///
+/// The password is stored stretched (PBKDF2-HMAC-SHA256, see
+/// [_pbkdf2Iterations]) rather than as the single SHA-256 pass it used to
+/// be. That matters because the hash and its salt travel in the settings
+/// backup, which is a plain text file in the Downloads folder: whoever has
+/// that file can guess at the password offline, as fast as they can compute
+/// the hash, and one pass of SHA-256 is as fast as computing gets.
+///
+/// It does not make a short password safe. Stretching multiplies the cost
+/// of each guess; it does nothing about how many guesses there are, and a
+/// four-digit PIN is ten thousand of them. A password worth the name is
+/// still the only thing that makes this hard.
 class SecretAppsController extends ValueNotifier<Set<String>> {
   SecretAppsController._() : super(const {});
 
@@ -69,6 +148,16 @@ class SecretAppsController extends ValueNotifier<Set<String>> {
   SecretUnlock? _activeUnlock;
 
   bool _loaded = false;
+
+  /// The round count new hashes are written with. Lowered by tests, which
+  /// would otherwise spend most of a second on every password they set.
+  ///
+  /// Only ever lowered here: the number is the whole of what makes a stored
+  /// hash expensive to guess. A hash written at one count still verifies
+  /// after it changes, because the count it was written with is stored
+  /// alongside it.
+  @visibleForTesting
+  static int debugIterations = _pbkdf2Iterations;
 
   /// False until a password has ever been set - the first tap on the folder
   /// then asks for a new one instead of an existing one.
@@ -111,6 +200,27 @@ class SecretAppsController extends ValueNotifier<Set<String>> {
     _recoverySalt = prefs.getString(_recoverySaltKey);
   }
 
+  /// The hidden keys, with the stored list guaranteed to have been read.
+  ///
+  /// Everything that filters against the secret folder from outside
+  /// [LauncherEntriesController] - the notification block, the badge on a
+  /// pinned icon, the most-used app - runs off the panel being pulled down,
+  /// and that can happen before the first [load] has finished. Reading
+  /// [value] straight out at that moment gets back the empty set it starts
+  /// as, and a filter against an empty set is not a filter: the class
+  /// comment on [NotificationsController] promises a hidden app is not in
+  /// its list, and the one thing that promise cannot survive is being asked
+  /// a fraction of a second too early.
+  ///
+  /// It happened to hold anyway, because [LauncherEntriesController.load]
+  /// awaits this at startup - but that is a coincidence of ordering rather
+  /// than a rule, and `test/secret_apps_guard_test.dart` now keeps the
+  /// direct reads down to the places that are already inside a load.
+  Future<Set<String>> loadedKeys() async {
+    await load();
+    return value;
+  }
+
   /// Sets the first password and unlocks straight away, so setting one and
   /// putting the first app in is a single trip. Refuses to run when a
   /// password already exists - changing that one goes through
@@ -118,17 +228,28 @@ class SecretAppsController extends ValueNotifier<Set<String>> {
   Future<SecretUnlock?> setPassword(String password) async {
     if (hasPassword || password.isEmpty) return null;
     _salt = _newSalt();
-    _hash = _hashOf(password, _salt!);
+    _hash = await _hashOf(password, _salt!);
     await _writePassword();
     return _activeUnlock = SecretUnlock._();
   }
 
   /// Returns a token on the right password, null on a wrong one.
-  SecretUnlock? unlock(String password) {
+  ///
+  /// Asynchronous because checking a password now costs real work - see the
+  /// class comment. The app list tries every keystroke against this, so
+  /// whoever calls it repeatedly has to wait out the typing first rather
+  /// than start a derivation per letter.
+  Future<SecretUnlock?> unlock(String password) async {
     final salt = _salt;
     final hash = _hash;
     if (salt == null || hash == null) return null;
-    if (_hashOf(password, salt) != hash) return null;
+    if (!await _matches(password, salt, hash)) return null;
+    await _upgradeLegacy(
+      secret: password,
+      salt: salt,
+      stored: hash,
+      isRecovery: false,
+    );
     return _activeUnlock = SecretUnlock._();
   }
 
@@ -141,13 +262,19 @@ class SecretAppsController extends ValueNotifier<Set<String>> {
   /// it is shown once and only ever stored as a hash. It survives being used,
   /// so a cancelled recovery does not leave the folder without a way in;
   /// [newRecoveryCode] is what retires one.
-  SecretUnlock? unlockWithRecoveryCode(String code) {
+  Future<SecretUnlock?> unlockWithRecoveryCode(String code) async {
     final salt = _recoverySalt;
     final hash = _recoveryHash;
     if (salt == null || hash == null) return null;
     final normalized = normalizeRecoveryCode(code);
     if (normalized.length != _codeLength) return null;
-    if (_hashOf(normalized, salt) != hash) return null;
+    if (!await _matches(normalized, salt, hash)) return null;
+    await _upgradeLegacy(
+      secret: normalized,
+      salt: salt,
+      stored: hash,
+      isRecovery: true,
+    );
     return _activeUnlock = SecretUnlock._();
   }
 
@@ -158,7 +285,7 @@ class SecretAppsController extends ValueNotifier<Set<String>> {
     if (!isUnlockedWith(token)) return null;
     final code = _newRecoveryCode();
     _recoverySalt = _newSalt();
-    _recoveryHash = _hashOf(normalizeRecoveryCode(code), _recoverySalt!);
+    _recoveryHash = await _hashOf(normalizeRecoveryCode(code), _recoverySalt!);
     await _writeRecovery();
     return code;
   }
@@ -171,7 +298,7 @@ class SecretAppsController extends ValueNotifier<Set<String>> {
   Future<bool> changePassword(SecretUnlock token, String password) async {
     if (!isUnlockedWith(token) || password.isEmpty) return false;
     _salt = _newSalt();
-    _hash = _hashOf(password, _salt!);
+    _hash = await _hashOf(password, _salt!);
     await _writePassword();
     return true;
   }
@@ -262,8 +389,59 @@ class SecretAppsController extends ValueNotifier<Set<String>> {
     await prefs.setString(_recoverySaltKey, salt);
   }
 
-  static String _hashOf(String password, String salt) =>
-      sha256.convert(utf8.encode('$salt:$password')).toString();
+  /// The stored form of [secret] under [salt], in the current format.
+  ///
+  /// On a background isolate: a hundred thousand rounds is a fifth of a
+  /// second on a desktop and closer to a second on a phone, and the home
+  /// screen must not stop moving while a password is checked.
+  static Future<String> _hashOf(String secret, String salt) =>
+      compute(derivePasswordHash, (secret, salt, debugIterations));
+
+  /// Whether [secret] is what [stored] was made from.
+  ///
+  /// The format is read out of [stored] rather than assumed, which is what
+  /// lets a password set before the stretching keep working: the old form
+  /// was a bare SHA-256 of `salt:secret` and carries no marker, so anything
+  /// unmarked is one of those. The round count is read back out too, so
+  /// raising [_pbkdf2Iterations] later never invalidates a stored hash.
+  static Future<bool> _matches(
+    String secret,
+    String salt,
+    String stored,
+  ) async {
+    if (!stored.startsWith('$_pbkdf2Prefix\$')) {
+      return _legacyHashOf(secret, salt) == stored;
+    }
+    final parts = stored.split('\$');
+    final rounds = parts.length == 3 ? int.tryParse(parts[1]) : null;
+    if (rounds == null || rounds < 1) return false;
+    return await compute(derivePasswordHash, (secret, salt, rounds)) == stored;
+  }
+
+  /// Rewrites a hash that predates the stretching, at the one moment the
+  /// secret behind it is in hand. Costs one extra derivation, once.
+  Future<void> _upgradeLegacy({
+    required String secret,
+    required String salt,
+    required String stored,
+    required bool isRecovery,
+  }) async {
+    if (stored.startsWith('$_pbkdf2Prefix\$')) return;
+    if (isRecovery) {
+      _recoveryHash = await _hashOf(secret, salt);
+      await _writeRecovery();
+    } else {
+      _hash = await _hashOf(secret, salt);
+      await _writePassword();
+    }
+  }
+
+  /// The format used before the stretching: one pass of SHA-256, which a
+  /// four-digit PIN falls to faster than the file can be opened. Kept only
+  /// so a password set under it is still recognised - and replaced the
+  /// first time it is used, by [_upgradeLegacy].
+  static String _legacyHashOf(String secret, String salt) =>
+      sha256.convert(utf8.encode('$salt:$secret')).toString();
 
   static String _newSalt() {
     final random = Random.secure();

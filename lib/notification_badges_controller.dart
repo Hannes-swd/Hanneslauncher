@@ -242,15 +242,16 @@ class NotificationCounts extends ValueNotifier<Map<String, int>> {
     } catch (_) {
       counts = null;
     }
+    // A hidden app must not announce itself on the home screen. It can't
+    // normally be pinned - putting one into the secret folder unpins it -
+    // but the rule belongs here, where the packages arrive, rather than at
+    // the icon that happens to draw them today. Awaited, because this polls
+    // on a timer that can start before the list has been read off disk.
+    final secret = await SecretAppsController.instance.loadedKeys();
     final next = <String, int>{
       for (final entry in (counts ?? const <String, int>{}).entries)
         if (entry.value > 0)
-          // A hidden app must not announce itself on the home screen. It
-          // can't normally be pinned - putting one into the secret folder
-          // unpins it - but the rule belongs here, where the packages
-          // arrive, rather than at the icon that happens to draw them today.
-          if (!SecretAppsController.instance.contains(entry.key))
-            entry.key: entry.value,
+          if (!secret.contains(entry.key)) entry.key: entry.value,
     };
     if (!mapEquals(next, value)) value = next;
   }

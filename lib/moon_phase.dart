@@ -13,6 +13,14 @@ double moonPhaseFraction(DateTime date) {
 
 /// The single emoji matching [moonPhaseFraction] - meant to be dropped
 /// straight into a text element, no icon-rule setup needed.
+///
+/// Rounded to the nearest of the eight, not cut down to the one below it.
+/// Each symbol names a *moment* - new, first quarter, full, last quarter -
+/// and the four in between name the stretch around their own midpoint, so
+/// the symbol has to be centred on the moment rather than start at it.
+/// Cutting down instead put every symbol a full eighth of a month (about
+/// 1.8 days) late: the full-moon night itself still read as waxing gibbous,
+/// and the full moon showed for the four nights after it.
 String moonPhaseEmoji(DateTime date) {
   final phase = moonPhaseFraction(date);
   const symbols = [
@@ -25,6 +33,8 @@ String moonPhaseEmoji(DateTime date) {
     '🌗', // last quarter
     '🌘', // waning crescent
   ];
-  final index = (phase * symbols.length).floor() % symbols.length;
+  // The round can land on 8 (a phase just short of the next new moon), which
+  // is the same symbol as 0 - the modulo is what wraps it back.
+  final index = (phase * symbols.length).round() % symbols.length;
   return symbols[index];
 }

@@ -391,6 +391,33 @@ class AppStrings {
       _en ? 'No upcoming events' : 'Keine anstehenden Termine';
   String get today => _en ? 'Today' : 'Heute';
   String get tomorrow => _en ? 'Tomorrow' : 'Morgen';
+
+  /// The name of a weekday, for a [DateTime.weekday] - which runs 1..7
+  /// starting on Monday, the same order as the list below.
+  ///
+  /// Here rather than next to whatever prints it: the calendar block and the
+  /// `{{wochentag}}` placeholder each carried their own copy of both lists,
+  /// which is two places to fix a typo and two places for a new language to
+  /// be forgotten.
+  String weekdayName(int weekday) => (_en
+      ? const [
+          'Monday',
+          'Tuesday',
+          'Wednesday',
+          'Thursday',
+          'Friday',
+          'Saturday',
+          'Sunday',
+        ]
+      : const [
+          'Montag',
+          'Dienstag',
+          'Mittwoch',
+          'Donnerstag',
+          'Freitag',
+          'Samstag',
+          'Sonntag',
+        ])[weekday - 1];
   String get calendarsLabel => _en ? 'Calendars' : 'Kalender';
   String get allCalendars => _en ? 'All calendars' : 'Alle Kalender';
   String get daysAheadLabel => _en ? 'Look ahead' : 'Vorschau';

@@ -102,20 +102,22 @@ class _PanelViewState extends State<PanelView> {
     );
   }
 
+  /// Whether anything about to be drawn needs a position, so that one is
+  /// fetched before it is asked for.
+  ///
+  /// Which placeholders those are is [DataSourcesController]'s to know -
+  /// this used to keep its own list of four, which silently left out
+  /// sunrise and sunset.
   bool _usesLocation() {
-    bool mentionsLocation(String text) =>
-        text.contains('{{ort}}') ||
-        text.contains('{{city}}') ||
-        text.contains('{{lat}}') ||
-        text.contains('{{lon}}');
-
     for (final block in PanelBlocksController.instance.value) {
       for (final element in block.elements) {
-        if (mentionsLocation(element.template)) return true;
+        if (DataSourcesController.templateNeedsLocation(element.template)) {
+          return true;
+        }
       }
     }
     return DataSourcesController.instance.value.any(
-      (source) => mentionsLocation(source.url),
+      (source) => DataSourcesController.templateNeedsLocation(source.url),
     );
   }
 

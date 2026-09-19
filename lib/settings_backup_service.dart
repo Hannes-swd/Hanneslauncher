@@ -246,6 +246,13 @@ class SettingsBackupService {
   /// [CodeWidgetStore.maxBackedUpFileBytes] each - past that the file would
   /// do more harm to the backup's size than good.
   static Future<Map<String, dynamic>> buildWithFiles() async {
+    // Before anything is read out of it: [build] takes the secret folder's
+    // list straight off the controller, and an automatic backup is written
+    // when the panel is first pulled down - which can be before that list
+    // has been read off disk. An empty list written into the file would not
+    // look like a fault, it would look like an empty secret folder, and
+    // restoring it would un-hide every app in there.
+    await SecretAppsController.instance.loadedKeys();
     final document = build();
     final widgets = <String, dynamic>{};
     for (final block in PanelBlocksController.instance.value) {

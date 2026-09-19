@@ -71,6 +71,11 @@ const Map<String, String> settingsKeyNotes = {
       "The step counter's reading at midnight. Only true for today, and the "
       'sensor it is an offset into is reset by a reboot anyway.',
   'steps_baseline_date': 'Which day the step baseline belongs to.',
+  'steps_last_raw':
+      "The step counter's last reading, so the next new day has a number "
+      'from before midnight to count up from. It is an offset into one '
+      "phone's sensor since its last boot, and means nothing on any other.",
+  'steps_last_raw_date': 'Which day that last reading was taken on.',
   'update_checked_at':
       'When GitHub was last asked for a release. Rechecked on the next panel '
       'open.',
@@ -166,6 +171,8 @@ const Map<String, KeyFate> settingsKeyRegistry = {
   'secret_recovery_salt': KeyFate.backedUp,
   'steps_baseline_count': KeyFate.deviceLocal,
   'steps_baseline_date': KeyFate.deviceLocal,
+  'steps_last_raw': KeyFate.deviceLocal,
+  'steps_last_raw_date': KeyFate.deviceLocal,
   'update_checked_at': KeyFate.deviceLocal,
   'update_latest_release': KeyFate.deviceLocal,
   'wallpaper_image_path': KeyFate.backedUp,

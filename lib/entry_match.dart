@@ -54,7 +54,7 @@ int? matchScore(String name, String query) {
   // to plausibly be initials. Without that bound a long query would start
   // matching long names by their first letters alone.
   if (needle.length >= 2 && needle.length <= 5 && words.length >= 2) {
-    final initials = words.map((w) => w[0]).join();
+    final initials = words.map(_initialOf).join();
     if (initials == needle) return 700;
     if (initials.startsWith(needle)) return 690 - _lengthPenalty(haystack);
   }
@@ -73,26 +73,44 @@ int? matchScore(String name, String query) {
 /// out of all proportion to how well it matched.
 int _lengthPenalty(String value) => value.length.clamp(0, 40) ~/ 4;
 
+/// What separates one word from the next: anything that is not a letter or
+/// a digit, in any alphabet.
+///
+/// This used to be the literal class `[^a-z0-9äöüß]`, which treated every
+/// letter outside German as punctuation - "Pokémon GO" came apart into
+/// `pok`, `mon`, `go`, so its initials were `pmg` and `pg` found nothing,
+/// and a name in a non-Latin alphabet produced no words at all. The
+/// properties below are the same rule without the list of letters that
+/// happened to come to mind.
+final RegExp _wordBreak = RegExp(r'[^\p{L}\p{N}]+', unicode: true);
+
+/// A capital in the middle of a word, which is the other way a name is
+/// written as several: "YouTube", "OpenVPN". Between a lowercase letter or
+/// a digit and a capital, so a run of capitals stays one word.
+final RegExp _camelHump = RegExp(r'(?<=[\p{Ll}\p{N}])(?=\p{Lu})', unicode: true);
+
 /// Splits a name the way a person reads it: on spaces and punctuation, and
 /// also at a capital in the middle of a word, so "YouTube" is two words and
 /// `yt` finds it.
 List<String> _wordsOf(String lowered) => [
-  for (final part in lowered.split(RegExp(r'[^a-z0-9äöüß]+')))
+  for (final part in lowered.split(_wordBreak))
     if (part.isNotEmpty) part,
 ];
 
 /// Same as [_wordsOf] but on the original spelling, so the capitals are
 /// still there to split on.
 List<String> searchWords(String name) {
-  final split = name.replaceAllMapped(
-    RegExp(r'(?<=[a-zäöüß0-9])(?=[A-ZÄÖÜ])'),
-    (_) => ' ',
-  );
+  final split = name.replaceAllMapped(_camelHump, (_) => ' ');
   return [
-    for (final part in split.toLowerCase().split(RegExp(r'[^a-z0-9äöüß]+')))
+    for (final part in split.toLowerCase().split(_wordBreak))
       if (part.isNotEmpty) part,
   ];
 }
+
+/// A word's first letter, as a whole letter. `word[0]` is one UTF-16 code
+/// unit, which is half of any letter outside the basic planes - and half a
+/// letter compared against a typed one never matches.
+String _initialOf(String word) => String.fromCharCode(word.runes.first);
 
 /// [matchScore] with the camel-hump split applied, which is the one callers
 /// should use. Kept apart so the plain version stays easy to reason about.
@@ -113,7 +131,7 @@ int? rankName(String name, String query) {
   // shortens a name and starts describing a coincidence between a long
   // query and a long name.
   if (needle.length >= 2 && needle.length <= 5) {
-    final initials = words.map((w) => w[0]).join();
+    final initials = words.map(_initialOf).join();
     if (initials == needle) {
       best = _higher(best, 700);
     } else if (initials.startsWith(needle)) {
