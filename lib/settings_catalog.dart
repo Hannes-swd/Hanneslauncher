@@ -23,6 +23,7 @@ import 'settings_backup_screen.dart';
 import 'update_controller.dart';
 import 'update_screen.dart';
 import 'wallpaper_controller.dart';
+import 'wallpaper_settings_screen.dart';
 import 'web_apps_settings_screen.dart';
 
 /// The headings the settings list is grouped under, in display order.
@@ -131,6 +132,10 @@ List<SettingsEntry> buildSettingsCatalog({
         'wallpaper', 'hintergrund', 'hintergrundbild', 'bild', 'foto',
         'background', 'image', 'picture', 'video', 'gif', 'mp4', 'film',
         'bewegt', 'animiert', 'animated', 'live',
+        'sperrbildschirm', 'lockscreen', 'lock screen', 'sperren', 'lock',
+        'bibliothek', 'library', 'mitgeliefert', 'vorinstalliert',
+        'vordefiniert', 'built-in', 'builtin', 'preset', 'auswahl',
+        'galerie', 'gallery',
       ],
       // Wrapped in a Builder because the catalog is assembled outside any
       // widget's build - the thumbnail still has to reach the design for its
@@ -158,7 +163,7 @@ List<SettingsEntry> buildSettingsCatalog({
                 ),
               ),
             ),
-      onTap: (context) => WallpaperController.instance.pickAndSet(),
+      onTap: (context) => _push(context, const WallpaperSettingsScreen()),
     ),
     if (wallpaper != null)
       SettingsEntry(

@@ -33,6 +33,12 @@
          it isn't granted. Android asks once, for this app, and
          "installApk" in MainActivity.kt opens that dialog directly. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+    <!-- Lets the wallpaper settings put a picture on Android's own lock
+         screen (WallpaperManager with FLAG_LOCK, see MainActivity.kt). A
+         normal permission - granted at install, no prompt - and it is only
+         ever used for the lock screen: the launcher draws its own home
+         screen background itself and never touches the system wallpaper. -->
+    <uses-permission android:name="android.permission.SET_WALLPAPER"/>
     <!-- Cleartext HTTP is off by default since Android 9 - needed here so
          an action element's http:// call actually reaches a local smart
          home device (almost none of them have a certificate). Data sources

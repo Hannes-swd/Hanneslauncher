@@ -32,6 +32,41 @@ class AppStrings {
   String get videoSelected => _en ? 'Video selected' : 'Video ausgewählt';
   String get removeWallpaper =>
       _en ? 'Remove wallpaper' : 'Hintergrund entfernen';
+  String get wallpaperSubtitle => _en
+      ? 'Built-in pictures, your own, lock screen'
+      : 'Mitgelieferte Bilder, eigene, Sperrbildschirm';
+  String get wallpaperLibrary => _en ? 'Library' : 'Bibliothek';
+  String get wallpaperLibraryEmpty => _en
+      ? 'No pictures are shipping with this build.'
+      : 'Mit dieser Version wird kein Bild mitgeliefert.';
+  String get wallpaperFromGallery =>
+      _en ? 'Choose your own' : 'Eigenes Bild wählen';
+  String get homeWallpaperHint => _en
+      ? 'The background of the home screen, drawn by the launcher itself. A '
+            'picture, an animated GIF or a video.'
+      : 'Der Hintergrund des Homescreens, den der Launcher selbst zeichnet. '
+            'Bild, animiertes GIF oder Video.';
+
+  String get lockScreen => _en ? 'Lock screen' : 'Sperrbildschirm';
+  String get lockScreenWallpaperHint => _en
+      ? "Android's own lock screen. Pictures only - and it keeps showing "
+            'this one even while another launcher is running.'
+      : 'Androids eigener Sperrbildschirm. Nur Bilder - und er zeigt dieses '
+            'auch dann, wenn gerade ein anderer Launcher läuft.';
+  String get lockScreenNotSet =>
+      _en ? 'Not set from here' : 'Nicht von hier gesetzt';
+  String get lockScreenImageSet => _en ? 'Picture set' : 'Bild gesetzt';
+  String get lockScreenReset =>
+      _en ? 'Back to the system wallpaper' : 'Zurück zum Systemhintergrund';
+  String get lockScreenUnsupported => _en
+      ? "This phone doesn't let an app set the lock screen."
+      : 'Dieses Handy lässt eine App den Sperrbildschirm nicht setzen.';
+  String get lockScreenFailed => _en
+      ? 'Android would not take that picture.'
+      : 'Android hat das Bild nicht angenommen.';
+  String get wallpaperAssetMissing => _en
+      ? 'That picture is no longer in the app.'
+      : 'Dieses Bild ist nicht mehr in der App.';
 
   String get appList => _en ? 'App list' : 'App-Liste';
   String get appListSubtitle => _en

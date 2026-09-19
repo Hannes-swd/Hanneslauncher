@@ -5,6 +5,7 @@ import android.app.Activity
 import android.app.ActivityOptions
 import android.app.AppOpsManager
 import android.app.role.RoleManager
+import android.app.WallpaperManager
 import android.app.usage.UsageStatsManager
 import android.content.ComponentName
 import android.content.BroadcastReceiver
@@ -48,6 +49,7 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
+import java.io.FileInputStream
 import java.util.Calendar
 
 class MainActivity : FlutterActivity() {
@@ -66,6 +68,7 @@ class MainActivity : FlutterActivity() {
     private val appShortcutsChannelName = "hanneslauncher/app_shortcuts"
     private val launchChannelName = "hanneslauncher/launch"
     private val packagesChannelName = "hanneslauncher/packages"
+    private val wallpaperChannelName = "hanneslauncher/wallpaper"
     private val calendarPermissionRequestCode = 4201
     private val importFileRequestCode = 4202
     private val stepsPermissionRequestCode = 4203
@@ -427,6 +430,25 @@ class MainActivity : FlutterActivity() {
                             },
                         )
                     }
+                    else -> result.notImplemented()
+                }
+            }
+
+        // The launcher draws its own home screen background, but the lock
+        // screen belongs to Android - the only way a picture gets onto it is
+        // WallpaperManager, so that is what this channel is. FLAG_LOCK on
+        // purpose: setting the lock screen must leave whatever the system
+        // wallpaper is alone, which is the wallpaper other launchers and the
+        // recents screen show.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, wallpaperChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "supportsLockScreen" -> result.success(supportsLockScreen())
+                    "setLockScreen" -> {
+                        val path = call.argument<String>("path")
+                        result.success(if (path == null) false else setLockScreen(path))
+                    }
+                    "clearLockScreen" -> result.success(clearLockScreen())
                     else -> result.notImplemented()
                 }
             }
@@ -945,6 +967,64 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    // Whether this phone lets an app put a picture on the lock screen.
+    //
+    // A separate lock screen wallpaper only exists from Android 7 on, and a
+    // managed device can have the whole thing switched off - in both cases
+    // the settings screen leaves the section out rather than offering a
+    // button that quietly does nothing.
+    private fun supportsLockScreen(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return false
+        return try {
+            val manager = WallpaperManager.getInstance(this)
+            manager.isWallpaperSupported && manager.isSetWallpaperAllowed
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    // Hands the picture at [path] to Android as the lock screen wallpaper.
+    //
+    // Streamed rather than decoded here: the system does the decoding and
+    // the scaling to the screen it knows the size of, so a picture larger
+    // than this process could hold in memory is still fine.
+    private fun setLockScreen(path: String): Boolean {
+        if (!supportsLockScreen()) return false
+        return try {
+            val file = File(path)
+            if (!file.exists()) {
+                false
+            } else {
+                FileInputStream(file).use { stream ->
+                    WallpaperManager.getInstance(this).setStream(
+                        stream,
+                        null,
+                        true,
+                        WallpaperManager.FLAG_LOCK,
+                    )
+                }
+                true
+            }
+        } catch (e: Throwable) {
+            // Throwable, not Exception: a picture too big lands here as an
+            // OutOfMemoryError on some OEM builds, and a lock screen that
+            // stayed as it was is not worth taking the launcher down for.
+            false
+        }
+    }
+
+    // Takes this app's picture off the lock screen, which puts Android back
+    // to showing the system wallpaper there.
+    private fun clearLockScreen(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return false
+        return try {
+            WallpaperManager.getInstance(this).clear(WallpaperManager.FLAG_LOCK)
+            true
+        } catch (e: Throwable) {
+            false
+        }
+    }
+
     private fun canInstallApks(): Boolean {
         // The permission only exists from Android 8 on; below that any app
         // could hand a file to the installer.
@@ -1032,11 +1112,11 @@ class MainActivity : FlutterActivity() {
             Manifest.permission.ACTIVITY_RECOGNITION,
         ) == PackageManager.PERMISSION_GRANTED
 
-    /// The step counter sensor only reports on change, not on demand - this
-    /// registers a listener just long enough to catch the next (usually
-    /// near-immediate) reading, then drops it again. A timeout answers with
-    /// null instead of hanging forever if the device never fires one (no
-    /// sensor, or one that's stuck).
+    // The step counter sensor only reports on change, not on demand - this
+    // registers a listener just long enough to catch the next (usually
+    // near-immediate) reading, then drops it again. A timeout answers with
+    // null instead of hanging forever if the device never fires one (no
+    // sensor, or one that's stuck).
     private fun readStepCounter(result: MethodChannel.Result) {
         if (!hasStepsPermission()) {
             result.success(null)
@@ -1548,14 +1628,14 @@ class MainActivity : FlutterActivity() {
             Manifest.permission.READ_CONTACTS,
         ) == PackageManager.PERMISSION_GRANTED
 
-    /// Matches [query] against names and numbers alike - CONTENT_FILTER_URI
-    /// is what Android's own dialer search uses, so typing "mei" and typing
-    /// "0171" both land where the user expects.
-    ///
-    /// Only contacts that have a phone number can appear: the search goes
-    /// through the Phone table, which is also what makes a result callable
-    /// with one tap. A contact stored with nothing but an email is invisible
-    /// here.
+    // Matches [query] against names and numbers alike - CONTENT_FILTER_URI
+    // is what Android's own dialer search uses, so typing "mei" and typing
+    // "0171" both land where the user expects.
+    //
+    // Only contacts that have a phone number can appear: the search goes
+    // through the Phone table, which is also what makes a result callable
+    // with one tap. A contact stored with nothing but an email is invisible
+    // here.
     private fun searchContacts(
         query: String,
         limit: Int,
@@ -1604,9 +1684,9 @@ class MainActivity : FlutterActivity() {
         return hits
     }
 
-    /// Nothing on the phone may answer the intent (a tablet with no dialer,
-    /// a contacts app that has been disabled), and that throws rather than
-    /// returning false.
+    // Nothing on the phone may answer the intent (a tablet with no dialer,
+    // a contacts app that has been disabled), and that throws rather than
+    // returning false.
     private fun startIntentSafely(intent: Intent): Boolean =
         try {
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -1648,9 +1728,9 @@ class MainActivity : FlutterActivity() {
         return calendars
     }
 
-    /// The Instances table (rather than Events) is what expands recurring
-    /// events into concrete occurrences inside [start]..[end], so a weekly
-    /// meeting shows up on every date it actually falls on.
+    // The Instances table (rather than Events) is what expands recurring
+    // events into concrete occurrences inside [start]..[end], so a weekly
+    // meeting shows up on every date it actually falls on.
     private fun queryEvents(
         calendarIds: Set<String>,
         start: Long,

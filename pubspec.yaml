@@ -84,6 +84,13 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # The wallpapers that ship with the app. Declared as the whole folder on
+  # purpose: the library is read back out of the asset manifest at runtime
+  # (see lib/wallpaper_library.dart), so dropping a picture in here is all
+  # it takes to add one - no list anywhere to keep in step with the folder.
+  assets:
+    - assets/wallpapers/
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

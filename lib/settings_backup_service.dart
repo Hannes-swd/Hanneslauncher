@@ -21,6 +21,7 @@ import 'gesture_shortcuts_controller.dart';
 import 'icon_theme_controller.dart';
 import 'launcher_entries_controller.dart';
 import 'locale_controller.dart';
+import 'lock_wallpaper_controller.dart';
 import 'notification_badges_controller.dart';
 import 'offline_mode_controller.dart';
 import 'panel_blocks_controller.dart';
@@ -38,9 +39,9 @@ import 'web_apps_controller.dart';
 /// The code widgets are the one part that isn't held by a block: their
 /// files are written alongside the document by [buildWithFiles].
 ///
-/// Custom pictures - the wallpaper, replaced app icons, web app icons -
-/// travel as the pictures themselves, base64 in the 'pictures' section, not
-/// as paths. A path would point into this install's private storage and
+/// Custom pictures - the home screen wallpaper, the lock screen one,
+/// replaced app icons, web app icons - travel as the pictures themselves,
+/// base64 in the 'pictures' section, not as paths. A path would point into this install's private storage and
 /// therefore at nothing after a reinstall, which is how a restored launcher
 /// used to come back correct in every respect except that it looked wrong.
 ///
@@ -267,16 +268,35 @@ class SettingsBackupService {
 
   /// Every picture the user chose, as bytes.
   ///
-  /// Three kinds, each keyed by what it belongs to so a restore can put it
-  /// back without the old path meaning anything: the wallpaper, one icon per
-  /// app package, one icon per web app id.
+  /// Four kinds, each keyed by what it belongs to so a restore can put it
+  /// back without the old path meaning anything: the home screen wallpaper,
+  /// the lock screen one, one icon per app package, one icon per web app id.
+  ///
+  /// A picture that came out of the app's own library carries the asset it
+  /// came from next to its bytes. Only so the picker can tick the right tile
+  /// again after a restore - the bytes are what is put back either way, so a
+  /// backup from a build whose library has since changed still restores the
+  /// picture the user was actually looking at.
   static Future<Map<String, dynamic>> _buildPictures() async {
     final pictures = <String, dynamic>{};
 
     final wallpaper = WallpaperController.instance.value;
     if (wallpaper != null) {
       final entry = await _encodePicture(wallpaper.file);
-      if (entry != null) pictures['wallpaper'] = entry;
+      if (entry != null) {
+        if (wallpaper.assetKey != null) entry['asset'] = wallpaper.assetKey;
+        pictures['wallpaper'] = entry;
+      }
+    }
+
+    final lock = LockWallpaperController.instance.value;
+    if (lock != null) {
+      final entry = await _encodePicture(lock);
+      if (entry != null) {
+        final asset = LockWallpaperController.instance.assetKey;
+        if (asset != null) entry['asset'] = asset;
+        pictures['lockWallpaper'] = entry;
+      }
     }
 
     final appIcons = <String, dynamic>{};
@@ -334,9 +354,11 @@ class SettingsBackupService {
       final pictures = decoded['pictures'];
       if (pictures is! Map<String, dynamic>) return const [];
       final names = <String>[];
-      if (pictures['wallpaper'] is Map &&
-          (pictures['wallpaper'] as Map).containsKey('tooLarge')) {
-        names.add('wallpaper');
+      for (final single in const ['wallpaper', 'lockWallpaper']) {
+        final picture = pictures[single];
+        if (picture is Map && picture.containsKey('tooLarge')) {
+          names.add(single);
+        }
       }
       for (final group in const ['appIcons', 'webAppIcons']) {
         final entries = pictures[group];
@@ -765,7 +787,21 @@ class SettingsBackupService {
 
     final wallpaper = await _decodePicture(pictures['wallpaper'], 'wallpaper');
     if (wallpaper != null) {
-      await WallpaperController.instance.restoreFile(wallpaper);
+      await WallpaperController.instance.restoreFile(
+        wallpaper,
+        assetKey: _assetOf(pictures['wallpaper']),
+      );
+    }
+
+    // The one picture here that leaves the app: this hands it to Android as
+    // the lock screen. A restore is meant to give back the phone that was
+    // backed up, and the lock screen is part of what was set up on it.
+    final lock = await _decodePicture(pictures['lockWallpaper'], 'lock');
+    if (lock != null) {
+      await LockWallpaperController.instance.restoreFile(
+        lock,
+        assetKey: _assetOf(pictures['lockWallpaper']),
+      );
     }
 
     final appIcons = pictures['appIcons'];
@@ -787,6 +823,13 @@ class SettingsBackupService {
         }
       }
     }
+  }
+
+  /// Which library entry a stored picture came from, if any.
+  static String? _assetOf(Object? entry) {
+    if (entry is! Map) return null;
+    final asset = entry['asset'];
+    return asset is String ? asset : null;
   }
 
   /// One picture back onto disk, under a name of this install's choosing.

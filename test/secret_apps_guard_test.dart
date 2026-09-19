@@ -153,6 +153,9 @@ void main() {
       'hanneslauncher/offline_mode',
       'hanneslauncher/system_apps',
       'hanneslauncher/system_gestures',
+      // Hands Android a picture for the lock screen and asks whether it is
+      // allowed to. Nothing about apps goes either way over it.
+      'hanneslauncher/wallpaper',
     };
 
     final pattern = RegExp(r"MethodChannel\(\s*'([^']+)'");

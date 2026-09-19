@@ -17,6 +17,7 @@ import 'home_reset.dart';
 import 'icon_pack_controller.dart';
 import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
+import 'lock_wallpaper_controller.dart';
 import 'notifications_controller.dart';
 import 'offline_mode_controller.dart';
 import 'panel_view.dart';
@@ -103,6 +104,9 @@ class _LauncherRootState extends State<LauncherRoot>
     _controller.addListener(_tidyClosedPanel);
     AppListSettingsController.instance.addListener(_onAppListSettingsChanged);
     WallpaperController.instance.load();
+    // Only so the settings can show the picture that is on the lock screen -
+    // Android draws it from here on, whether this app is running or not.
+    LockWallpaperController.instance.load();
     LocaleController.instance.load();
     DesignController.instance.load();
     IconThemeController.instance.load();

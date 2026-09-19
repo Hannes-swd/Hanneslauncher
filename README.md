@@ -40,6 +40,17 @@ is optional.
 silent, and it only moves while the home screen is actually in front of you -
 open another app or pull the settings panel down and it stops where it is.
 
+A handful of backgrounds ship with the app, and the same screen also sets
+**Android's own lock screen** - a picture of your own or one out of that
+library. The two are kept apart: the home screen one is drawn by the launcher,
+the lock screen one is handed to Android and stays there even if you switch
+launchers.
+
+The shipped ones live in `assets/wallpapers/`. The folder is the whole list -
+drop a picture in, build, and it is in the picker, named after its file
+(`sakura-night.png` becomes "Sakura night"). PNG, JPG, WEBP, GIF and the
+common video containers; nothing else has to be edited.
+
 **The letter bar on the right** only ever shows the letters that actually
 hold something. Running a finger over one immediately reveals that letter's
 apps, with no app drawer in between. Keep dragging to the left to pick a row
@@ -414,6 +425,7 @@ All of them are optional; without one, exactly one feature is missing.
 | Activity recognition | `{{schritte}}` |
 | Usage access | `{{meistgenutzt}}` (granted by hand in the Android settings) |
 | Install apps | Updating straight from the app |
+| Set wallpaper | Putting a picture on Android's lock screen |
 
 ## How it is put together
 

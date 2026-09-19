@@ -153,6 +153,8 @@ const Map<String, KeyFate> settingsKeyRegistry = {
   'location_city_locale': KeyFate.deviceLocal,
   'location_lat': KeyFate.deviceLocal,
   'location_lon': KeyFate.deviceLocal,
+  'lock_wallpaper_asset': KeyFate.backedUp,
+  'lock_wallpaper_path': KeyFate.backedUp,
   'offline_burn_in_protection': KeyFate.backedUp,
   'offline_color': KeyFate.backedUp,
   'offline_digital_font': KeyFate.backedUp,
@@ -175,6 +177,7 @@ const Map<String, KeyFate> settingsKeyRegistry = {
   'steps_last_raw_date': KeyFate.deviceLocal,
   'update_checked_at': KeyFate.deviceLocal,
   'update_latest_release': KeyFate.deviceLocal,
+  'wallpaper_asset': KeyFate.backedUp,
   'wallpaper_image_path': KeyFate.backedUp,
   'web_apps': KeyFate.backedUp,
 };
