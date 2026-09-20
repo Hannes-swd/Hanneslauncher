@@ -1341,6 +1341,47 @@ class AppStrings {
   String get updateOpenFailed =>
       _en ? 'Couldn\'t open the link' : 'Link konnte nicht geöffnet werden';
 
+  // Reporting a bug or sending an idea (feedback_screen.dart). One mail
+  // address, and the mail itself is written for the reader rather than left
+  // blank - see feedback_mail.dart for why it is English either way.
+  String get feedback => _en ? 'Feedback' : 'Rückmeldung';
+  String get feedbackSubtitle =>
+      _en ? 'Report a bug, send an idea' : 'Fehler melden, Idee schicken';
+  String get feedbackIntro => _en
+      ? 'Both open your mail app with the questions already in it - you only '
+            'fill in the answers and send it.'
+      : 'Beides öffnet deine Mail-App mit den Fragen schon drin - du füllst '
+            'nur die Antworten aus und schickst sie ab.';
+  String get feedbackReportBug => _en ? 'Report a bug' : 'Fehler melden';
+  String get feedbackReportBugHint => _en
+      ? 'Something crashed, vanished or behaves differently than it should.'
+      : 'Etwas stürzt ab, ist verschwunden oder verhält sich anders als es '
+            'soll.';
+  String get feedbackSuggestIdea => _en ? 'Send an idea' : 'Idee schicken';
+  String get feedbackSuggestIdeaHint => _en
+      ? 'Something missing, or something that could be easier.'
+      : 'Etwas fehlt, oder etwas könnte einfacher gehen.';
+  String get feedbackEnglishNote => _en
+      ? 'The mail is in English because that is the inbox it lands in. '
+            'Answering in German is fine.'
+      : 'Die Mail ist auf Englisch, weil sie in einem englischen Postfach '
+            'landet. Antworten auf Deutsch sind trotzdem in Ordnung.';
+  String get feedbackWhatIsSent => _en
+      ? 'The app version, the phone model, the Android version and the app '
+            'language are put at the end of the mail. Nothing else is read, '
+            'and nothing is sent without you pressing send in your mail app.'
+      : 'App-Version, Handy-Modell, Android-Version und App-Sprache stehen '
+            'am Ende der Mail. Mehr wird nicht ausgelesen, und nichts geht '
+            'raus, bevor du in deiner Mail-App auf Senden tippst.';
+  String get feedbackAddress => _en ? 'Mail address' : 'Mail-Adresse';
+  String get feedbackCopyAddress => _en ? 'Copy' : 'Kopieren';
+  String get feedbackAddressCopied =>
+      _en ? 'Address copied' : 'Adresse kopiert';
+  String get feedbackNoMailApp => _en
+      ? "Couldn't open a mail app - write to the address below instead."
+      : 'Keine Mail-App zu öffnen - schreib stattdessen an die Adresse '
+            'unten.';
+
   String get addColor => _en ? 'Add color' : 'Farbe hinzufügen';
   String get pickColor => _en ? 'Pick a color' : 'Farbe wählen';
   String colorBrightness(int percent) =>

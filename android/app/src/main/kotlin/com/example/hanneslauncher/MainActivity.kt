@@ -402,6 +402,7 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "version" -> result.success(installedVersion())
+                    "device" -> result.success(deviceInfo())
                     "canInstallApks" -> result.success(canInstallApks())
                     "requestInstallPermission" -> result.success(requestInstallPermission())
                     "installApk" -> {
@@ -1067,6 +1068,18 @@ class MainActivity : FlutterActivity() {
         return mapOf(
             "versionName" to (info.versionName ?: ""),
             "versionCode" to code,
+        )
+    }
+
+    // Only what a bug report needs to be readable at the other end: which
+    // phone, and which Android. Nothing here identifies the device - these
+    // are the same values for every phone of that model.
+    private fun deviceInfo(): Map<String, Any?> {
+        return mapOf(
+            "manufacturer" to Build.MANUFACTURER,
+            "model" to Build.MODEL,
+            "androidRelease" to Build.VERSION.RELEASE,
+            "sdkInt" to Build.VERSION.SDK_INT,
         )
     }
 

@@ -12,6 +12,7 @@ import 'default_launcher_screen.dart';
 import 'design_settings_screen.dart';
 import 'design_tokens.dart';
 import 'device_data_screen.dart';
+import 'feedback_screen.dart';
 import 'folders_settings_screen.dart';
 import 'gesture_shortcuts_settings_screen.dart';
 import 'icon_theme_controller.dart';
@@ -441,6 +442,23 @@ List<SettingsEntry> buildSettingsCatalog({
         'kopie', 'json',
       ],
       onTap: (context) => _push(context, const SettingsBackupScreen()),
+    ),
+    SettingsEntry(
+      icon: Icons.feedback_outlined,
+      title: s.feedback,
+      section: SettingsSection.app,
+      subtitle: s.feedbackSubtitle,
+      keywords: const [
+        'feedback', 'rückmeldung', 'rueckmeldung', 'fehler', 'bug', 'bugs',
+        'melden', 'report', 'problem', 'absturz', 'abstürzt', 'abstuerzt',
+        'crash', 'kaputt', 'broken', 'funktioniert nicht', 'idee', 'ideen',
+        'idea', 'ideas', 'vorschlag', 'vorschläge', 'vorschlaege',
+        'suggestion', 'wunsch', 'wünsche', 'wuensche', 'feature', 'request',
+        'verbesserung', 'improvement', 'kontakt', 'contact', 'entwickler',
+        'developer', 'hilfe', 'help', 'support', 'mail', 'email', 'e-mail',
+        'schreiben', 'write',
+      ],
+      onTap: (context) => _push(context, const FeedbackScreen()),
     ),
     SettingsEntry(
       icon: Icons.system_update_outlined,

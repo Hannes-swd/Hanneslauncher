@@ -122,6 +122,27 @@ void main() {
     );
   });
 
+  test('the feedback row is findable by what people call it', () {
+    // The row someone looks for while something is broken, which is the
+    // worst moment to have to guess which group it was filed under.
+    for (final query in [
+      'fehler',
+      'bug',
+      'melden',
+      'absturz',
+      'idee',
+      'vorschlag',
+      'feedback',
+      'kontakt',
+      'support',
+    ]) {
+      expect(search(query), contains('Rückmeldung'), reason: query);
+    }
+    for (final query in ['report', 'crash', 'idea', 'suggestion', 'help']) {
+      expect(search(query), contains('Rückmeldung'), reason: query);
+    }
+  });
+
   test('umlaut spelled out finds the same entry', () {
     expect(search('schriftgroesse'), contains('App-Liste'));
     expect(search('geraetedaten', language: AppLanguage.de), isEmpty);
