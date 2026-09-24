@@ -549,6 +549,7 @@ class _InputFieldState extends State<_InputField> {
       ),
       onChanged: (text) =>
           WidgetInputStore.instance.setText(element.inputName, text),
+      onSubmitted: (_) => WidgetInputStore.instance.submit(element.inputName),
     );
 
     return SizedBox(
@@ -661,10 +662,43 @@ class _ResultsListState extends State<_ResultsList> {
   List<SearchHit> _hits = const [];
   String _shown = '';
 
+  /// The [_searchKey] that [_hits] actually answer. Trails [_shown] while a
+  /// lookup is still out.
+  String _answered = '';
+
   /// Rises with every search started, so a slow one (contacts go through a
   /// platform channel) can't land after a newer one and put stale rows back
   /// on screen.
   int _run = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetInputStore.instance.addSubmitListener(_onSubmit);
+  }
+
+  @override
+  void dispose() {
+    WidgetInputStore.instance.removeSubmitListener(_onSubmit);
+    super.dispose();
+  }
+
+  /// Enter in the watched field opens the top row, the same as tapping it.
+  /// Rows still on screen from an older query are not the answer to this
+  /// one, so nothing happens until the current lookup has landed. A sum is
+  /// passed over: its row opens nothing, so Enter goes to the next one.
+  void _onSubmit(String name) {
+    if (!widget.interactive) return;
+    if (name != WidgetInputStore.normalizeName(widget.element.inputName)) {
+      return;
+    }
+    if (_answered != _searchKey) return;
+    for (final hit in _hits) {
+      if (hit.kind == SearchHitKind.calculation) continue;
+      _tap(hit);
+      return;
+    }
+  }
 
   @override
   void didUpdateWidget(_ResultsList oldWidget) {
@@ -786,7 +820,10 @@ class _ResultsListState extends State<_ResultsList> {
       s: AppStrings(LocaleController.instance.value),
     ).then((hits) {
       if (!mounted || run != _run) return;
-      setState(() => _hits = hits);
+      setState(() {
+        _hits = hits;
+        _answered = key;
+      });
     });
   }
 

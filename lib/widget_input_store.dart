@@ -84,6 +84,27 @@ class WidgetInputStore extends ChangeNotifier {
     setText(name, '');
   }
 
+  final List<void Function(String name)> _submitListeners = [];
+
+  /// Called with a field's name whenever Enter is pressed in it. The field
+  /// and whatever answers it are separate elements, often on separate
+  /// cards, so this is the only line between the two.
+  void addSubmitListener(void Function(String name) listener) =>
+      _submitListeners.add(listener);
+
+  void removeSubmitListener(void Function(String name) listener) =>
+      _submitListeners.remove(listener);
+
+  void submit(String name) {
+    final key = normalizeName(name);
+    if (!_names.contains(key)) return;
+    // A copy: a listener acting on it can clear the field, and the rebuild
+    // that follows may take a results element off screen mid-loop.
+    for (final listener in [..._submitListeners]) {
+      listener(key);
+    }
+  }
+
   /// Empties every field. Runs when the panel shuts, for the same reason
   /// the values are memory-only in the first place: what was typed belongs
   /// to the moment it was typed in, and finding it still there on the next

@@ -207,10 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     List<SettingsEntry> entries,
     String query,
   ) {
-    final matches = [
-      for (final entry in entries)
-        if (entry.matches(query)) entry,
-    ];
+    final matches = rankSettings(entries, query);
     if (matches.isEmpty) {
       return Center(
         child: Padding(

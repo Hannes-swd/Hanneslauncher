@@ -10,6 +10,7 @@ import 'data_sources_settings_screen.dart';
 import 'default_launcher_controller.dart';
 import 'default_launcher_screen.dart';
 import 'design_settings_screen.dart';
+import 'entry_match.dart';
 import 'design_tokens.dart';
 import 'device_data_screen.dart';
 import 'feedback_screen.dart';
@@ -88,15 +89,56 @@ class SettingsEntry {
   final Widget? trailing;
 
   /// [query] is expected already trimmed and lowercased.
-  bool matches(String query) {
-    if (query.isEmpty) return true;
-    if (title.toLowerCase().contains(query)) return true;
-    if (subtitle.toLowerCase().contains(query)) return true;
+  bool matches(String query) => query.isEmpty || score(query) != null;
+
+  /// How well [query] finds this entry, or null when it doesn't. Higher is
+  /// better. The same ranking the app search uses (see entry_match.dart),
+  /// so "des" puts "Design" first rather than wherever the catalog happens
+  /// to list it, and `al` finds "App-Liste" by its initials.
+  ///
+  /// The title counts most, since it is what the row says. A keyword is a
+  /// step below it: it names something inside the screen, one tap further
+  /// away, so a keyword typed out in full still beats a title that merely
+  /// contains the letters somewhere. The subtitle counts least - it often
+  /// carries live counts and summaries rather than what the entry is.
+  int? score(String query) {
+    int? best = rankName(title, query);
     for (final keyword in keywords) {
-      if (keyword.contains(query)) return true;
+      final hit = rankName(keyword, query);
+      if (hit != null) best = _higher(best, hit - _keywordPenalty);
     }
-    return false;
+    final inSubtitle = rankName(subtitle, query);
+    if (inSubtitle != null) {
+      best = _higher(best, inSubtitle - _subtitlePenalty);
+    }
+    return best;
   }
+
+  static const int _keywordPenalty = 300;
+  static const int _subtitlePenalty = 450;
+
+  static int _higher(int? a, int b) => a == null || b > a ? b : a;
+}
+
+/// The entries of [entries] that [query] finds, best match first. Equally
+/// good matches keep the catalog's own order, which groups them by section.
+///
+/// [query] is expected already trimmed and lowercased.
+List<SettingsEntry> rankSettings(List<SettingsEntry> entries, String query) {
+  if (query.isEmpty) return [...entries];
+  final scored = <({SettingsEntry entry, int score, int index})>[];
+  for (var i = 0; i < entries.length; i++) {
+    final score = entries[i].score(query);
+    if (score != null) {
+      scored.add((entry: entries[i], score: score, index: i));
+    }
+  }
+  // List.sort is not stable, hence the index as the last word.
+  scored.sort((a, b) {
+    if (a.score != b.score) return b.score - a.score;
+    return a.index - b.index;
+  });
+  return [for (final hit in scored) hit.entry];
 }
 
 /// Every setting there is, in one list. Built fresh on each rebuild so the

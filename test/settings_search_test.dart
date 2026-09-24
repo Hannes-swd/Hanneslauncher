@@ -208,4 +208,37 @@ void main() {
       contains('Gerätedaten'),
     );
   });
+
+  group('results are ranked, not listed in catalog order', () {
+    List<String> ranked(String query) => [
+      for (final entry in rankSettings(catalog(), query)) entry.title,
+    ];
+
+    test('a title starting with the query comes first', () {
+      // "Design" and "Angepinnte Apps" both sit above "App-Liste" in the
+      // catalog, and both match "app" somewhere.
+      expect(ranked('app').first, 'App-Liste');
+      expect(ranked('des').first, 'Design');
+    });
+
+    test('a title beats an entry found only by keyword', () {
+      // "uhr" is a keyword of the offline mode too, and its subtitle says
+      // "Uhr auf Schwarz" - it still belongs below the clock itself.
+      expect(ranked('uhr'), ['Uhr', 'Offline-Modus']);
+    });
+
+    test('initials find a hyphenated title', () {
+      expect(ranked('al').first, 'App-Liste');
+    });
+
+    test('ranking finds exactly what matching finds', () {
+      for (final query in ['app', 'des', 'farbe', 'bild', 'x', 'backup']) {
+        expect(
+          ranked(query).toSet(),
+          search(query).toSet(),
+          reason: query,
+        );
+      }
+    });
+  });
 }

@@ -964,14 +964,9 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     );
   }
 
-  /// The search icon's release swaps the list for this: a text field plus
-  /// every entry whose name contains what's typed, spanning every letter
-  /// instead of just the one group a scrub would reach.
-  Widget _buildSearchView() {
-    final s = AppStrings(LocaleController.instance.value);
-    final query = _searchController.text.trim().toLowerCase();
+  List<LauncherEntry> _searchResultsFor(String query) {
     final unlock = _searchUnlock;
-    final results = searchResults(
+    return searchResults(
       query: query,
       visible: LauncherEntriesController.instance.entries,
       // Empty unless the password was typed - and empty again if the folder
@@ -981,10 +976,57 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
           : LauncherEntriesController.instance.secretEntries(unlock),
       sortMode: _settings.sortMode,
     );
-    // Only shown while they belong to what is currently typed. Without that
-    // check, backspacing would leave the previous query's answer standing
-    // under the new results until the next lookup lands.
-    final extras = _extraHitsQuery == query ? _extraHits : const <SearchHit>[];
+  }
+
+  /// Only while they belong to what is currently typed. Without that check,
+  /// backspacing would leave the previous query's answer standing under the
+  /// new results until the next lookup lands.
+  List<SearchHit> _extraHitsFor(String query) =>
+      _extraHitsQuery == query ? _extraHits : const <SearchHit>[];
+
+  /// Enter on the keyboard opens the top row - the one the ranking already
+  /// put first, so it is the same thing a tap on it would do.
+  ///
+  /// The web row is never what Enter reaches here. The secret folder's
+  /// password is typed into this very field, and Enter straight after it is
+  /// the most natural keystroke there is: with the web row in reach, the
+  /// password would go off to a search engine before the unlock had even
+  /// finished deriving. A sum is skipped too - its row opens nothing.
+  void _submitSearch() {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      _searchFocusNode.requestFocus();
+      return;
+    }
+    final results = _searchResultsFor(query);
+    if (results.isNotEmpty) {
+      final entry = results.first;
+      _closeSearch();
+      _open(entry);
+      return;
+    }
+    for (final hit in _extraHitsFor(query)) {
+      if (hit.kind == SearchHitKind.calculation ||
+          hit.kind == SearchHitKind.web) {
+        continue;
+      }
+      _closeSearch();
+      hit.onTap(context);
+      return;
+    }
+    // Nothing to open: the keyboard stays up, so the query can be fixed
+    // rather than having to tap back into the field first.
+    _searchFocusNode.requestFocus();
+  }
+
+  /// The search icon's release swaps the list for this: a text field plus
+  /// every entry whose name contains what's typed, spanning every letter
+  /// instead of just the one group a scrub would reach.
+  Widget _buildSearchView() {
+    final s = AppStrings(LocaleController.instance.value);
+    final query = _searchController.text.trim().toLowerCase();
+    final results = _searchResultsFor(query);
+    final extras = _extraHitsFor(query);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1011,6 +1053,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
                     // anyway, so nothing is lost for the search itself.
                     autocorrect: false,
                     enableSuggestions: false,
+                    textInputAction: TextInputAction.go,
                     decoration: InputDecoration(
                       isDense: true,
                       // No fill: this field sits on the wallpaper, not on
@@ -1021,6 +1064,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
                       hintText: s.searchApps,
                     ),
                     onChanged: _onSearchChanged,
+                    onSubmitted: (_) => _submitSearch(),
                   ),
                 ),
               ),

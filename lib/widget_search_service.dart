@@ -182,14 +182,13 @@ List<SearchHit> _appHits(String query, int limit) {
 List<SearchHit> _settingHits(String query, AppStrings s, int limit) {
   final lowered = query.toLowerCase();
   return [
-    for (final entry in currentSettingsCatalog(s))
-      if (entry.matches(lowered))
-        SearchHit(
-          kind: SearchHitKind.setting,
-          title: entry.title,
-          subtitle: entry.section.label(s),
-          onTap: (context) async => entry.onTap(context),
-        ),
+    for (final entry in rankSettings(currentSettingsCatalog(s), lowered))
+      SearchHit(
+        kind: SearchHitKind.setting,
+        title: entry.title,
+        subtitle: entry.section.label(s),
+        onTap: (context) async => entry.onTap(context),
+      ),
   ].take(limit).toList();
 }
 
