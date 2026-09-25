@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'app_icon.dart';
 import 'app_strings.dart';
 import 'design_tokens.dart';
+import 'entry_search_field.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
@@ -233,23 +234,51 @@ class _SecretFolderScreenState extends State<_SecretFolderScreen>
         if (entry.app != null || entry.isWebApp) entry,
     ];
 
+    final search = TextEditingController();
     final key = await showDialog<String>(
       context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(s.whichApp),
-        children: [
-          for (final entry in candidates)
-            SimpleDialogOption(
-              onPressed: () => Navigator.of(context).pop(entry.key),
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: AppIcon(entry: entry, size: 36),
-                title: Text(entry.name),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          final shown = filterByName(
+            candidates,
+            search.text,
+            (entry) => entry.name,
+          );
+          return AlertDialog(
+            title: Text(s.whichApp),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: MediaQuery.of(context).size.height * 0.6,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  EntrySearchField(
+                    controller: search,
+                    s: s,
+                    autofocus: true,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: shown.length,
+                      itemBuilder: (context, index) {
+                        final entry = shown[index];
+                        return ListTile(
+                          leading: AppIcon(entry: entry, size: 36),
+                          title: Text(entry.name),
+                          onTap: () => Navigator.of(context).pop(entry.key),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
-        ],
+          );
+        },
       ),
-    );
+    ).whenComplete(search.dispose);
     if (key == null) return;
 
     final wasPinned = await SecretAppsController.instance.add(

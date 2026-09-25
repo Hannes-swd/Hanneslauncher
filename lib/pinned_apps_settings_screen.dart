@@ -7,30 +7,49 @@ import 'app_strings.dart';
 import 'color_swatch_picker.dart';
 import 'design_tokens.dart';
 import 'design_widgets.dart';
+import 'entry_search_field.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
 import 'notification_badges_controller.dart';
 import 'pinned_apps_controller.dart';
 
-class PinnedAppsSettingsScreen extends StatelessWidget {
+class PinnedAppsSettingsScreen extends StatefulWidget {
   const PinnedAppsSettingsScreen({super.key});
+
+  @override
+  State<PinnedAppsSettingsScreen> createState() =>
+      _PinnedAppsSettingsScreenState();
+}
+
+class _PinnedAppsSettingsScreenState extends State<PinnedAppsSettingsScreen> {
+  final TextEditingController _search = TextEditingController();
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
 
   /// Folders, web apps and the launcher's own screens first: there are only
   /// a handful of them and they'd be tedious to find among hundreds of
   /// packages otherwise.
   List<LauncherEntry> _entries() {
     final all = LauncherEntriesController.instance.entries;
-    return [
-      for (final entry in all)
-        if (entry.isFolder) entry,
-      for (final entry in all)
-        if (entry.isWebApp) entry,
-      for (final entry in all)
-        if (entry.isBuiltIn) entry,
-      for (final entry in all)
-        if (!entry.isFolder && !entry.isWebApp && !entry.isBuiltIn) entry,
-    ];
+    return filterByName(
+      [
+        for (final entry in all)
+          if (entry.isFolder) entry,
+        for (final entry in all)
+          if (entry.isWebApp) entry,
+        for (final entry in all)
+          if (entry.isBuiltIn) entry,
+        for (final entry in all)
+          if (!entry.isFolder && !entry.isWebApp && !entry.isBuiltIn) entry,
+      ],
+      _search.text,
+      (entry) => entry.name,
+    );
   }
 
   @override
@@ -81,6 +100,11 @@ class PinnedAppsSettingsScreen extends StatelessWidget {
                                   _LeftMarginSlider(s: s),
                                   _BadgeSection(s: s),
                                   const Divider(height: 32),
+                                  EntrySearchField(
+                                    controller: _search,
+                                    s: s,
+                                    onChanged: (_) => setState(() {}),
+                                  ),
                                 ],
                               );
                             }

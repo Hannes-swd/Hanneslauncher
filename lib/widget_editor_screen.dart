@@ -31,6 +31,7 @@ import 'data_sources_controller.dart';
 import 'design_tokens.dart';
 import 'design_widgets.dart';
 import 'data_sources_settings_screen.dart';
+import 'entry_search_field.dart';
 import 'header_text_format.dart';
 import 'launcher_entries_controller.dart';
 import 'locale_controller.dart';
@@ -559,13 +560,27 @@ class _LinkedEntryTile extends StatelessWidget {
 
 /// Picks the single app, web app or folder a widget card opens when tapped.
 /// Pops with the chosen key, or an empty string to clear the link.
-class _LinkedEntryPicker extends StatelessWidget {
+class _LinkedEntryPicker extends StatefulWidget {
   const _LinkedEntryPicker({required this.s});
 
   final AppStrings s;
 
   @override
+  State<_LinkedEntryPicker> createState() => _LinkedEntryPickerState();
+}
+
+class _LinkedEntryPickerState extends State<_LinkedEntryPicker> {
+  final TextEditingController _search = TextEditingController();
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final s = widget.s;
     return ListenableBuilder(
       listenable: LauncherEntriesController.instance,
       builder: (context, child) {
@@ -578,31 +593,55 @@ class _LinkedEntryPicker extends StatelessWidget {
         // Folders and web apps first: there are only a handful of them and
         // they'd be tedious to find among hundreds of packages otherwise.
         final all = LauncherEntriesController.instance.entries;
-        final entries = [
-          for (final entry in all)
-            if (entry.isFolder) entry,
-          for (final entry in all)
-            if (entry.isWebApp) entry,
-          for (final entry in all)
-            if (!entry.isFolder && !entry.isWebApp) entry,
-        ];
+        final entries = filterByName(
+          [
+            for (final entry in all)
+              if (entry.isFolder) entry,
+            for (final entry in all)
+              if (entry.isWebApp) entry,
+            for (final entry in all)
+              if (!entry.isFolder && !entry.isWebApp) entry,
+          ],
+          _search.text,
+          (entry) => entry.name,
+        );
+        final query = _search.text.trim();
 
         return Scaffold(
           appBar: AppBar(title: Text(s.linkPickerTitle)),
-          body: ListView(
+          body: Column(
             children: [
-              ListTile(
-                leading: Icon(Icons.block, color: context.design.textMuted),
-                title: Text(s.openOnTapNone),
-                onTap: () => Navigator.of(context).pop(''),
+              EntrySearchField(
+                controller: _search,
+                s: s,
+                onChanged: (_) => setState(() {}),
               ),
-              const Divider(height: 1),
-              for (final entry in entries)
-                ListTile(
-                  leading: AppIcon(entry: entry, size: 36),
-                  title: Text(entry.name),
-                  onTap: () => Navigator.of(context).pop(entry.key),
+              Expanded(
+                child: ListView(
+                  children: [
+                    // The way to clear the link is itself found by name, so
+                    // it hides once the search narrows the list down - it
+                    // would otherwise be the one row no query ever removes.
+                    if (query.isEmpty) ...[
+                      ListTile(
+                        leading: Icon(
+                          Icons.block,
+                          color: context.design.textMuted,
+                        ),
+                        title: Text(s.openOnTapNone),
+                        onTap: () => Navigator.of(context).pop(''),
+                      ),
+                      const Divider(height: 1),
+                    ],
+                    for (final entry in entries)
+                      ListTile(
+                        leading: AppIcon(entry: entry, size: 36),
+                        title: Text(entry.name),
+                        onTap: () => Navigator.of(context).pop(entry.key),
+                      ),
+                  ],
                 ),
+              ),
             ],
           ),
         );

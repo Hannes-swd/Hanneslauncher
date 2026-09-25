@@ -5,6 +5,7 @@ import 'package:installed_apps/installed_apps.dart';
 import 'app_icon.dart';
 import 'app_overrides_controller.dart';
 import 'app_strings.dart';
+import 'entry_search_field.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
@@ -25,6 +26,8 @@ class AppCustomizeScreen extends StatefulWidget {
 
 class _AppCustomizeScreenState extends State<AppCustomizeScreen>
     with WidgetsBindingObserver {
+  final TextEditingController _search = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -34,6 +37,7 @@ class _AppCustomizeScreenState extends State<AppCustomizeScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _search.dispose();
     super.dispose();
   }
 
@@ -219,24 +223,45 @@ class _AppCustomizeScreenState extends State<AppCustomizeScreen>
               if (!LauncherEntriesController.instance.isLoaded) {
                 return const Center(child: CircularProgressIndicator());
               }
-              final entries = _entries();
-              return ListView.builder(
-                // One extra row for the secret folder, which sits above the
-                // apps rather than among them - it isn't an app, and it has
-                // to be reachable without scrolling past hundreds of them.
-                itemCount: entries.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == 0) return _secretFolderTile(s);
-                  final entry = entries[index - 1];
-                  return ListTile(
-                    leading: AppIcon(entry: entry, size: 36),
-                    title: Text(entry.name),
-                    // Web apps show their address; renamed apps show the
-                    // original name, so they stay findable.
-                    subtitle: _subtitleFor(entry),
-                    onTap: () => _openOptions(entry, s),
-                  );
-                },
+              final query = _search.text.trim();
+              final entries = filterByName(
+                _entries(),
+                query,
+                (entry) => entry.name,
+              );
+              // The secret folder isn't an app and has no name to match
+              // against, so it only sits above the list while unfiltered -
+              // once a query narrows the list down it would otherwise be
+              // the one row a search can never get rid of.
+              final showSecretFolder = query.isEmpty;
+              return Column(
+                children: [
+                  EntrySearchField(
+                    controller: _search,
+                    s: s,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: entries.length + (showSecretFolder ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (showSecretFolder && index == 0) {
+                          return _secretFolderTile(s);
+                        }
+                        final entry =
+                            entries[index - (showSecretFolder ? 1 : 0)];
+                        return ListTile(
+                          leading: AppIcon(entry: entry, size: 36),
+                          title: Text(entry.name),
+                          // Web apps show their address; renamed apps show
+                          // the original name, so they stay findable.
+                          subtitle: _subtitleFor(entry),
+                          onTap: () => _openOptions(entry, s),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               );
             },
           ),

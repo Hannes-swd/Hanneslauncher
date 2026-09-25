@@ -5,6 +5,7 @@ import 'app_launcher.dart';
 import 'app_pairs_controller.dart';
 import 'app_strings.dart';
 import 'design_tokens.dart';
+import 'entry_search_field.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
@@ -87,33 +88,60 @@ class _AppPairsSettingsScreenState extends State<AppPairsSettingsScreen> {
         if (entry.key != exclude?.key) entry,
     ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
+    final search = TextEditingController();
     return showDialog<LauncherEntry>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: options.length,
-            itemBuilder: (context, index) {
-              final entry = options[index];
-              return ListTile(
-                leading: AppIcon(entry: entry, size: 32),
-                title: Text(entry.name),
-                onTap: () => Navigator.of(context).pop(entry),
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(s.cancel),
-          ),
-        ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          final shown = filterByName(
+            options,
+            search.text,
+            (entry) => entry.name,
+          );
+          return AlertDialog(
+            title: Text(title),
+            content: SizedBox(
+              width: double.maxFinite,
+              // Capped rather than left to size itself to the list: a
+              // dialog that grows with every letter typed would jump around
+              // the screen while the query is still being narrowed down.
+              height: MediaQuery.of(context).size.height * 0.6,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  EntrySearchField(
+                    controller: search,
+                    s: s,
+                    autofocus: true,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: shown.length,
+                      itemBuilder: (context, index) {
+                        final entry = shown[index];
+                        return ListTile(
+                          leading: AppIcon(entry: entry, size: 32),
+                          title: Text(entry.name),
+                          onTap: () => Navigator.of(context).pop(entry),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(s.cancel),
+              ),
+            ],
+          );
+        },
       ),
-    );
+    ).whenComplete(search.dispose);
   }
 
   String _describe(AppPair pair) {

@@ -4,6 +4,7 @@ import 'app_icon.dart';
 import 'app_strings.dart';
 import 'color_swatch_picker.dart';
 import 'design_tokens.dart';
+import 'entry_search_field.dart';
 import 'folders_controller.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
@@ -239,10 +240,23 @@ class FolderEditScreen extends StatelessWidget {
 }
 
 /// Picks what goes into a folder: apps, web apps and other folders.
-class FolderContentsPicker extends StatelessWidget {
+class FolderContentsPicker extends StatefulWidget {
   const FolderContentsPicker({super.key, required this.folderId});
 
   final String folderId;
+
+  @override
+  State<FolderContentsPicker> createState() => _FolderContentsPickerState();
+}
+
+class _FolderContentsPickerState extends State<FolderContentsPicker> {
+  final TextEditingController _search = TextEditingController();
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -253,47 +267,65 @@ class FolderContentsPicker extends StatelessWidget {
         return ValueListenableBuilder<List<LauncherFolder>>(
           valueListenable: FoldersController.instance,
           builder: (context, folders, child) {
-            final folder = FoldersController.instance.byId(folderId);
+            final folder = FoldersController.instance.byId(widget.folderId);
             if (folder == null) return const Scaffold();
 
             // Folders first, then everything else - a folder is the thing
             // being looked for here and would be lost among the packages.
             final all = LauncherEntriesController.instance.entries;
-            final entries = [
-              for (final entry in all)
-                if (entry.isFolder &&
-                    FoldersController.instance.canContain(folder.id, entry.key))
-                  entry,
-              for (final entry in all)
-                if (!entry.isFolder) entry,
-            ];
+            final entries = filterByName(
+              [
+                for (final entry in all)
+                  if (entry.isFolder &&
+                      FoldersController.instance.canContain(
+                        folder.id,
+                        entry.key,
+                      ))
+                    entry,
+                for (final entry in all)
+                  if (!entry.isFolder) entry,
+              ],
+              _search.text,
+              (entry) => entry.name,
+            );
 
             return Scaffold(
               appBar: AppBar(title: Text(s.addToFolder)),
-              body: ListView.builder(
-                itemCount: entries.length,
-                itemBuilder: (context, index) {
-                  final entry = entries[index];
-                  final contained = folder.itemKeys.contains(entry.key);
-                  return CheckboxListTile(
-                    value: contained,
-                    secondary: AppIcon(entry: entry, size: 36),
-                    title: Text(entry.name),
-                    onChanged: (_) {
-                      if (contained) {
-                        FoldersController.instance.removeItem(
-                          folder.id,
-                          entry.key,
+              body: Column(
+                children: [
+                  EntrySearchField(
+                    controller: _search,
+                    s: s,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: entries.length,
+                      itemBuilder: (context, index) {
+                        final entry = entries[index];
+                        final contained = folder.itemKeys.contains(entry.key);
+                        return CheckboxListTile(
+                          value: contained,
+                          secondary: AppIcon(entry: entry, size: 36),
+                          title: Text(entry.name),
+                          onChanged: (_) {
+                            if (contained) {
+                              FoldersController.instance.removeItem(
+                                folder.id,
+                                entry.key,
+                              );
+                            } else {
+                              FoldersController.instance.addItem(
+                                folder.id,
+                                entry.key,
+                              );
+                            }
+                          },
                         );
-                      } else {
-                        FoldersController.instance.addItem(
-                          folder.id,
-                          entry.key,
-                        );
-                      }
-                    },
-                  );
-                },
+                      },
+                    ),
+                  ),
+                ],
               ),
             );
           },

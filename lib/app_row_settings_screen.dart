@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app_icon.dart';
 import 'app_strings.dart';
 import 'design_tokens.dart';
+import 'entry_search_field.dart';
 import 'launcher_entries_controller.dart';
 import 'locale_controller.dart';
 import 'panel_blocks_controller.dart';
@@ -99,13 +100,27 @@ class AppRowSettingsScreen extends StatelessWidget {
   }
 }
 
-class _Picker extends StatelessWidget {
+class _Picker extends StatefulWidget {
   const _Picker({required this.block});
 
   final PanelBlock block;
 
   @override
+  State<_Picker> createState() => _PickerState();
+}
+
+class _PickerState extends State<_Picker> {
+  final TextEditingController _search = TextEditingController();
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final s = AppStrings(LocaleController.instance.value);
     return ListenableBuilder(
       listenable: LauncherEntriesController.instance,
       builder: (context, child) {
@@ -118,29 +133,38 @@ class _Picker extends StatelessWidget {
         // Folders and web apps first: there are only a handful of them and
         // they'd be tedious to find among hundreds of packages otherwise.
         final all = LauncherEntriesController.instance.entries;
-        final entries = [
-          for (final entry in all)
-            if (entry.isFolder) entry,
-          for (final entry in all)
-            if (entry.isWebApp) entry,
-          for (final entry in all)
-            if (!entry.isFolder && !entry.isWebApp) entry,
-        ];
+        final entries = filterByName(
+          [
+            for (final entry in all)
+              if (entry.isFolder) entry,
+            for (final entry in all)
+              if (entry.isWebApp) entry,
+            for (final entry in all)
+              if (!entry.isFolder && !entry.isWebApp) entry,
+          ],
+          _search.text,
+          (entry) => entry.name,
+        );
 
         return Column(
           children: [
+            EntrySearchField(
+              controller: _search,
+              s: s,
+              onChanged: (_) => setState(() {}),
+            ),
             for (final entry in entries)
               CheckboxListTile(
-                value: block.itemKeys.contains(entry.key),
+                value: widget.block.itemKeys.contains(entry.key),
                 secondary: AppIcon(entry: entry, size: 36),
                 title: Text(entry.name),
                 onChanged: (_) {
-                  final keys = List<String>.from(block.itemKeys);
+                  final keys = List<String>.from(widget.block.itemKeys);
                   // Newly ticked entries go to the end, so the row's order
                   // follows the order they were picked in.
                   if (!keys.remove(entry.key)) keys.add(entry.key);
                   PanelBlocksController.instance.update(
-                    block.copyWith(itemKeys: keys),
+                    widget.block.copyWith(itemKeys: keys),
                   );
                 },
               ),
