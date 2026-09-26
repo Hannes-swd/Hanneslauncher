@@ -54,12 +54,39 @@ class MyApp extends StatelessWidget {
           // reloading. DesignTokens.lerp is what carries it.
           themeAnimationDuration: tokens.motionNormal,
           themeAnimationCurve: tokens.motionCurve,
+          navigatorObservers: [_GestureExclusionObserver()],
           home: child,
         );
       },
       child: const LauncherRoot(),
     );
   }
+}
+
+/// Keeps the alphabet bar's gesture exclusion (see system_gesture_exclusion)
+/// off whenever a settings page or dialog is on top of the home screen -
+/// otherwise the OS back-swipe on that edge would stay blocked everywhere in
+/// the app, not just on the home screen it's meant for.
+class _GestureExclusionObserver extends NavigatorObserver {
+  void _sync(Route<dynamic>? topRoute) {
+    SystemGestureExclusion.setHomeTopmost(topRoute?.isFirst ?? true);
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _sync(route);
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _sync(previousRoute);
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _sync(previousRoute);
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) =>
+      _sync(newRoute);
 }
 
 class LauncherRoot extends StatefulWidget {
