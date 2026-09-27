@@ -83,4 +83,12 @@ class MediaSession {
       await _channel.invokeMethod('previous');
     } catch (_) {}
   }
+
+  /// Pauses if something is playing, plays if it was paused - one call for
+  /// the one button a card has room for.
+  static Future<void> playPause() async {
+    try {
+      await _channel.invokeMethod('playPause');
+    } catch (_) {}
+  }
 }

@@ -55,6 +55,7 @@ IconData _templateIcon(CodeWidgetTemplate template) => switch (template) {
   CodeWidgetTemplate.data => Icons.cloud_outlined,
   CodeWidgetTemplate.gallery => Icons.image_outlined,
   CodeWidgetTemplate.game => Icons.sports_esports_outlined,
+  CodeWidgetTemplate.media => Icons.music_note_outlined,
 };
 
 /// Writes a code widget: its three files, the pictures and data files next

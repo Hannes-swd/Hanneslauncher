@@ -5,6 +5,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import 'code_widget_store.dart';
 import 'data_sources_controller.dart';
+import 'media_session.dart';
 import 'widget_action.dart';
 import 'widget_input_store.dart';
 
@@ -154,6 +155,26 @@ class CodeWidgetBridge {
 
       case 'fetch':
         return _fetch(args);
+
+      case 'mediaHasPermission':
+        return MediaSession.hasPermission();
+
+      case 'media':
+        final now = await MediaSession.current();
+        if (now == null) return null;
+        return {'title': now.title, 'artist': now.artist, 'playing': now.playing};
+
+      case 'mediaNext':
+        await MediaSession.next();
+        return true;
+
+      case 'mediaPrevious':
+        await MediaSession.previous();
+        return true;
+
+      case 'mediaPlayPause':
+        await MediaSession.playPause();
+        return true;
 
       case 'open':
         final key = args['key'] as String? ?? '';
@@ -513,7 +534,12 @@ const String _bridgeCore = r'''
     load: function (key) { return call('load', {key: key}); },
     forget: function (key) { return call('forget', {key: key}); },
     toast: function (message) { return call('toast', {text: String(message)}); },
-    log: report
+    log: report,
+    mediaHasPermission: function () { return call('mediaHasPermission'); },
+    media: function () { return call('media'); },
+    mediaNext: function () { return call('mediaNext'); },
+    mediaPrevious: function () { return call('mediaPrevious'); },
+    mediaPlayPause: function () { return call('mediaPlayPause'); }
   };
 
   document.addEventListener('DOMContentLoaded', function () {

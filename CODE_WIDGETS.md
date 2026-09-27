@@ -28,6 +28,7 @@ kurz genug, um sie ganz zu lesen und eine Zeile davon zu ändern:
 | **Datenquelle** | Zeigt einen Wert an und hält ihn aktuell |
 | **Bilder** | Hochgeladene Bilder durchtippen |
 | **Kleines Spiel** | Triff den Punkt, auf einem Canvas |
+| **Musik** | Titel, Interpret und Knöpfe für Spotify & Co, in deren Optik |
 
 ## Bearbeiten
 
@@ -212,6 +213,24 @@ hat. Die Daten gehören dem einzelnen Widget und wandern ins Backup mit.
 | `launcher.openUrl('https://…')` | Gibt eine Adresse ans Handy weiter - Browser, Telefon-App, Karten-App. |
 | `launcher.toast('fertig')` | Sagt kurz unten am Bildschirm Bescheid. |
 | `launcher.log('…')` | Schreibt in die Konsole der Vorschau. |
+
+### Musikwiedergabe
+
+Dieselbe Quelle, aus der auch die Vorlage **Musik** liest: Androids eigene
+Media Session, dieselbe Stelle, an der auch der Sperrbildschirm sein
+"Gerade läuft" herholt. Läuft für Spotify genauso wie für YouTube Music
+oder einen Podcast-Player - ohne eigenes Konto, ohne eigenen Login. Die
+einzige Voraussetzung ist die Berechtigung **Benachrichtigungszugriff**
+für diese App (*Einstellungen → Benachrichtigungen & Berechtigungen*);
+ohne sie liefert `launcher.media()` immer `null`.
+
+| Aufruf | Macht |
+|---|---|
+| `launcher.mediaHasPermission()` | Ob der Benachrichtigungszugriff an ist. |
+| `launcher.media()` | `{title, artist, playing}`, oder `null` wenn nichts läuft. |
+| `launcher.mediaNext()` | Nächster Titel. |
+| `launcher.mediaPrevious()` | Vorheriger Titel. |
+| `launcher.mediaPlayPause()` | Wiedergabe anhalten oder fortsetzen - je nachdem, was gerade läuft. |
 
 ---
 

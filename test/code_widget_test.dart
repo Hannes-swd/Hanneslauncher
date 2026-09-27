@@ -60,6 +60,11 @@ void main() {
         'load:',
         'forget:',
         'toast:',
+        'mediaHasPermission:',
+        'media:',
+        'mediaNext:',
+        'mediaPrevious:',
+        'mediaPlayPause:',
       ]) {
         expect(document, contains(call), reason: call);
       }

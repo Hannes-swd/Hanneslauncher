@@ -509,6 +509,10 @@ class AppStrings {
   String get codeTemplateGame => _en ? 'Small game' : 'Kleines Spiel';
   String get codeTemplateGameHint =>
       _en ? 'Hit the dot, on a canvas' : 'Triff den Punkt, auf einem Canvas';
+  String get codeTemplateMedia => _en ? 'Music' : 'Musik';
+  String get codeTemplateMediaHint => _en
+      ? 'Title, artist and controls for Spotify & co, in their look'
+      : 'Titel, Interpret und Knöpfe für Spotify & Co, in deren Optik';
 
   String get codeFiles => _en ? 'Files' : 'Dateien';
   String get codeCard => _en ? 'Card' : 'Karte';

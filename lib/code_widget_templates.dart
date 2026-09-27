@@ -9,7 +9,7 @@ import 'code_widget_store.dart';
 /// The code itself is written in English, names and comments alike: it is
 /// meant to be edited next to examples found anywhere else, and half-German
 /// identifiers next to a pasted snippet read worse than either on its own.
-enum CodeWidgetTemplate { empty, button, data, gallery, game }
+enum CodeWidgetTemplate { empty, button, data, gallery, game, media }
 
 extension CodeWidgetTemplateInfo on CodeWidgetTemplate {
   String label(AppStrings s) => switch (this) {
@@ -18,6 +18,7 @@ extension CodeWidgetTemplateInfo on CodeWidgetTemplate {
     CodeWidgetTemplate.data => s.codeTemplateData,
     CodeWidgetTemplate.gallery => s.codeTemplateGallery,
     CodeWidgetTemplate.game => s.codeTemplateGame,
+    CodeWidgetTemplate.media => s.codeTemplateMedia,
   };
 
   String description(AppStrings s) => switch (this) {
@@ -26,6 +27,7 @@ extension CodeWidgetTemplateInfo on CodeWidgetTemplate {
     CodeWidgetTemplate.data => s.codeTemplateDataHint,
     CodeWidgetTemplate.gallery => s.codeTemplateGalleryHint,
     CodeWidgetTemplate.game => s.codeTemplateGameHint,
+    CodeWidgetTemplate.media => s.codeTemplateMediaHint,
   };
 
   CodeWidgetSource get source => switch (this) {
@@ -34,6 +36,7 @@ extension CodeWidgetTemplateInfo on CodeWidgetTemplate {
     CodeWidgetTemplate.data => _data,
     CodeWidgetTemplate.gallery => _gallery,
     CodeWidgetTemplate.game => _game,
+    CodeWidgetTemplate.media => _media,
   };
 }
 
@@ -270,5 +273,122 @@ board.addEventListener('click', function (event) {
 window.addEventListener('resize', resize);
 resize();
 setInterval(moveTarget, 1400);
+''',
+);
+
+const CodeWidgetSource _media = CodeWidgetSource(
+  html: '''
+<!-- Reads whatever is currently playing - Spotify, YouTube Music, any
+     player - from Android's own media session, the same place the lock
+     screen gets it from. Needs "Notification access" turned on for this
+     app once; the hint below shows while it isn't. -->
+<div id="card">
+  <p id="hint">Turn on "Notification access" for this app in Settings,
+    then reopen this card.</p>
+  <div id="playing" hidden>
+    <div id="title">-</div>
+    <div id="artist"></div>
+    <div class="controls">
+      <button id="prev" aria-label="Previous">&#9198;</button>
+      <button id="toggle" aria-label="Play or pause">&#9208;</button>
+      <button id="next" aria-label="Next">&#9197;</button>
+    </div>
+  </div>
+</div>
+''',
+  css: '''
+#card {
+  height: 100%;
+  padding: 14px;
+  background: #121212;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+#hint {
+  margin: 0;
+  color: #b3b3b3;
+  font-size: 13px;
+}
+#title {
+  font-size: 17px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#artist {
+  margin-top: 2px;
+  color: #b3b3b3;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 12px;
+}
+.controls button {
+  border: 0;
+  background: none;
+  color: #fff;
+  padding: 0;
+  font-size: 22px;
+  line-height: 1;
+}
+#toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  background: #1db954;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+''',
+  js: '''
+// Polling rather than a push: the media session can change from outside
+// this card (someone else picks a track), and this is the only way to
+// notice that. 1.5s keeps the play/pause icon close to true without
+// waking the page up constantly.
+async function tick() {
+  const allowed = await launcher.mediaHasPermission();
+  document.getElementById('hint').hidden = allowed;
+  document.getElementById('playing').hidden = !allowed;
+  if (!allowed) return;
+
+  const now = await launcher.media();
+  const title = document.getElementById('title');
+  const artist = document.getElementById('artist');
+  const toggle = document.getElementById('toggle');
+
+  if (!now) {
+    title.textContent = 'Nothing playing';
+    artist.textContent = '';
+    toggle.innerHTML = '&#9658;';
+    return;
+  }
+  title.textContent = now.title;
+  artist.textContent = now.artist || '';
+  toggle.innerHTML = now.playing ? '&#9208;' : '&#9658;';
+}
+
+document
+  .getElementById('prev')
+  .addEventListener('click', function () { launcher.mediaPrevious(); });
+document
+  .getElementById('next')
+  .addEventListener('click', function () { launcher.mediaNext(); });
+document
+  .getElementById('toggle')
+  .addEventListener('click', function () { launcher.mediaPlayPause(); });
+
+tick();
+setInterval(tick, 1500);
 ''',
 );

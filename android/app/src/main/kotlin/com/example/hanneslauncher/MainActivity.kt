@@ -500,6 +500,7 @@ class MainActivity : FlutterActivity() {
                     "current" -> result.success(currentMedia())
                     "next" -> result.success(sendMediaCommand(next = true))
                     "previous" -> result.success(sendMediaCommand(next = false))
+                    "playPause" -> result.success(sendPlayPause())
                     else -> result.notImplemented()
                 }
             }
@@ -826,6 +827,24 @@ class MainActivity : FlutterActivity() {
                 controller.transportControls.skipToNext()
             } else {
                 controller.transportControls.skipToPrevious()
+            }
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    // Toggles rather than always sending "play": a code widget's button is
+    // one icon that has to do both, and asking the caller to first read
+    // [currentMedia] to know which one to send would just move this same
+    // check onto the Dart side.
+    private fun sendPlayPause(): Boolean {
+        val controller = activeMediaController() ?: return false
+        return try {
+            if (controller.playbackState?.state == PlaybackState.STATE_PLAYING) {
+                controller.transportControls.pause()
+            } else {
+                controller.transportControls.play()
             }
             true
         } catch (_: Exception) {
