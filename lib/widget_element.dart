@@ -53,7 +53,18 @@ enum WidgetActionKind {
   /// dropdowns and no address to type, which is the whole point of it
   /// existing next to [open].
   search,
+
+  /// Sends one of Android's own media transport commands - previous, next,
+  /// or play/pause - to whatever is currently playing (Spotify, YouTube
+  /// Music, a podcast app). Uses [WidgetElement.actionMediaCommand] and
+  /// nothing else; the same permission the lock screen's own controls need
+  /// (see `MediaSession`).
+  media,
 }
+
+/// Which of Android's media transport controls a [WidgetActionKind.media]
+/// button sends.
+enum WidgetMediaCommand { previous, playPause, next }
 
 /// What a search address writes where the typed words belong. Deliberately
 /// not one of the `{{...}}` data-source placeholders: this is filled in at
@@ -191,6 +202,7 @@ class WidgetElement {
     this.actionValueMode = ActionValueMode.fixed,
     this.actionToggleSource = '',
     this.actionKind = WidgetActionKind.http,
+    this.actionMediaCommand = WidgetMediaCommand.playPause,
     this.inputName = '',
     this.inputHint = '',
     this.inputKeyboard = WidgetInputKeyboard.text,
@@ -255,10 +267,16 @@ class WidgetElement {
   final ActionValueMode actionValueMode;
   final String actionToggleSource;
 
-  /// Action only: whether the tap sends a request or opens the address.
-  /// Everything above applies to [WidgetActionKind.http] alone - opening
-  /// needs nothing but [actionUrl].
+  /// Action only: whether the tap sends a request, opens the address,
+  /// searches, or sends a media transport command. Everything above applies
+  /// to [WidgetActionKind.http] alone - opening needs nothing but
+  /// [actionUrl], and [WidgetActionKind.media] needs only
+  /// [actionMediaCommand].
   final WidgetActionKind actionKind;
+
+  /// Action only, when [actionKind] is [WidgetActionKind.media]: which
+  /// transport command the tap sends.
+  final WidgetMediaCommand actionMediaCommand;
 
   /// Input: the name this field is referenced by, as `{{eingabe.<name>}}`.
   /// Results and a text element in a mode other than [WidgetTextMode.free]:
@@ -321,6 +339,7 @@ class WidgetElement {
     ActionValueMode? actionValueMode,
     String? actionToggleSource,
     WidgetActionKind? actionKind,
+    WidgetMediaCommand? actionMediaCommand,
     String? inputName,
     String? inputHint,
     WidgetInputKeyboard? inputKeyboard,
@@ -355,6 +374,7 @@ class WidgetElement {
       actionValueMode: actionValueMode ?? this.actionValueMode,
       actionToggleSource: actionToggleSource ?? this.actionToggleSource,
       actionKind: actionKind ?? this.actionKind,
+      actionMediaCommand: actionMediaCommand ?? this.actionMediaCommand,
       inputName: inputName ?? this.inputName,
       inputHint: inputHint ?? this.inputHint,
       inputKeyboard: inputKeyboard ?? this.inputKeyboard,
@@ -391,6 +411,7 @@ class WidgetElement {
     'actionValueMode': actionValueMode.name,
     'actionToggleSource': actionToggleSource,
     'actionKind': actionKind.name,
+    'actionMediaCommand': actionMediaCommand.name,
     'inputName': inputName,
     'inputHint': inputHint,
     'inputKeyboard': inputKeyboard.name,
@@ -441,6 +462,7 @@ class WidgetElement {
     // Absent on every card built before buttons could open something, and
     // those all sent a request - which is exactly the fallback.
     actionKind: _actionKindFromName(json['actionKind']),
+    actionMediaCommand: _mediaCommandFromName(json['actionMediaCommand']),
     inputName: json['inputName'] as String? ?? '',
     inputHint: json['inputHint'] as String? ?? '',
     inputKeyboard: _inputKeyboardFromName(json['inputKeyboard']),
@@ -465,6 +487,13 @@ class WidgetElement {
       if (kind.name == name) return kind;
     }
     return WidgetActionKind.http;
+  }
+
+  static WidgetMediaCommand _mediaCommandFromName(Object? name) {
+    for (final command in WidgetMediaCommand.values) {
+      if (command.name == name) return command;
+    }
+    return WidgetMediaCommand.playPause;
   }
 
   static WidgetInputKeyboard _inputKeyboardFromName(Object? name) {
@@ -585,4 +614,8 @@ const Map<String, IconData> widgetIcons = {
   'mail': Icons.mail_outline,
   'shop': Icons.shopping_bag_outlined,
   'play': Icons.play_circle_outline,
+  'pause': Icons.pause_circle_outline,
+  'skip_previous': Icons.skip_previous,
+  'skip_next': Icons.skip_next,
+  'music': Icons.music_note,
 };

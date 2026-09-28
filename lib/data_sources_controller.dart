@@ -10,6 +10,7 @@ import 'data_packages_controller.dart';
 import 'device_stats_controller.dart';
 import 'locale_controller.dart';
 import 'location_controller.dart';
+import 'media_session_controller.dart';
 import 'moon_phase.dart';
 import 'sun_times.dart';
 import 'widget_input_store.dart';
@@ -369,6 +370,9 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
     'mondphase': 'moon_phase',
     'schritte': 'steps',
     'meistgenutzt': 'most_used_app',
+    'musik_titel': 'media_title',
+    'musik_interpret': 'media_artist',
+    'musik_status': 'media_status',
   };
 
   /// How [key] is written in the app's current language. Keys without an
@@ -391,6 +395,12 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
       'ort',
       'lat',
       'lon',
+      // Not gated behind the device-data package: this needs Android's own
+      // "Notification access" permission instead, the same one the offline
+      // mode's music display already asks for (offline_mode_settings_screen).
+      'musik_titel',
+      'musik_interpret',
+      'musik_status',
       if (deviceData) ...[
         'akku',
         'akku_laedt',
@@ -428,6 +438,31 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
     'sonnenunter',
     'sunset',
   };
+
+  /// The built-in placeholders that read [MediaSessionController], under
+  /// both spellings. Same reasoning as [locationBuiltInKeys]: whoever is
+  /// about to draw one of these has to refresh it first, and the switch in
+  /// [_builtIn] is the only thing that knows which keys those are.
+  /// `test/media_placeholders_guard_test.dart` checks this list against that
+  /// switch in both directions.
+  static const Set<String> mediaBuiltInKeys = {
+    'musik_titel',
+    'media_title',
+    'musik_interpret',
+    'media_artist',
+    'musik_status',
+    'media_status',
+  };
+
+  /// Whether anything in [template] needs [MediaSessionController] refreshed
+  /// before it can be drawn - the same idea as [templateNeedsLocation], one
+  /// placeholder set later.
+  static bool templateNeedsMedia(String template) {
+    for (final match in _placeholder.allMatches(template)) {
+      if (mediaBuiltInKeys.contains(_keyOf(match.group(1)!))) return true;
+    }
+    return false;
+  }
 
   /// Whether anything in [template] needs a position before it can be
   /// drawn.
@@ -535,9 +570,28 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
         return steps == null ? '-' : '$steps';
       case 'meistgenutzt' || 'most_used_app':
         return DeviceStatsController.instance.mostUsedApp ?? '-';
+      case 'musik_titel' || 'media_title':
+        return MediaSessionController.instance.title ?? '-';
+      case 'musik_interpret' || 'media_artist':
+        return MediaSessionController.instance.artist ?? '-';
+      case 'musik_status' || 'media_status':
+        if (!MediaSessionController.instance.hasPermission) return '-';
+        final en = LocaleController.instance.value == AppLanguage.en;
+        return MediaSessionController.instance.playing
+            ? (en ? 'Playing' : 'Spielt')
+            : (en ? 'Paused' : 'Pausiert');
       default:
         return null;
     }
+  }
+
+  /// Re-reads what's playing and tells every card watching a placeholder to
+  /// redraw - the same "refresh after a successful tap" an HTTP toggle
+  /// button gets (see `runWidgetAction`), so a title or a play/pause status
+  /// next to a media button doesn't sit stale until the panel's own tick.
+  Future<void> refreshMedia() async {
+    await MediaSessionController.instance.refresh();
+    notifyListeners();
   }
 
   static String _formatGb(double? gb) => gb == null ? '-' : '${gb.toStringAsFixed(1)} GB';

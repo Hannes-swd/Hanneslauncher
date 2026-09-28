@@ -330,6 +330,7 @@ class _ActionSettingsState extends State<_ActionSettings> {
                   WidgetActionKind.http => s.actionKindHttp,
                   WidgetActionKind.open => s.actionKindOpen,
                   WidgetActionKind.search => s.actionKindSearch,
+                  WidgetActionKind.media => s.actionKindMedia,
                 }),
                 selected: kind == option,
                 onSelected: (_) => widget.onChanged(
@@ -364,6 +365,7 @@ class _ActionSettingsState extends State<_ActionSettings> {
             WidgetActionKind.http => s.actionKindHttpHint,
             WidgetActionKind.open => s.actionKindOpenHint,
             WidgetActionKind.search => s.actionKindSearchHint,
+            WidgetActionKind.media => s.actionKindMediaHint,
           },
           style: TextStyle(
             fontSize: context.design.typeCaption,
@@ -376,6 +378,7 @@ class _ActionSettingsState extends State<_ActionSettings> {
           WidgetActionKind.http => _httpFields(s, mode, showBody),
           WidgetActionKind.open => _openFields(s),
           WidgetActionKind.search => _searchFields(s),
+          WidgetActionKind.media => _mediaFields(s),
         },
       ],
     );
@@ -387,10 +390,90 @@ class _ActionSettingsState extends State<_ActionSettings> {
     WidgetActionKind.http: 'power',
     WidgetActionKind.open: 'open',
     WidgetActionKind.search: 'search',
+    WidgetActionKind.media: 'play',
   };
-  static const Set<String> _defaultIcons = {'power', 'open', 'search'};
+  static const Set<String> _defaultIcons = {
+    'power',
+    'open',
+    'search',
+    'play',
+    'pause',
+    'skip_previous',
+    'skip_next',
+  };
   static String _defaultIconFor(WidgetActionKind kind) =>
       _kindIcons[kind] ?? 'power';
+
+  /// The glyph each transport command starts on - same "still the default"
+  /// tracking as [_defaultIconFor], one level down.
+  static const Map<WidgetMediaCommand, String> _mediaCommandIcons = {
+    WidgetMediaCommand.previous: 'skip_previous',
+    WidgetMediaCommand.playPause: 'play',
+    WidgetMediaCommand.next: 'skip_next',
+  };
+  static String _defaultMediaIconFor(WidgetMediaCommand command) =>
+      _mediaCommandIcons[command] ?? 'play';
+
+  /// One row of chips and nothing else - there is no address, no method, no
+  /// toggle. Just which of the three transport commands this button sends.
+  List<Widget> _mediaFields(AppStrings s) {
+    final command = widget.element.actionMediaCommand;
+    return [
+      FieldLabel(s.actionMediaCommandLabel),
+      Wrap(
+        spacing: 8,
+        children: [
+          for (final option in WidgetMediaCommand.values)
+            ChoiceChip(
+              label: Text(switch (option) {
+                WidgetMediaCommand.previous => s.actionMediaPrevious,
+                WidgetMediaCommand.playPause => s.actionMediaPlayPause,
+                WidgetMediaCommand.next => s.actionMediaNext,
+              }),
+              selected: command == option,
+              onSelected: (_) => widget.onChanged(
+                widget.element.copyWith(
+                  actionMediaCommand: option,
+                  // Same rule as the kind switch above: only follows the
+                  // pick while the glyph is still whichever default it
+                  // started on.
+                  template: _defaultIcons.contains(widget.element.template)
+                      ? _defaultMediaIconFor(option)
+                      : widget.element.template,
+                ),
+              ),
+            ),
+        ],
+      ),
+      const SizedBox(height: 20),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: FilledButton.tonalIcon(
+          onPressed: _testing ? null : _test,
+          icon: const Icon(Icons.play_arrow),
+          label: Text(s.testAction),
+        ),
+      ),
+      if (_testResult != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: context.design.fillSubtle,
+              borderRadius: BorderRadius.circular(context.design.radiusMedium),
+            ),
+            child: Text(
+              _testResult!,
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: context.design.typeCaption,
+              ),
+            ),
+          ),
+        ),
+    ];
+  }
 
   /// Two dropdowns and a preview - no address anywhere. Everything the HTTP
   /// kind needs is meaningless here, so none of it is shown.

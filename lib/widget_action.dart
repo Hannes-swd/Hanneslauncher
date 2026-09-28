@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'app_strings.dart';
 import 'data_sources_controller.dart';
 import 'locale_controller.dart';
+import 'media_session.dart';
 import 'widget_element.dart';
 import 'widget_input_store.dart';
 
@@ -95,10 +96,13 @@ ResolvedAction resolveAction(WidgetElement element) {
 /// certificate at all, so requiring https would make this useless for
 /// exactly the thing it's for.
 Future<WidgetActionResult> runWidgetAction(WidgetElement element) async {
-  // Before resolveAction: a search button has no address of its own to
-  // resolve, and its toggle fields are meaningless.
+  // Before resolveAction: neither a search nor a media button has an
+  // address of its own to resolve, and their toggle fields are meaningless.
   if (element.actionKind == WidgetActionKind.search) {
     return _runSearchAction(element);
+  }
+  if (element.actionKind == WidgetActionKind.media) {
+    return _runMediaAction(element);
   }
 
   final resolved = resolveAction(element);
@@ -196,6 +200,29 @@ Future<WidgetActionResult> _runSearchAction(WidgetElement element) {
       Uri.encodeQueryComponent(query.trim()),
     ),
   );
+}
+
+/// Sends one of Android's own media transport commands. The only way this
+/// can fail is the permission being off - there's no address to get wrong,
+/// and a command sent with nothing playing is simply a no-op on the Android
+/// side, same as pressing skip on an empty lock screen.
+Future<WidgetActionResult> _runMediaAction(WidgetElement element) async {
+  final s = AppStrings(LocaleController.instance.value);
+  if (!await MediaSession.hasPermission()) {
+    return WidgetActionResult(success: false, detail: s.actionMediaNoPermission);
+  }
+  switch (element.actionMediaCommand) {
+    case WidgetMediaCommand.previous:
+      await MediaSession.previous();
+    case WidgetMediaCommand.playPause:
+      await MediaSession.playPause();
+    case WidgetMediaCommand.next:
+      await MediaSession.next();
+  }
+  // Lets a title or play/pause status next to the button catch up without
+  // waiting for the panel's own refresh tick.
+  await DataSourcesController.instance.refreshMedia();
+  return const WidgetActionResult(success: true);
 }
 
 /// Hands the address to the phone and lets it decide who opens it - the

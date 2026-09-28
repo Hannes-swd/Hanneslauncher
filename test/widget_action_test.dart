@@ -59,6 +59,23 @@ void main() {
     },
   );
 
+  test(
+    'a media button fails cleanly when notification access is off - as it '
+    'always is in a test, with no platform channel behind it',
+    () async {
+      final result = await runWidgetAction(
+        const WidgetElement(
+          id: '1',
+          type: WidgetElementType.action,
+          actionKind: WidgetActionKind.media,
+          actionMediaCommand: WidgetMediaCommand.next,
+        ),
+      );
+      expect(result.success, false);
+      expect(result.detail, isNotNull);
+    },
+  );
+
   group('resolveAction', () {
     setUp(() {
       SharedPreferences.setMockInitialValues({});

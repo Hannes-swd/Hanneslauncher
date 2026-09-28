@@ -62,6 +62,26 @@ fehlt. Ein Neustart des Handys setzt den Sensor auf null zurück; danach
 wird ab dem Neustart gezählt, die Schritte davor sind für den Sensor
 nicht mehr vorhanden.
 
+## Musik (eigene Berechtigung)
+
+Liest, was gerade läuft - Spotify, YouTube Music, jeder Player - über
+Androids eigene Media Session, dieselbe Stelle, an der auch der
+Sperrbildschirm sein "Gerade läuft" herholt. Kein eigenes Konto, kein
+Login. Braucht einmalig **"Benachrichtigungszugriff"** für diese App
+(*Einstellungen → Offline-Modus* hat den Schalter dafür); ohne die
+Berechtigung liefern diese Platzhalter einen Strich.
+
+| Platzhalter | Zeigt |
+|---|---|
+| `{{musik_titel}}` | Titel des laufenden Stücks |
+| `{{musik_interpret}}` | Interpret |
+| `{{musik_status}}` | "Spielt" / "Pausiert" |
+
+Ein Aktions-Button (Element-Typ "Knopf") kann außerdem auf **Musiksteuerung**
+gestellt werden - Zurück, Play/Pause oder Weiter, dieselben drei Befehle wie
+die Knöpfe im Sperrbildschirm. Ein Tipp aktualisiert die drei Platzhalter
+oben sofort, statt auf den nächsten Panel-Refresh zu warten.
+
 ## Eigene Datenquellen (APIs)
 
 Unter *Datenquellen* lässt sich eine beliebige JSON-URL mit einem

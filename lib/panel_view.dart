@@ -21,6 +21,7 @@ import 'settings_screen.dart';
 import 'text_prompt_dialog.dart';
 import 'update_screen.dart';
 import 'widget_editor_screen.dart';
+import 'widget_element.dart';
 
 /// Contents of the panel that pulls down from the top: a fixed header with
 /// the add and settings buttons, and below it the user's blocks - app rows
@@ -69,7 +70,15 @@ class _PanelViewState extends State<PanelView> {
     super.initState();
     _loadSources();
     _tick = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) setState(() {});
+      if (!mounted) return;
+      setState(() {});
+      // Same tick the clock rides on; a title or a play/pause status is
+      // worth refetching just as much as the battery percent already is.
+      if (_usesMedia()) {
+        DataSourcesController.instance.refreshMedia().then((_) {
+          if (mounted) setState(() {});
+        });
+      }
     });
   }
 
@@ -100,6 +109,26 @@ class _PanelViewState extends State<PanelView> {
       wantsSteps: DeviceDataController.instance.value,
       wantsMostUsedApp: DeviceDataController.instance.value,
     );
+    if (_usesMedia()) await DataSourcesController.instance.refreshMedia();
+  }
+
+  /// Whether anything about to be drawn reads what's playing - a text or
+  /// icon element following a `musik_*`/`media_*` placeholder, or a button
+  /// set to send a transport command. Same idea as [_usesLocation]: nothing
+  /// pays for a media-session read it never asked for.
+  bool _usesMedia() {
+    for (final block in PanelBlocksController.instance.value) {
+      for (final element in block.elements) {
+        if (DataSourcesController.templateNeedsMedia(element.template)) {
+          return true;
+        }
+        if (element.type == WidgetElementType.action &&
+            element.actionKind == WidgetActionKind.media) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /// Whether anything about to be drawn needs a position, so that one is

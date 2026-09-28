@@ -593,7 +593,10 @@ class _ActionButtonState extends State<_ActionButton> {
     // the way back as if something had just happened. Only a request, which
     // shows nothing at all by itself, needs the confirmation - and a failure
     // always needs saying, or the tap looks ignored.
-    final leaves = widget.element.actionKind != WidgetActionKind.http;
+    final leaves = switch (widget.element.actionKind) {
+      WidgetActionKind.open || WidgetActionKind.search => true,
+      WidgetActionKind.http || WidgetActionKind.media => false,
+    };
     if (result.success && leaves) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -614,6 +617,7 @@ class _ActionButtonState extends State<_ActionButton> {
           WidgetActionKind.open => Icons.open_in_new,
           WidgetActionKind.search => Icons.search,
           WidgetActionKind.http => Icons.touch_app,
+          WidgetActionKind.media => Icons.music_note,
         };
     final glyph = _running
         ? SizedBox(

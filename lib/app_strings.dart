@@ -1524,6 +1524,23 @@ class AppStrings {
       : 'Gibt die Adresse ans Handy weiter: https öffnet den Browser, tel: '
             'die Telefon-App, geo: die Karte. Zusammen mit einem Eingabefeld '
             'ist das ein Such-Button.';
+  String get actionKindMedia => _en ? 'Music control' : 'Musiksteuerung';
+  String get actionKindMediaHint => _en
+      ? 'Sends previous, next or play/pause to whatever is currently '
+            'playing - Spotify, YouTube Music, any player. Needs '
+            '"Notification access" turned on for this app once.'
+      : 'Sendet Zurück, Weiter oder Play/Pause an das, was gerade läuft - '
+            'Spotify, YouTube Music, jeden Player. Braucht einmalig den '
+            '"Benachrichtigungszugriff" für diese App.';
+  String get actionMediaCommandLabel =>
+      _en ? 'Which button' : 'Welcher Knopf';
+  String get actionMediaPrevious => _en ? 'Previous' : 'Zurück';
+  String get actionMediaPlayPause => _en ? 'Play / Pause' : 'Play / Pause';
+  String get actionMediaNext => _en ? 'Next' : 'Weiter';
+  String get actionMediaNoPermission => _en
+      ? 'Notification access is off - turn it on in Settings first'
+      : 'Benachrichtigungszugriff ist aus - erst in den Einstellungen '
+            'einschalten';
   String get actionOpenUrlLabel =>
       _en ? 'Address to open' : 'Adresse zum Öffnen';
   String get actionOpenUrlHint => _en
