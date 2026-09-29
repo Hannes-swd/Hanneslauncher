@@ -39,6 +39,17 @@
          ever used for the lock screen: the launcher draws its own home
          screen background itself and never touches the system wallpaper. -->
     <uses-permission android:name="android.permission.SET_WALLPAPER"/>
+    <!-- Lets the terminal (and the shell it runs) reach the shared storage
+         under /sdcard - without it `cd /sdcard` only shows the app's own
+         folder. Special app access on Android 11+, switched on by hand via
+         `setup-storage` in the terminal; the write permission is the same
+         thing for the Android versions before that. -->
+    <uses-permission
+        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage"/>
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29"/>
     <!-- Cleartext HTTP is off by default since Android 9 - needed here so
          an action element's http:// call actually reaches a local smart
          home device (almost none of them have a certificate). Data sources

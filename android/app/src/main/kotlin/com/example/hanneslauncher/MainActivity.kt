@@ -69,11 +69,13 @@ class MainActivity : FlutterActivity() {
     private val launchChannelName = "hanneslauncher/launch"
     private val packagesChannelName = "hanneslauncher/packages"
     private val wallpaperChannelName = "hanneslauncher/wallpaper"
+    private val terminalChannelName = "hanneslauncher/terminal"
     private val calendarPermissionRequestCode = 4201
     private val importFileRequestCode = 4202
     private val stepsPermissionRequestCode = 4203
     private val homeRoleRequestCode = 4204
     private val contactsPermissionRequestCode = 4205
+    private val storagePermissionRequestCode = 4206
 
     // A plugin (device_calendar) returning every field as null on some
     // Android versions is what this replaces - reading Android's own
@@ -454,6 +456,20 @@ class MainActivity : FlutterActivity() {
                 }
             }
 
+        // The terminal runs the phone's own /system/bin/sh as this app, so
+        // all it can reach is what this app can. The shared storage
+        // (/sdcard) is the one place worth unlocking for it, and on Android
+        // 11+ that is "all files access" - a switch in the system settings,
+        // not a runtime prompt. Nothing about apps goes either way over this.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, terminalChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "hasStorageAccess" -> result.success(hasAllFilesAccess())
+                    "requestStorageAccess" -> result.success(requestAllFilesAccess())
+                    else -> result.notImplemented()
+                }
+            }
+
         // The offline mode is meant to be looked at from across the room
         // while the phone charges, so the screen must not turn itself off
         // for as long as it is open. A window flag rather than a wakelock:
@@ -749,6 +765,44 @@ class MainActivity : FlutterActivity() {
     // Started without resolveActivity() on purpose, like the other settings
     // screens here: one isn't reliably visible to a package visibility
     // query, and a null answer would leave no way in at all.
+    private fun hasAllFilesAccess(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            return Environment.isExternalStorageManager()
+        }
+        return ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    // Opens the switch for this app directly where the phone has that
+    // screen, and the list of all apps with the switch where it doesn't.
+    // Below Android 11 it is still an ordinary runtime prompt. Answers
+    // whether something was opened, not whether access was granted - that
+    // is only known once the user comes back.
+    private fun requestAllFilesAccess(): Boolean {
+        if (hasAllFilesAccess()) return true
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            return try {
+                startActivity(
+                    Intent(
+                        Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                        Uri.parse("package:$packageName"),
+                    ),
+                )
+                true
+            } catch (_: Exception) {
+                openSettings(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+            }
+        }
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+            storagePermissionRequestCode,
+        )
+        return true
+    }
+
     private fun openSettings(action: String): Boolean {
         return try {
             startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

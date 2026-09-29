@@ -462,6 +462,10 @@ which is what makes the window grow out of it.
 | [CODE_WIDGETS.md](CODE_WIDGETS.md) | Writing a widget in HTML, CSS and JavaScript |
 | [RELEASE.md](RELEASE.md) | Bump the version, build, publish on GitHub |
 
+## License
+
+MIT, see [LICENSE](LICENSE).
+
 ---
 
 <sub>Note: parts of this project, including this documentation, were written

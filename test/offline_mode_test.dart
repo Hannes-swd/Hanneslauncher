@@ -159,7 +159,7 @@ void main() {
 
     test('sits in the app list, so it can be opened and pinned like one', () {
       final entry = LauncherEntriesController.instance.entries.singleWhere(
-        (entry) => entry.isBuiltIn,
+        (entry) => entry.builtIn == BuiltInEntry.offlineMode,
       );
 
       expect(entry.builtIn, BuiltInEntry.offlineMode);
@@ -192,14 +192,14 @@ void main() {
     test('follows the app language, and honours a name override', () async {
       await LocaleController.instance.update(AppLanguage.de);
       final entry = LauncherEntriesController.instance.entries.singleWhere(
-        (entry) => entry.isBuiltIn,
+        (entry) => entry.builtIn == BuiltInEntry.offlineMode,
       );
       expect(entry.name, 'Offline-Modus');
 
       await LocaleController.instance.update(AppLanguage.en);
       expect(
         LauncherEntriesController.instance.entries
-            .singleWhere((entry) => entry.isBuiltIn)
+            .singleWhere((e) => e.builtIn == BuiltInEntry.offlineMode)
             .name,
         'Offline mode',
       );
@@ -210,7 +210,7 @@ void main() {
       );
       expect(
         LauncherEntriesController.instance.entries
-            .singleWhere((entry) => entry.isBuiltIn)
+            .singleWhere((e) => e.builtIn == BuiltInEntry.offlineMode)
             .name,
         'Nachtuhr',
       );

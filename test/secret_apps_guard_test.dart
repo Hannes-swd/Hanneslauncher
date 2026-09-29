@@ -153,6 +153,11 @@ void main() {
       'hanneslauncher/offline_mode',
       'hanneslauncher/system_apps',
       'hanneslauncher/system_gestures',
+      // Asks for, and whether there is, access to /sdcard - nothing about
+      // apps. The terminal's shell can name apps by other means (`pm list
+      // packages`), which is why TerminalShell drops every output line
+      // naming a secret package before it reaches the screen.
+      'hanneslauncher/terminal',
       // Hands Android a picture for the lock screen and asks whether it is
       // allowed to. Nothing about apps goes either way over it.
       'hanneslauncher/wallpaper',

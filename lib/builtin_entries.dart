@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 
 import 'app_strings.dart';
 import 'offline_mode_screen.dart';
+import 'terminal_screen.dart';
 
 /// The launcher's own screens that behave exactly like an installed app:
 /// they sit in the app list under their own letter, can be pinned to the
 /// home screen, dropped into a folder or put on a widget, and are opened
-/// with the same tap. Only the offline mode so far.
+/// with the same tap: the offline mode and the terminal.
 ///
 /// This is why there is no separate button anywhere for them - anything
 /// that already knows how to show an app knows how to show these too.
-enum BuiltInEntry { offlineMode }
+enum BuiltInEntry { offlineMode, terminal }
 
 /// Prefixed like the web app and folder keys so a stored pin can't collide
 /// with a package name.
@@ -23,10 +24,12 @@ extension BuiltInEntryDetails on BuiltInEntry {
   /// case, since these have no icon of their own to fall back on.
   IconData get icon => switch (this) {
     BuiltInEntry.offlineMode => Icons.bedtime_outlined,
+    BuiltInEntry.terminal => Icons.terminal,
   };
 
   String label(AppStrings s) => switch (this) {
     BuiltInEntry.offlineMode => s.offlineMode,
+    BuiltInEntry.terminal => s.terminal,
   };
 }
 
@@ -47,5 +50,6 @@ BuiltInEntry? builtInFromKey(String key) {
 Future<void> openBuiltIn(BuildContext context, BuiltInEntry entry) {
   return switch (entry) {
     BuiltInEntry.offlineMode => openOfflineMode(context),
+    BuiltInEntry.terminal => openTerminal(context),
   };
 }

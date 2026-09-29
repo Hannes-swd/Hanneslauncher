@@ -140,6 +140,8 @@ class AppStrings {
   String get splitFlap => _en ? 'Split-flap' : 'Klapptafel';
   String get orbit => 'Orbit';
   String get vertical => _en ? 'Vertical' : 'Vertikal';
+  // Same word in both languages - it is what Ubuntu calls it too.
+  String get terminal => 'Terminal';
   // The offline mode: the screen turned into nothing but a clock on black,
   // for a phone stood on its side while charging.
   String get offlineMode => _en ? 'Offline mode' : 'Offline-Modus';
