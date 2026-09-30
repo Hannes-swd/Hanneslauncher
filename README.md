@@ -344,6 +344,51 @@ in **[CODE_WIDGETS.md](CODE_WIDGETS.md)**.
 
 ---
 
+## Terminal
+
+A terminal in Ubuntu's colours and with Ubuntu's syntax, sitting in the app
+list as **Terminal** - so it can be pinned, put in a folder or on a widget
+like any app. Behind it runs the phone's own `/system/bin/sh`, so everything
+Android ships works as it does over `adb shell`: `ls`, `cd`, `mkdir`, `cat`,
+`cp`, `mv`, `rm`, `grep`, `find`, `sed`, `awk`, `ping`, `ps`, `df`, `tar`,
+loops and `if`.
+
+```sh
+hannes@hanneslauncher:~$ nano notes.txt          # create or edit a file
+hannes@hanneslauncher:~$ ls -la | grep txt > list.txt && cat list.txt
+hannes@hanneslauncher:~$ fastfetch | lolcat
+hannes@hanneslauncher:~$ apt remove tiktok
+```
+
+- **The shell**: pipes and redirections (`| > >> < && || ;`), variables,
+  `$(...)`, wildcards, aliases in `~/.bashrc`, history in `~/.bash_history`
+  with `!!`, Tab completion for commands, files and app names
+- **On a phone**: a row of extra keys (Tab, ^C, arrows, `| / - ~`), pinch to
+  change the font size, long press to copy, tap to bring the keyboard back
+- **What Ubuntu has and Android doesn't**: `nano`/`vim` (the launcher's own
+  editor, `^S` saves), `tree`, `curl`, `wget`, `less`, `bc`, `lsb_release`,
+  `hostnamectl`, `sudo` (runs the command, there is no root)
+- **About the phone**: `fastfetch`/`neofetch` - Android logo, device, kernel,
+  memory, storage, battery and the launcher's own numbers; `battery`,
+  `ip a`, `myip`, `weather [place]`
+- **About the launcher**: `apps`, `open <app or url>`,
+  `apt list/search/show/install/remove/update/upgrade` (install goes to Google
+  Play, update checks for a new launcher version), and
+  `hl info/pins/folders/settings/backup/update/offline`
+- **For fun**: `cowsay`, `fortune`, `lolcat`, `cmatrix`
+
+`help` lists everything, `man <command>` explains one. Files live in the
+home folder `~`; the phone's shared storage (`/sdcard`: photos, downloads)
+needs one switch first, which `setup-storage` opens.
+
+What it can't do: full-screen programs like the real `vim` or `top` need a
+pseudo-terminal, which Android does not give an app - that's why `nano` opens
+an editor of its own. And there is no root, so the shell sees what this app
+may see and nothing more. Apps in the secret folder stay hidden here too:
+any output line naming one is dropped before it reaches the screen.
+
+---
+
 ## More features
 
 - **Folders**, nestable to any depth, each with its own color
@@ -426,6 +471,7 @@ All of them are optional; without one, exactly one feature is missing.
 | Usage access | `{{meistgenutzt}}` (granted by hand in the Android settings) |
 | Install apps | Updating straight from the app |
 | Set wallpaper | Putting a picture on Android's lock screen |
+| All files access | The terminal reaching `/sdcard` (switched on by hand, `setup-storage`) |
 
 ## How it is put together
 
@@ -449,6 +495,15 @@ Code widgets are the one part that doesn't live in `SharedPreferences`: each
 one keeps its HTML, CSS, JavaScript and uploaded files in its own folder
 under the app's documents directory, and runs in a WebView that reaches the
 app only through a named channel (`code_widget_bridge.dart`).
+
+The terminal is four files: `terminal_parser.dart` cuts a command line at
+its `;`, `&&`, `||` and `|`, `terminal_shell.dart` decides per piece whether
+it runs in Dart or goes to `sh` (and streams the output),
+`terminal_commands.dart` holds the Dart-side commands, and
+`terminal_output.dart` turns ANSI escape
+codes into coloured text. Its `~/.bashrc` and history are plain files in the
+app's own folder, not in `SharedPreferences`, so they are not part of a
+backup.
 
 The app list is read once and then only when Android says the installed apps
 changed (`installed_packages_watch.dart`); it used to be re-read, icons and
