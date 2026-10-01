@@ -352,11 +352,16 @@ class _TerminalScreenState extends State<TerminalScreen>
     final at = _tapDownAt;
     _tapDown = null;
     if (down == null || at == null) return;
-    final short = DateTime.now().difference(at).inMilliseconds < 250;
-    if (short && (event.position - down).distance < 12) {
+    final short = DateTime.now().difference(at).inMilliseconds < 400;
+    if (short && (event.position - down).distance < 20) {
       // A plain tap anywhere brings the keyboard back, like in Termux.
-      _focus.requestFocus();
-      SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+      // After the tap's own handling, so the text selection - which takes
+      // the focus for itself on a tap - cannot take it back again.
+      Future.microtask(() {
+        if (!mounted) return;
+        _focus.requestFocus();
+        SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+      });
     }
   }
 
@@ -445,6 +450,9 @@ class _TerminalScreenState extends State<TerminalScreen>
                   builder: (context, constraints) {
                     _measure(constraints.maxWidth - 16, constraints.maxHeight);
                     return Listener(
+                      // The whole area, not just the lines: below short
+                      // output there is nothing else to catch a tap.
+                      behavior: HitTestBehavior.translucent,
                       onPointerDown: _pointerDown,
                       onPointerMove: _pointerMove,
                       onPointerUp: _pointerUp,

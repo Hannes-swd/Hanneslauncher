@@ -94,7 +94,18 @@ void main() {
     expect(screen(tester), contains('bc 6*7'));
     expect(File('$home/.bash_history').readAsStringSync(), contains('bc 6*7'));
 
+    // A tap far below the last line still lands in the input field.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+    expect(_inputFocused(tester), isFalse);
+    await tester.tapAt(const Offset(180, 1100));
+    await tester.pump();
+    expect(_inputFocused(tester), isTrue);
+
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 1));
   });
 }
+
+bool _inputFocused(WidgetTester tester) =>
+    tester.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus;
