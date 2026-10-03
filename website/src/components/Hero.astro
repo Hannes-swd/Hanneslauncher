@@ -11,7 +11,6 @@ const mb = latest?.apk ? Math.round(latest.apk.size / 1e6) : null;
 ---
 <section id="start" class="hero" data-chapter>
   <div class="wrap hero-grid">
-    <p class="overline hero-over" data-hero-in>{s.hero.overline}</p>
     <h1 class="hero-word">
       <DotWord class="hero-word-wide" label="hanneslauncher" />
       <DotWord class="hero-word-narrow" split={6} label="hanneslauncher" />
@@ -46,15 +45,14 @@ const mb = latest?.apk ? Math.round(latest.apk.size / 1e6) : null;
   .hero-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(220px, 30%);
-    grid-template-areas: 'over over' 'word word' 'copy stage';
+    grid-template-areas: 'word word' 'copy stage';
     column-gap: var(--s6);
     align-items: start;
   }
-  .hero-over { grid-area: over; margin: 0 0 var(--s4); }
   .hero-word { grid-area: word; margin: 0; width: min(68%, 900px); }
   .hero-word :global(.hero-word-narrow) { display: none; }
   .hero-copy { grid-area: copy; padding-top: var(--s6); }
-  .hero-title { font-size: clamp(var(--t4), 4.4vw, var(--t6)); max-width: 15ch; }
+  .hero-title { font-size: clamp(var(--t4), 4.8vw, var(--t6)); max-width: 13ch; }
   .hero-sub { margin: var(--s5) 0 0; max-width: 40ch; }
   .hero-cta { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s5); }
   .hero-req { margin: var(--s4) 0 0; font-size: var(--t-1); color: var(--ink-2); letter-spacing: 0.02em; }
@@ -69,7 +67,7 @@ const mb = latest?.apk ? Math.round(latest.apk.size / 1e6) : null;
   @media (max-width: 860px) {
     .hero-grid {
       grid-template-columns: 1fr;
-      grid-template-areas: 'over' 'word' 'copy' 'stage';
+      grid-template-areas: 'word' 'copy' 'stage';
     }
     .hero-word :global(.hero-word-wide) { display: none; }
     .hero-word :global(.hero-word-narrow) { display: block; }

@@ -35,9 +35,8 @@ const en = {
     letterBar: 'Chapters, A to Z',
   },
   hero: {
-    overline: 'Android launcher · free · open source',
-    title: 'A clock, a few apps, the alphabet. That’s the whole home screen.',
-    sub: 'Everything else is one gesture away. I built it because the launchers I tried annoyed me. Now I use it every day.',
+    title: 'A clock, a few apps, the alphabet.',
+    sub: 'Everything else is one gesture away.',
     download: 'Download APK',
     trailer: 'Watch the trailer',
     req: 'Android 7.0 or newer',
@@ -96,7 +95,7 @@ const en = {
   design: {
     overline: 'Design',
     title: 'Change everything. Break nothing.',
-    sub: 'Every value has bounds, so no combination of them can look broken. Try it with the design switch at the top: it changes this whole page.',
+    sub: 'Every value has bounds, so no combination of them can look broken. Try it: these controls change this whole page.',
     theme: 'Color theme',
     themes: ['Grey', 'Rose', 'Green', 'Blue', 'Dark'],
     rounding: 'Rounding',
@@ -186,8 +185,6 @@ const en = {
     all: 'All releases',
   },
   ui: {
-    design: 'Design',
-    designOpen: 'Change the look of this page',
     tryIt: 'Try it',
     dragMe: 'Drag me',
   },
@@ -245,9 +242,8 @@ const de: typeof en = {
     letterBar: 'Kapitel, A bis Z',
   },
   hero: {
-    overline: 'Android-Launcher · kostenlos · Open Source',
-    title: 'Eine Uhr, ein paar Apps, das Alphabet. Mehr ist auf dem Startbildschirm nicht.',
-    sub: 'Alles andere ist eine Geste entfernt. Ich habe ihn gebaut, weil mich die Launcher genervt haben, die ich ausprobiert hatte. Jetzt benutze ich ihn jeden Tag.',
+    title: 'Eine Uhr, ein paar Apps, das Alphabet.',
+    sub: 'Alles andere ist eine Geste entfernt.',
     download: 'APK laden',
     trailer: 'Trailer ansehen',
     req: 'Android 7.0 oder neuer',
@@ -306,7 +302,7 @@ const de: typeof en = {
   design: {
     overline: 'Design',
     title: 'Alles verstellbar. Nichts kaputtzukriegen.',
-    sub: 'Jeder Wert hat Grenzen, deshalb kann keine Kombination kaputt aussehen. Probier es mit dem Design-Schalter ganz oben aus: Er verändert die ganze Seite.',
+    sub: 'Jeder Wert hat Grenzen, deshalb kann keine Kombination kaputt aussehen. Probier es aus: Diese Regler verändern die ganze Seite.',
     theme: 'Farbschema',
     themes: ['Grau', 'Rosa', 'Grün', 'Blau', 'Dunkel'],
     rounding: 'Rundung',
@@ -396,8 +392,6 @@ const de: typeof en = {
     all: 'Alle Releases',
   },
   ui: {
-    design: 'Design',
-    designOpen: 'Aussehen dieser Seite ändern',
     tryIt: 'Ausprobieren',
     dragMe: 'Zieh mich',
   },

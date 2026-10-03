@@ -1,6 +1,6 @@
 // One design state for the whole page, the way the app has one theme for
-// everything it draws. Every [data-design] box (top bar, design chapter)
-// edits and shows the same state; the choice is kept in the visitor's own
+// everything it draws. The controls in the design chapter and the light/dark
+// switch in the top bar edit the same state; the choice is kept in the visitor's own
 // browser so the next visit starts the same. The inline script in Base
 // applies it before the first paint, this file takes over from there.
 
@@ -87,23 +87,4 @@ export function initDesign() {
   document.querySelectorAll<HTMLButtonElement>('[data-dark-toggle]').forEach((b) =>
     b.addEventListener('click', () => set({ theme: state.theme === 'dark' ? lastLight : 'dark' })));
 
-  // the design pop-over under the top bar
-  const pop = document.querySelector<HTMLElement>('[data-design-pop]');
-  const openers = [...document.querySelectorAll<HTMLButtonElement>('[data-design-open]')];
-  if (!pop) return;
-  const show = (v: boolean) => {
-    pop.hidden = !v;
-    openers.forEach((o) => o.setAttribute('aria-expanded', String(v)));
-    if (v) pop.querySelector<HTMLElement>('input')?.focus({ preventScroll: true });
-  };
-  openers.forEach((o) => o.addEventListener('click', (e) => {
-    e.stopPropagation();
-    show(pop.hidden);
-  }));
-  document.addEventListener('click', (e) => {
-    if (!pop.hidden && !pop.contains(e.target as Node)) show(false);
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !pop.hidden) show(false);
-  });
 }

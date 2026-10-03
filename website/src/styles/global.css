@@ -229,7 +229,7 @@ html.in-night .top { color: #eef0ff; }
 html.in-night .top.is-scrolled { background: color-mix(in srgb, var(--night) 70%, transparent); box-shadow: 0 1px 0 rgb(255 255 255 / 0.06); }
 html.in-night .top .handle-bar { background: rgb(255 255 255 / 0.4); }
 html.in-night .top .lang-switch { color: #aab3ff; }
-html.in-night .top-ico, html.in-night .top-design { color: #eef0ff; background: rgb(255 255 255 / 0.1); }
+html.in-night .top-ico { color: #eef0ff; background: rgb(255 255 255 / 0.1); }
 
 /* ---- "You can touch this": one sign for every editable area ---- */
 .editable { position: relative; }

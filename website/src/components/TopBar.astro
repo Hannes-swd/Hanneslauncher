@@ -1,6 +1,5 @@
 ---
 import Logo from './Logo.astro';
-import DesignControls from './DesignControls.astro';
 import { t, paths, type Lang } from '../i18n/strings';
 import { RELEASES_URL, REPO_URL, type ReleaseData } from '../data/releases';
 interface Props { lang: Lang; chapters: { id: string; label: string }[]; data: ReleaseData }
@@ -23,10 +22,6 @@ const apk = latest?.apk?.url ?? RELEASES_URL + '/latest';
       <svg class="ico-moon" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M20 14.6A8 8 0 0 1 9.4 4a8 8 0 1 0 10.6 10.6z" fill="currentColor"/></svg>
       <svg class="ico-sun" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><circle cx="12" cy="12" r="4.4" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></g></svg>
     </button>
-    <button class="top-design" type="button" data-design-open aria-expanded="false" aria-controls="design-pop" title={s.ui.designOpen}>
-      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="7" r="2.4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="17" r="2.4" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-      <span>{s.ui.design}</span>
-    </button>
     <a class="lang-switch" href={paths[s.otherLang as Lang].home} hreflang={s.otherLang} lang={s.otherLang} data-lang-switch>
       <span aria-hidden="true">{s.otherLangShort}</span><span class="visually-hidden">{s.otherLangLabel}</span>
     </a>
@@ -34,10 +29,6 @@ const apk = latest?.apk?.url ?? RELEASES_URL + '/latest';
       {s.download.button}
       {latest && <small data-version>v{latest.version}</small>}
     </a>
-  </div>
-  <div class="design-pop surface-l" id="design-pop" data-design-pop hidden role="dialog" aria-label={s.ui.designOpen}>
-    <p class="design-pop-title">{s.ui.designOpen}</p>
-    <DesignControls lang={lang} id="top" />
   </div>
 </header>
 
@@ -148,27 +139,18 @@ const apk = latest?.apk?.url ?? RELEASES_URL + '/latest';
   .handle-bar { display: block; width: 40px; height: 5px; border-radius: 99px; background: color-mix(in srgb, var(--ink) 28%, transparent); transition: width var(--fast) var(--ease), background-color var(--fast) var(--ease); }
   .handle:hover .handle-bar { width: 52px; background: color-mix(in srgb, var(--ink) 50%, transparent); }
   .top-right { justify-self: end; display: flex; align-items: center; gap: var(--s3); }
-  .top-ico, .top-design {
-    display: inline-flex; align-items: center; gap: var(--s2);
-    height: 40px; border: 0; border-radius: 999px; cursor: pointer;
+  /* light and dark, one tap; everything else lives in the design chapter */
+  .top-ico {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; border: 0; border-radius: 999px; cursor: pointer;
     background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink);
     transition: background-color var(--fast) var(--ease), transform var(--fast) var(--ease);
   }
-  .top-ico { width: 40px; justify-content: center; }
-  .top-design { padding: 0 var(--s3) 0 var(--s3); font-weight: 650; font-size: 0.94rem; }
-  .top-ico:hover, .top-design:hover, .top-design[aria-expanded='true'] { background: color-mix(in srgb, var(--accent) 16%, transparent); }
-  .top-ico:active, .top-design:active { transform: scale(0.94); }
+  .top-ico:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  .top-ico:active { transform: scale(0.94); }
   .top-ico .ico-sun { display: none; }
   :global(html.theme-dark) .top-ico .ico-moon { display: none; }
   :global(html.theme-dark) .top-ico .ico-sun { display: block; }
-  .design-pop {
-    position: absolute; top: calc(100% + 6px); right: calc(var(--gutter) + var(--bar));
-    width: min(380px, calc(100vw - 2 * var(--s3)));
-    padding: var(--s4); border-radius: var(--r-l);
-    background: var(--card); color: var(--ink);
-  }
-  .design-pop[hidden] { display: none; }
-  .design-pop-title { margin: 0 0 var(--s4); font-weight: 650; }
   .lang-switch { font-weight: 700; font-size: var(--t-1); letter-spacing: 0.1em; text-decoration: none; padding: var(--s2); color: var(--ink-2); }
   .lang-switch:hover { color: var(--ink); }
   .top-dl { min-height: 40px; padding: 0 var(--s4); font-size: 0.94rem; }
@@ -215,8 +197,5 @@ const apk = latest?.apk?.url ?? RELEASES_URL + '/latest';
     .top { grid-template-columns: auto 1fr auto; }
     .top-dl small { display: none; }
     .top-right { gap: var(--s2); }
-    .top-design span { display: none; }
-    .top-design { width: 40px; padding: 0; justify-content: center; }
-    .design-pop { right: var(--s3); }
   }
 </style>
