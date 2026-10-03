@@ -1,0 +1,49 @@
+---
+import Logo from './Logo.astro';
+import { t, paths, type Lang } from '../i18n/strings';
+import { REPO_URL } from '../data/releases';
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const s = t(lang).footer;
+// The address is put together in the browser, so it is not in the HTML for
+// harvesters to read; people get a normal mailto link.
+const user = 'stellarfrog0';
+const host = 'gmail.com';
+---
+<footer class="foot">
+  <div class="wrap foot-grid">
+    <div class="foot-brand">
+      <Logo size={32} />
+      <p><b>{s.made}</b> · <a href="https://github.com/Hannes-swd" rel="noopener">@Hannes-swd</a></p>
+      <p class="foot-ai">{s.ai}</p>
+    </div>
+    <ul class="foot-links" role="list">
+      <li><a href="#" data-mail data-u={user.split('').reverse().join('')} data-h={host.split('').reverse().join('')}>{s.write}</a></li>
+      <li><a href={REPO_URL} rel="noopener">GitHub</a></li>
+      <li><a href={`${REPO_URL}/blob/master/LICENSE`} rel="noopener">{s.license}</a></li>
+      <li><a href={paths[lang].privacy}>{s.privacy}</a></li>
+      <li><button type="button" data-consent-open>{s.cookies}</button></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+  document.querySelectorAll<HTMLAnchorElement>('[data-mail]').forEach((a) => {
+    const rev = (v?: string) => (v ?? '').split('').reverse().join('');
+    const addr = `${rev(a.dataset.u)}@${rev(a.dataset.h)}`;
+    a.href = `mailto:${addr}?subject=hanneslauncher`;
+    a.title = addr;
+  });
+</script>
+
+<style>
+  .foot { padding-block: var(--s6) calc(var(--s6) + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
+  .foot-grid { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s5); align-items: start; }
+  .foot-brand { display: grid; gap: var(--s2); }
+  .foot-brand p { margin: 0; }
+  .foot-brand a { text-underline-offset: 3px; }
+  .foot-ai { color: var(--ink-2); font-size: var(--t-1); }
+  .foot-links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); }
+  .foot-links a, .foot-links button { color: var(--ink-2); font-weight: 600; text-decoration: none; background: none; border: 0; padding: 0; cursor: pointer; font-size: 0.95rem; }
+  .foot-links a:hover, .foot-links button:hover { color: var(--ink); }
+</style>

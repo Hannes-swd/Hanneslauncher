@@ -1,0 +1,231 @@
+/* The page is built from the launcher's own design tokens
+   (lib/design_tokens.dart): the grey theme's colors, corner radii a golden
+   step apart, the 4-8-12-20-32-52 spacing ramp, a type ramp in half-steps of
+   phi, and the three-layer shadow. The design chapter rewrites the custom
+   properties below live, the way the app's Design screen does. */
+
+:root {
+  /* grey theme */
+  --paper: #f4f3f0;
+  --card: #ffffff;
+  --ink: #1b1a17;
+  --ink-2: #6c6860;
+  --line: #e4e1da;
+  /* the H in the icon */
+  --indigo: #3f48cc;
+  --sky: #00a2e8;
+  --accent: var(--indigo);
+  --on-accent: #ffffff;
+  /* the trailer */
+  --night: #0a0d25;
+  --night-2: #141a3f;
+
+  /* phi and what follows from it */
+  --phi: 1.618;
+  --r: 24px; /* rounding, 4..32 */
+  --r-l: var(--r);
+  --r-m: max(3px, calc(var(--r) / 1.618));
+  --r-s: max(2px, calc(var(--r) / 2.618));
+  --sh: 1; /* shadow strength, 0..2 (the app's slider x2) */
+  --depth: 1; /* 1.7 on dark grounds */
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 20px; --s5: 32px; --s6: 52px; --s7: 84px; --s8: 136px;
+
+  /* type: 16px x sqrt(phi)^n */
+  --t-1: 0.786rem;  /* 12.6 */
+  --t0: 1rem;       /* 16 */
+  --t1: 1.272rem;   /* 20.4 */
+  --t2: 1.618rem;   /* 25.9 */
+  --t3: 2.058rem;   /* 32.9 */
+  --t4: 2.618rem;   /* 41.9 */
+  --t5: 3.330rem;   /* 53.3 */
+  --t6: 4.236rem;   /* 67.8 */
+  --t7: 5.388rem;   /* 86.2 */
+
+  --gutter: clamp(16px, 4vw, 52px);
+  --bar: 46px; /* the letter bar's lane on the right */
+  --max: 1320px;
+
+  --ease: cubic-bezier(0.215, 0.61, 0.355, 1); /* easeOutCubic, as in the app */
+  --fast: 160ms;
+  --normal: 260ms;
+  --slow: 420ms;
+
+  --sans: 'Hanken Grotesk Variable', 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --dots: 'Doto Variable', 'Doto', ui-monospace, monospace;
+  --mono: 'Ubuntu Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+
+  color-scheme: light;
+}
+
+/* The three marks real light makes: a wide haze, the short throw, and a
+   contact hairline - scaled per tier by 1, 1/phi, 1/phi^2 like the app. */
+.surface-l {
+  box-shadow:
+    0 calc(12px * var(--sh)) calc(32px * var(--sh)) rgb(0 0 0 / calc(0.055 * var(--sh) * var(--depth))),
+    0 calc(3px * var(--sh)) calc(8px * var(--sh)) rgb(0 0 0 / calc(0.07 * var(--sh) * var(--depth))),
+    0 calc(1px * var(--sh)) calc(1.5px * var(--sh)) rgb(0 0 0 / calc(0.08 * var(--sh) * var(--depth)));
+}
+.surface-m {
+  box-shadow:
+    0 calc(7.4px * var(--sh)) calc(19.8px * var(--sh)) rgb(0 0 0 / calc(0.055 * var(--sh) * var(--depth))),
+    0 calc(1.9px * var(--sh)) calc(4.9px * var(--sh)) rgb(0 0 0 / calc(0.07 * var(--sh) * var(--depth))),
+    0 calc(0.6px * var(--sh)) calc(0.9px * var(--sh)) rgb(0 0 0 / calc(0.08 * var(--sh) * var(--depth)));
+}
+.surface-s {
+  box-shadow:
+    0 calc(4.6px * var(--sh)) calc(12.2px * var(--sh)) rgb(0 0 0 / calc(0.055 * var(--sh) * var(--depth))),
+    0 calc(1.1px * var(--sh)) calc(3px * var(--sh)) rgb(0 0 0 / calc(0.07 * var(--sh) * var(--depth))),
+    0 calc(0.4px * var(--sh)) calc(0.6px * var(--sh)) rgb(0 0 0 / calc(0.08 * var(--sh) * var(--depth)));
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+/* animated pieces wait off-screen to the sides; they must never widen the page */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; overflow-x: clip; }
+main { overflow-x: clip; }
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--t0);
+  line-height: 1.45;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+  transition: background-color var(--slow) var(--ease), color var(--slow) var(--ease);
+}
+
+img, video, svg, canvas { display: block; max-width: 100%; }
+button { font: inherit; color: inherit; }
+a { color: inherit; }
+::selection { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--r-s);
+}
+
+.skip {
+  position: fixed; left: var(--s3); top: var(--s3); z-index: 100;
+  padding: var(--s2) var(--s3); background: var(--card); border-radius: var(--r-s);
+  transform: translateY(-200%);
+}
+.skip:focus { transform: none; }
+
+.visually-hidden {
+  position: absolute !important; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+
+/* ---- Type roles, as in the app: large and light at the top, small,
+   spaced out and heavier at the bottom ---- */
+.overline {
+  font-size: var(--t-1);
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.display {
+  font-weight: 300;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+  margin: 0;
+  text-wrap: balance;
+}
+.lede {
+  font-size: var(--t1);
+  line-height: 1.42;
+  color: var(--ink-2);
+  max-width: 34ch;
+  text-wrap: pretty;
+}
+.dots {
+  font-family: var(--dots);
+  font-variation-settings: 'ROND' 100;
+  font-weight: 700;
+}
+
+/* ---- Buttons: pills, the shape the launcher's chips take ---- */
+.btn {
+  display: inline-flex; align-items: center; gap: var(--s2);
+  min-height: 48px; padding: 0 var(--s4);
+  border-radius: 999px; border: 0; cursor: pointer;
+  font-weight: 600; font-size: var(--t0); text-decoration: none;
+  transition: transform var(--fast) var(--ease), background-color var(--normal) var(--ease), box-shadow var(--normal) var(--ease);
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--accent); color: var(--on-accent); }
+.btn-primary:hover { box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 32%, transparent); }
+.btn-quiet { background: var(--card); color: var(--ink); }
+.btn small { font-weight: 500; opacity: 0.75; font-size: var(--t-1); }
+
+/* ---- Layout ---- */
+.wrap {
+  width: 100%;
+  max-width: calc(var(--max) + 2 * var(--gutter));
+  margin-inline: auto;
+  padding-inline: var(--gutter) calc(var(--gutter) + var(--bar));
+}
+section { position: relative; }
+.chapter { padding-block: clamp(var(--s6), 12vh, var(--s8)); }
+
+/* Phone slots: the 3D phone flies to whichever slot is on stage. Without
+   WebGL (or before it is ready) the slot shows the clip in a CSS phone. */
+.phone-slot {
+  position: relative;
+  aspect-ratio: 74.5 / 158.4;
+  width: var(--phone-w, 300px);
+  max-width: 100%;
+  flex: none;
+}
+.phone-css {
+  position: absolute; inset: 0;
+  border-radius: 13% / 6.1%;
+  background: #d8d5cf;
+  padding: 1.9%;
+  box-shadow:
+    0 30px 60px -20px rgb(27 26 23 / 0.35),
+    0 12px 24px -12px rgb(27 26 23 / 0.25),
+    inset 0 0 0 1px rgb(255 255 255 / 0.6);
+  transition: opacity var(--slow) var(--ease);
+}
+.phone-css > * {
+  width: 100%; height: 100%; object-fit: cover;
+  border-radius: 11.5% / 5.3%;
+  background: #060608;
+  border: 0.8cqi solid #060608;
+}
+html.gl-ready .phone-slot .phone-css { opacity: 0; }
+/* the Blender still of the same phone, framed with some air around it */
+.phone-css.phone-render { background: none; box-shadow: none; padding: 0; }
+.phone-css.phone-render > * {
+  object-fit: contain; border: 0; border-radius: 0; background: none;
+  transform: scale(1.24);
+  filter: drop-shadow(0 28px 36px rgb(27 26 23 / 0.16));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+html.theme-dark { color-scheme: dark; }
+
+/* While the trailer's night fills the screen, the fixed chrome turns light */
+html.in-night .lbar-letter { color: #dfe3ff; }
+html.in-night .lbar-letter.is-on { color: #8fd3ff; }
+html.in-night .top { color: #eef0ff; }
+html.in-night .top.is-scrolled { background: color-mix(in srgb, var(--night) 70%, transparent); box-shadow: 0 1px 0 rgb(255 255 255 / 0.06); }
+html.in-night .top .handle-bar { background: rgb(255 255 255 / 0.4); }
+html.in-night .top .lang-switch { color: #aab3ff; }

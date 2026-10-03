@@ -1,0 +1,76 @@
+---
+import { t, paths, type Lang } from '../i18n/strings';
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const s = t(lang).consent;
+---
+<div class="consent surface-l" data-consent hidden role="dialog" aria-labelledby="consent-title" aria-modal="false">
+  <p id="consent-title" class="consent-title">{s.title}</p>
+  <p class="consent-text">{s.text}</p>
+  <div class="consent-choices" data-consent-choices hidden>
+    <label class="consent-row">
+      <input type="checkbox" data-consent-key="media" />
+      <span><b>{s.media}</b><small>{s.mediaText}</small></span>
+    </label>
+    <label class="consent-row">
+      <input type="checkbox" data-consent-key="stats" />
+      <span><b>{s.stats}</b><small>{s.statsText}</small></span>
+    </label>
+  </div>
+  <div class="consent-actions">
+    <button class="btn consent-btn" type="button" data-consent-all>{s.all}</button>
+    <button class="btn consent-btn" type="button" data-consent-none>{s.none}</button>
+  </div>
+  <div class="consent-foot">
+    <button class="consent-link" type="button" data-consent-choose aria-expanded="false">{s.choose}</button>
+    <button class="consent-link" type="button" data-consent-save hidden>{s.save}</button>
+    <a class="consent-link" href={paths[lang].privacy}>{s.more}</a>
+  </div>
+</div>
+
+<script>
+  import { initConsent } from '../scripts/consent';
+  initConsent();
+</script>
+
+<style>
+  .consent {
+    position: fixed;
+    z-index: 90;
+    left: max(var(--s3), env(safe-area-inset-left));
+    bottom: max(var(--s3), env(safe-area-inset-bottom));
+    width: min(420px, calc(100vw - 2 * var(--s3)));
+    padding: var(--s4);
+    background: var(--card);
+    color: var(--ink);
+    border-radius: var(--r-l);
+    font-size: 0.94rem;
+  }
+  .consent[hidden] { display: none; }
+  .consent-title { margin: 0 0 var(--s2); font-weight: 650; font-size: var(--t1); letter-spacing: -0.01em; }
+  .consent-text { margin: 0 0 var(--s4); color: var(--ink-2); line-height: 1.45; }
+  .consent-choices { display: grid; gap: var(--s2); margin-bottom: var(--s4); }
+  .consent-choices[hidden] { display: none; }
+  .consent-row {
+    display: flex; gap: var(--s3); align-items: flex-start;
+    padding: var(--s3); border-radius: var(--r-m); background: var(--paper); cursor: pointer;
+  }
+  .consent-row input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent); }
+  .consent-row span { display: grid; gap: 2px; }
+  .consent-row small { color: var(--ink-2); }
+  .consent-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
+  /* Same weight on purpose: saying no must be as easy as saying yes */
+  .consent-btn {
+    justify-content: center; min-height: 44px; padding: 0 var(--s3);
+    background: var(--paper); color: var(--ink); font-size: 0.94rem;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .consent-btn:hover { background: var(--line); }
+  .consent-foot { display: flex; flex-wrap: wrap; gap: var(--s4); margin-top: var(--s3); }
+  .consent-link {
+    background: none; border: 0; padding: 0; cursor: pointer;
+    color: var(--ink-2); font-size: var(--t-1); font-weight: 600;
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  .consent-link[hidden] { display: none; }
+</style>

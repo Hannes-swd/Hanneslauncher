@@ -1,0 +1,21 @@
+---
+// The launcher's icon (icon/icon.png) redrawn as vectors: the indigo stroke
+// with rounded ends, the sky stroke with square ones, and the slanted cut
+// where they meet in the crossbar.
+interface Props { size?: number; class?: string; title?: string }
+const { size = 28, class: cls = '', title } = Astro.props;
+---
+<svg
+  class={cls}
+  width={size}
+  height={size}
+  viewBox="52 58 342 310"
+  role={title ? 'img' : undefined}
+  aria-hidden={title ? undefined : 'true'}
+  aria-label={title}
+>
+  <rect x="62" y="70" width="80" height="286" rx="40" fill="#3f48cc" />
+  <path d="M138 165 H194 L219 232 H138 Z" fill="#3f48cc" />
+  <path d="M194 165 H300 V232 H219 Z" fill="#00a2e8" />
+  <rect x="296" y="67" width="88" height="293" fill="#00a2e8" />
+</svg>

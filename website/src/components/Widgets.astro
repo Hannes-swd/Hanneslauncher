@@ -1,0 +1,106 @@
+---
+// A widget card to play with: its pieces drag like they do in the app's
+// widget editor, with the same snapping guides, and the two placeholders
+// fill in live. The phone beside it plays the real editor.
+import { t, type Lang } from '../i18n/strings';
+interface Props { lang: Lang }
+const s = t(Astro.props.lang).widgets;
+const chips = ['{{zeit}}', '{{datum}}', '{{wochentag}}', '{{ort}}', '{{akku}}', '{{sonnenauf}}', '{{mondphase}}', '{{schritte}}'];
+---
+<section id="widgets" class="wid chapter" data-chapter>
+  <div class="wrap wid-grid">
+    <div class="wid-copy">
+      <p class="overline">{s.overline}</p>
+      <h2 class="display wid-title" data-split>{s.title}</h2>
+      <p class="lede">{s.sub}</p>
+    </div>
+
+    <div class="wid-play">
+      <div class="wid-card surface-l" data-widget aria-label={s.hint}>
+        <img class="wid-bg" src="/img/wall-mountains-light.webp" alt="" loading="lazy" />
+        <span class="guide guide-x" data-guide-x hidden></span>
+        <span class="guide guide-y" data-guide-y hidden></span>
+        <div class="wid-el el-box" data-el style="--x:6%;--y:16%;--w:58%;--h:68%"></div>
+        <div class="wid-el el-time" data-el style="--x:11%;--y:26%">
+          <span class="dots" data-ph="zeit">{'{{zeit}}'}</span>
+        </div>
+        <div class="wid-el el-day" data-el style="--x:11.5%;--y:62%">
+          <span data-ph="wochentag">{'{{wochentag}}'}</span>
+        </div>
+        <div class="wid-el el-icon" data-el style="--x:70%;--y:22%;--w:22%;--h:56%">
+          <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="9" fill="currentColor"/><g stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M24 5v5M24 38v5M5 24h5M38 24h5M10.6 10.6l3.5 3.5M33.9 33.9l3.5 3.5M10.6 37.4l3.5-3.5M33.9 14.1l3.5-3.5"/></g></svg>
+        </div>
+      </div>
+      <p class="wid-hint"><span aria-hidden="true">↔</span> {s.hint}</p>
+    </div>
+
+    <div class="wid-phone">
+      <div class="phone-slot" data-slot="widgets" data-clip="widget_drag" data-yaw="18" data-pitch="2" data-roll="4">
+        <div class="phone-css"><img src="/media/clips/widget_drag.webp" alt="" width="720" height="1600" loading="lazy" /></div>
+      </div>
+    </div>
+
+    <div class="wid-sources">
+      <p>{s.sources}</p>
+      <code class="wid-json">{s.sourceExample}</code>
+      <ul class="wid-chips" role="list">{chips.map((c) => <li><code>{c}</code></li>)}</ul>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { initWidget } from '../scripts/widget';
+  initWidget();
+</script>
+
+<style>
+  .wid-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(200px, 0.6fr);
+    grid-template-areas: 'copy phone' 'play phone' 'src phone';
+    gap: var(--s5) clamp(var(--s5), 5vw, var(--s7));
+    align-items: start;
+  }
+  .wid-copy { grid-area: copy; }
+  .wid-title { font-size: clamp(var(--t4), 4.6vw, var(--t6)); margin: var(--s3) 0 var(--s4); max-width: 17ch; }
+  .wid-play { grid-area: play; }
+  .wid-phone { grid-area: phone; align-self: center; display: flex; justify-content: center; }
+  .wid-phone .phone-slot { --phone-w: min(30vh, 250px); }
+  .wid-sources { grid-area: src; color: var(--ink-2); }
+  .wid-sources p { margin: 0 0 var(--s3); max-width: 52ch; }
+
+  .wid-card {
+    position: relative; overflow: hidden;
+    aspect-ratio: 2.4 / 1; width: 100%; max-width: 640px;
+    border-radius: var(--r-l); background: #cfccc6;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+  }
+  .wid-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 78%; pointer-events: none; }
+  .wid-el {
+    position: absolute; left: var(--x); top: var(--y);
+    width: var(--w, auto); height: var(--h, auto);
+    cursor: grab; color: #263238;
+    transition: box-shadow var(--fast) var(--ease);
+  }
+  .wid-el.is-dragging { cursor: grabbing; box-shadow: 0 0 0 2px var(--accent); border-radius: var(--r-s); }
+  .el-box { background: rgb(255 255 255 / 0.55); border-radius: var(--r-m); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+  .el-time { font-size: clamp(1.8rem, 4.4vw, 3rem); line-height: 1; }
+  .el-day { font-size: clamp(0.95rem, 1.8vw, 1.2rem); font-weight: 600; }
+  .el-icon { display: grid; place-items: center; background: rgb(255 255 255 / 0.55); border-radius: var(--r-m); }
+  .el-icon svg { width: 48%; height: auto; }
+  .guide { position: absolute; background: var(--accent); pointer-events: none; z-index: 2; }
+  .guide[hidden] { display: none; }
+  .guide-x { top: 0; bottom: 0; width: 1.5px; }
+  .guide-y { left: 0; right: 0; height: 1.5px; }
+  .wid-hint { margin: var(--s3) 0 0; font-size: var(--t-1); font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+
+  .wid-json, .wid-chips code { font-family: var(--mono); font-size: 1.05rem; color: var(--ink); }
+  .wid-json { display: inline-block; padding: var(--s2) var(--s3); border-radius: var(--r-s); background: var(--card); }
+  .wid-chips { list-style: none; margin: var(--s4) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s2); }
+  .wid-chips code { display: inline-block; padding: var(--s1) var(--s3); border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line); color: var(--ink-2); }
+
+  @media (max-width: 860px) {
+    .wid-grid { grid-template-columns: 1fr; grid-template-areas: 'copy' 'play' 'phone' 'src'; }
+    .wid-phone .phone-slot { --phone-w: min(52vw, 230px); }
+  }
+</style>

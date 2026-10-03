@@ -1,0 +1,63 @@
+---
+// The phone plays the real recording; the three steps light up while the
+// recording does them (times in seconds of /media/clips/scrub.mp4).
+import { t, type Lang } from '../i18n/strings';
+interface Props { lang: Lang }
+const s = t(Astro.props.lang).alphabet;
+const times = [[2.0, 5.6], [5.6, 7.6], [7.6, 9.4]];
+---
+<section id="alphabet" class="alpha chapter" data-chapter>
+  <div class="wrap alpha-grid">
+    <div class="alpha-stage">
+      <div class="phone-slot" data-slot="alphabet" data-clip="scrub" data-yaw="16" data-pitch="2" data-roll="3">
+        <div class="phone-css"><img src="/media/clips/scrub.webp" alt="" width="720" height="1600" loading="lazy" /></div>
+      </div>
+    </div>
+    <div class="alpha-copy">
+      <p class="overline">{s.overline}</p>
+      <h2 class="display alpha-title" data-split>{s.title}</h2>
+      <ol class="alpha-steps" data-steps="scrub">
+        {s.steps.map((step, i) => (
+          <li data-from={times[i][0]} data-to={times[i][1]}>
+            <span class="alpha-dot dots" aria-hidden="true">{i + 1}</span>
+            {step}
+          </li>
+        ))}
+      </ol>
+      <p class="alpha-note">{s.note}</p>
+      <p class="alpha-try">
+        <span class="try-mouse">{s.try}</span>
+        <span class="try-touch">{s.tryTouch}</span>
+        <svg viewBox="0 0 120 24" aria-hidden="true"><path d="M2 12h110m-12-9 12 9-12 9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .alpha-grid { display: grid; grid-template-columns: minmax(220px, 34%) minmax(0, 1fr); gap: clamp(var(--s5), 6vw, var(--s7)); align-items: center; min-height: 80svh; }
+  .alpha-stage { display: flex; justify-content: center; }
+  .alpha-stage .phone-slot { --phone-w: min(34vh, 100%); }
+  .alpha-title { font-size: clamp(var(--t4), 5vw, var(--t6)); margin-top: var(--s3); }
+  .alpha-steps { list-style: none; margin: var(--s5) 0 0; padding: 0; display: grid; gap: var(--s2); }
+  .alpha-steps li {
+    display: flex; align-items: center; gap: var(--s4);
+    padding: var(--s3) var(--s4); border-radius: var(--r-m);
+    font-size: var(--t1); color: var(--ink-2);
+    transition: background-color var(--normal) var(--ease), color var(--normal) var(--ease), transform var(--normal) var(--ease);
+  }
+  .alpha-steps li.is-now { background: var(--card); color: var(--ink); transform: translateX(8px); box-shadow: 0 7px 20px rgb(0 0 0 / calc(0.055 * var(--sh))), 0 2px 5px rgb(0 0 0 / calc(0.07 * var(--sh))); }
+  .alpha-dot { font-size: var(--t2); width: 1.2em; color: var(--accent); }
+  .alpha-note { margin: var(--s5) 0 0; color: var(--ink-2); max-width: 46ch; }
+  .alpha-try { display: flex; align-items: center; gap: var(--s3); margin: var(--s5) 0 0; font-weight: 600; color: var(--accent); }
+  .alpha-try svg { width: 110px; flex: none; animation: nudge 1.8s var(--ease) infinite; }
+  .try-touch { display: none; }
+  @media (hover: none) { .try-mouse { display: none; } .try-touch { display: inline; } }
+  @keyframes nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(10px); } }
+
+  @media (max-width: 860px) {
+    .alpha-grid { grid-template-columns: 1fr; }
+    .alpha-stage { order: 2; }
+    .alpha-stage .phone-slot { --phone-w: min(60vw, 280px); }
+  }
+</style>

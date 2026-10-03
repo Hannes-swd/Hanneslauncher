@@ -1,0 +1,73 @@
+---
+// "hanneslauncher" on a 5x7 dot grid, the way the launcher's dot-matrix
+// clock draws digits: every cell is a dot, lit ones carry the ink, the rest
+// stay as faint unlit dots. Each lit dot is its own circle so the hero can
+// fly them in from a scatter of stars, like the trailer's opening.
+interface Props { word?: string; split?: number; class?: string; label?: string }
+const { word = 'hanneslauncher', split, class: cls = '', label = word } = Astro.props;
+
+const glyphs: Record<string, string[]> = {
+  h: ['#....', '#....', '#.##.', '##..#', '#...#', '#...#', '#...#'],
+  a: ['.....', '.....', '.###.', '....#', '.####', '#...#', '.####'],
+  n: ['.....', '.....', '#.##.', '##..#', '#...#', '#...#', '#...#'],
+  e: ['.....', '.....', '.###.', '#...#', '#####', '#....', '.###.'],
+  s: ['.....', '.....', '.####', '#....', '.###.', '....#', '####.'],
+  l: ['.##..', '..#..', '..#..', '..#..', '..#..', '..#..', '.###.'],
+  u: ['.....', '.....', '#...#', '#...#', '#...#', '#..##', '.##.#'],
+  c: ['.....', '.....', '.###.', '#....', '#....', '#...#', '.###.'],
+  r: ['.....', '.....', '#.##.', '##..#', '#....', '#....', '#....'],
+};
+
+const P = 10; // pitch between dot centres
+const lines = split ? [word.slice(0, split), word.slice(split)] : [word];
+const cols = Math.max(...lines.map((l) => l.length * 6 - 1));
+const rows = lines.length * 7 + (lines.length - 1) * 2;
+const width = cols * P;
+const height = rows * P;
+
+type Dot = { x: number; y: number; on: boolean; t: number };
+const dots: Dot[] = [];
+lines.forEach((line, li) => {
+  [...line].forEach((ch, ci) => {
+    const g = glyphs[ch];
+    if (!g) return;
+    for (let r = 0; r < 7; r++)
+      for (let c = 0; c < 5; c++) {
+        const col = ci * 6 + c;
+        dots.push({
+          x: col * P + P / 2,
+          y: (li * 9 + r) * P + P / 2,
+          on: g[r][c] === '#',
+          // position along the word, 0..1 - drives the indigo-to-sky blend
+          t: col / Math.max(1, cols - 1),
+        });
+      }
+  });
+});
+
+const mix = (t: number) => {
+  // #3f48cc -> #00a2e8 through the logo's own two colors
+  const a = [0x3f, 0x48, 0xcc], b = [0x00, 0xa2, 0xe8];
+  const k = Math.min(1, Math.max(0, (t - 0.15) / 0.7));
+  return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(' ')})`;
+};
+---
+<svg
+  class={`dotword ${cls}`}
+  viewBox={`0 0 ${width} ${height}`}
+  role="img"
+  aria-label={label}
+  data-dotword
+>
+  <g class="dotword-off">
+    {dots.filter((d) => !d.on).map((d) => <circle cx={d.x} cy={d.y} r="3.1" />)}
+  </g>
+  <g class="dotword-on">
+    {dots.filter((d) => d.on).map((d) => <circle cx={d.x} cy={d.y} r="3.9" fill={mix(d.t)} />)}
+  </g>
+</svg>
+
+<style>
+  .dotword { width: 100%; height: auto; overflow: visible; }
+  .dotword-off circle { fill: var(--line); }
+</style>

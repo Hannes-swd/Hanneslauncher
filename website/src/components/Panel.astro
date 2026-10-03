@@ -1,0 +1,100 @@
+---
+// The six kinds of panel block (README, "The panel"), each drawn as a small
+// likeness of itself, sliding past sideways while the phone pulls the real
+// panel down.
+import { t, type Lang } from '../i18n/strings';
+interface Props { lang: Lang }
+const s = t(Astro.props.lang).panel;
+const [appRow, widget, calendar, notes, code, notifs] = s.blocks;
+---
+<section id="panel" class="pan" data-chapter data-hscroll>
+  <div class="pan-stage" data-hscroll-stage>
+    <div class="wrap pan-head">
+      <div>
+        <p class="overline">{s.overline}</p>
+        <h2 class="display pan-title" data-split>{s.title}</h2>
+        <p class="lede">{s.sub}</p>
+      </div>
+      <div class="pan-phone">
+        <div class="phone-slot" data-slot="panel" data-clip="panel" data-yaw="-14" data-pitch="3" data-roll="-3">
+          <div class="phone-css"><img src="/media/clips/panel.webp" alt="" width="720" height="1600" loading="lazy" /></div>
+        </div>
+      </div>
+    </div>
+    <div class="pan-track" data-hscroll-track>
+      <article class="blk surface-l">
+        <div class="blk-art art-row"><i></i><i></i><i></i><i></i></div>
+        <h3>{appRow.name}</h3><p>{appRow.text}</p>
+      </article>
+      <article class="blk surface-l">
+        <div class="blk-art art-widget"><span class="dots">17:12</span><small>Mo · 14 °C</small></div>
+        <h3>{widget.name}</h3><p>{widget.text}</p>
+      </article>
+      <article class="blk surface-l">
+        <div class="blk-art art-cal"><span><b>09:00</b> ——</span><span><b>13:30</b> ————</span><span><b>18:00</b> ——</span></div>
+        <h3>{calendar.name}</h3><p>{calendar.text}</p>
+      </article>
+      <article class="blk surface-l">
+        <div class="blk-art art-notes"><b>todo</b><span><i></i>shop</span><span><i></i>go home</span></div>
+        <h3>{notes.name}</h3><p>{notes.text}</p>
+      </article>
+      <article class="blk surface-l">
+        <div class="blk-art art-code"><code>&lt;b id=t&gt;&lt;/b&gt;<br />t.textContent =<br />&nbsp; launcher.get(<br />&nbsp; 'wetter.…')</code></div>
+        <h3>{code.name}</h3><p>{code.text}</p>
+      </article>
+      <article class="blk surface-l">
+        <div class="blk-art art-notif"><span><i></i>——— ——</span><span class="swipe"><i></i>—— ————</span></div>
+        <h3>{notifs.name}</h3><p>{notifs.text}</p>
+      </article>
+      <p class="pan-data">{s.data}</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .pan-stage { min-height: 100svh; display: grid; grid-template-columns: minmax(0, 100%); align-content: center; gap: var(--s5); padding-block: var(--s7) var(--s6); overflow: hidden; }
+  .pan-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s6); align-items: center; }
+  .pan-title { font-size: clamp(var(--t4), 5vw, var(--t6)); margin: var(--s3) 0 var(--s4); }
+  .pan-phone .phone-slot { --phone-w: min(23vh, 200px); }
+  .pan-track {
+    display: flex; gap: var(--s4); align-items: stretch;
+    padding-inline: var(--gutter) calc(var(--gutter) + var(--bar));
+    width: max-content;
+  }
+  .blk {
+    width: clamp(220px, 24vw, 300px); flex: none;
+    padding: var(--s4); border-radius: var(--r-l); background: var(--card);
+    display: grid; align-content: start; gap: var(--s2);
+  }
+  .blk h3 { margin: var(--s3) 0 0; font-size: var(--t1); font-weight: 650; letter-spacing: -0.01em; }
+  .blk p { margin: 0; color: var(--ink-2); }
+  .blk-art { height: 112px; border-radius: var(--r-m); background: var(--paper); padding: var(--s3); display: grid; align-content: center; gap: var(--s2); overflow: hidden; }
+  .art-row { grid-template-columns: repeat(4, 1fr); justify-items: center; }
+  .art-row i { width: 40px; height: 40px; border-radius: 50%; background: var(--card); box-shadow: 0 2px 6px rgb(0 0 0 / 0.08); }
+  .art-row i:nth-child(1) { background: conic-gradient(#3f48cc 0 25%, #00a2e8 0 50%, #d8d5cf 0 75%, #f4f3f0 0); }
+  .art-widget { background: linear-gradient(135deg, #b9b6b0, #e4e1da 55%, #8f8b84); color: #1b1a17; justify-items: start; }
+  .art-widget .dots { font-size: 2.2rem; line-height: 1; }
+  .art-widget small { font-weight: 600; }
+  .art-cal span { display: flex; gap: var(--s3); color: var(--ink-2); font-size: 0.9rem; }
+  .art-cal b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .art-notes { justify-items: start; font-size: 0.95rem; }
+  .art-notes span { display: flex; align-items: center; gap: var(--s2); }
+  .art-notes i { width: 14px; height: 14px; border-radius: 3px; box-shadow: inset 0 0 0 1.6px var(--ink-2); }
+  .art-code { background: #300a24; color: #e9e3ee; }
+  .art-code code { font-family: var(--mono); font-size: 0.92rem; line-height: 1.35; }
+  .art-notif span { display: flex; align-items: center; gap: var(--s2); padding: var(--s2); border-radius: var(--r-s); background: var(--card); color: var(--ink-2); }
+  .art-notif i { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); opacity: 0.8; }
+  .art-notif .swipe { transform: translateX(28%); opacity: 0.55; }
+  .pan-data { width: clamp(260px, 30vw, 380px); flex: none; align-self: center; margin: 0 0 0 var(--s4); font-size: var(--t1); line-height: 1.4; color: var(--ink); }
+
+  :global(html:not(.motion)) .pan-track { width: auto; flex-wrap: wrap; }
+
+  @media (max-width: 860px) {
+    /* phone beside the text, small, so the blocks still fit under it */
+    .pan-head { grid-template-columns: minmax(0, 1fr) auto; gap: var(--s4); align-items: end; }
+    .pan-title { font-size: clamp(1.9rem, 8vw, var(--t4)); }
+    .pan-head .lede { font-size: var(--t0); }
+    .pan-phone .phone-slot { --phone-w: min(28vw, 130px); }
+    .blk { width: 72vw; }
+  }
+</style>

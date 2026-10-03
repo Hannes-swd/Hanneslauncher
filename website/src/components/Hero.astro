@@ -1,0 +1,82 @@
+---
+import DotWord from './DotWord.astro';
+import { t, type Lang } from '../i18n/strings';
+import { RELEASES_URL, type ReleaseData } from '../data/releases';
+interface Props { lang: Lang; data: ReleaseData }
+const { lang, data } = Astro.props;
+const s = t(lang);
+const latest = data.releases[0];
+const apk = latest?.apk?.url ?? RELEASES_URL + '/latest';
+const mb = latest?.apk ? Math.round(latest.apk.size / 1e6) : null;
+---
+<section id="start" class="hero" data-chapter>
+  <div class="wrap hero-grid">
+    <p class="overline hero-over" data-hero-in>{s.hero.overline}</p>
+    <h1 class="hero-word">
+      <DotWord class="hero-word-wide" label="hanneslauncher" />
+      <DotWord class="hero-word-narrow" split={6} label="hanneslauncher" />
+    </h1>
+    <div class="hero-copy">
+      <p class="display hero-title" data-hero-in>{s.hero.title}</p>
+      <p class="lede hero-sub" data-hero-in>{s.hero.sub}</p>
+      <div class="hero-cta" data-hero-in>
+        <a class="btn btn-primary" href={apk} data-apk-link>
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          {s.hero.download}
+        </a>
+        <a class="btn btn-quiet surface-s" href="#trailer" data-goto="trailer">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>
+          {s.hero.trailer}
+        </a>
+      </div>
+      <p class="hero-req" data-hero-in>
+        {s.hero.req}{latest && <> · <span data-version>v{latest.version}</span></>}{mb && <> · <span data-size>{mb} MB</span></>}
+      </p>
+    </div>
+    <div class="hero-stage">
+      <div class="phone-slot" data-slot="hero" data-screen="/media/shots/clock_custom.webp" data-yaw="-20" data-pitch="3" data-roll="-5">
+        <div class="phone-css phone-render"><img src="/img/hero-phone.webp" alt="" width="600" height="1276" fetchpriority="high" /></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero { padding-top: clamp(96px, 14vh, 150px); padding-bottom: var(--s6); min-height: 100svh; }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 30%);
+    grid-template-areas: 'over over' 'word word' 'copy stage';
+    column-gap: var(--s6);
+    align-items: start;
+  }
+  .hero-over { grid-area: over; margin: 0 0 var(--s4); }
+  .hero-word { grid-area: word; margin: 0; width: min(68%, 900px); }
+  .hero-word :global(.hero-word-narrow) { display: none; }
+  .hero-copy { grid-area: copy; padding-top: var(--s6); }
+  .hero-title { font-size: clamp(var(--t4), 4.4vw, var(--t6)); max-width: 15ch; }
+  .hero-sub { margin: var(--s5) 0 0; max-width: 40ch; }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s5); }
+  .hero-req { margin: var(--s4) 0 0; font-size: var(--t-1); color: var(--ink-2); letter-spacing: 0.02em; }
+  .hero-stage {
+    grid-area: stage;
+    /* the phone reaches up into the word mark, in front of its dots */
+    margin-top: calc(-1 * clamp(40px, 7vw, 120px));
+    display: flex; justify-content: center;
+  }
+  .hero-stage .phone-slot { --phone-w: min(32vh, 100%); }
+
+  @media (max-width: 860px) {
+    .hero-grid {
+      grid-template-columns: 1fr;
+      grid-template-areas: 'over' 'word' 'copy' 'stage';
+    }
+    .hero-word :global(.hero-word-wide) { display: none; }
+    .hero-word :global(.hero-word-narrow) { display: block; }
+    .hero-word { width: min(100%, 560px); }
+    .hero-copy { padding-top: var(--s5); }
+    .hero-title { font-size: clamp(2rem, 8.4vw, var(--t5)); }
+    .hero-stage { margin-top: var(--s6); }
+    .hero-stage .phone-slot { --phone-w: min(64vw, 300px); }
+  }
+</style>

@@ -1,0 +1,69 @@
+---
+import { t, type Lang } from '../i18n/strings';
+import { RELEASES_URL, REPO_URL, type ReleaseData } from '../data/releases';
+interface Props { lang: Lang; data: ReleaseData }
+const { lang, data } = Astro.props;
+const s = t(lang).download;
+const latest = data.releases[0];
+const apk = latest?.apk?.url ?? RELEASES_URL + '/latest';
+const mb = latest?.apk ? Math.round(latest.apk.size / 1e6) : null;
+---
+<section id="download" class="dl chapter" data-chapter>
+  <div class="wrap dl-grid">
+    <div class="dl-phone">
+      <div class="phone-slot" data-slot="download" data-screen="/media/shots/clock_dotmatrix.webp" data-yaw="22" data-pitch="-8" data-roll="9">
+        <div class="phone-css"><img src="/media/shots/clock_dotmatrix.webp" alt="" width="720" height="1600" loading="lazy" /></div>
+      </div>
+    </div>
+    <div class="dl-copy">
+      <p class="overline">{s.overline}</p>
+      <h2 class="display dl-title" data-split>{s.title}</h2>
+      <ol class="dl-steps">
+        {s.steps.map((step, i) => (
+          <li class="dl-step surface-m">
+            <span class="dots dl-n" aria-hidden="true">{i + 1}</span>
+            <span><b>{step.title}</b><span>{step.text}</span></span>
+          </li>
+        ))}
+      </ol>
+      <div class="dl-cta">
+        <a class="btn btn-primary dl-btn" href={apk} data-apk-link>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          {s.button}
+          {latest && <small data-version>v{latest.version}</small>}
+          {mb && <small data-size>· {mb} MB</small>}
+        </a>
+        <p class="dl-req">{s.req}</p>
+      </div>
+      <p class="dl-links">
+        <a href={RELEASES_URL} rel="noopener">{s.all}</a>
+        <a href={REPO_URL} rel="noopener">{s.source}</a>
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .dl { padding-bottom: var(--s8); }
+  .dl-grid { display: grid; grid-template-columns: minmax(200px, 0.7fr) minmax(0, 1.3fr); gap: clamp(var(--s5), 6vw, var(--s8)); align-items: center; }
+  .dl-phone { display: flex; justify-content: center; }
+  .dl-phone .phone-slot { --phone-w: min(34vh, 280px); }
+  .dl-title { font-size: clamp(var(--t4), 5vw, var(--t6)); margin: var(--s3) 0 var(--s5); }
+  .dl-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); max-width: 620px; }
+  .dl-step { display: flex; gap: var(--s4); align-items: flex-start; padding: var(--s4); border-radius: var(--r-m); background: var(--card); }
+  .dl-step > span:last-child { display: grid; gap: 2px; }
+  .dl-step b { font-size: var(--t1); font-weight: 650; letter-spacing: -0.01em; }
+  .dl-step span span { color: var(--ink-2); }
+  .dl-n { font-size: var(--t3); line-height: 1; color: var(--accent); width: 1.1em; flex: none; }
+  .dl-cta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s4); margin-top: var(--s5); }
+  .dl-btn { min-height: 60px; padding: 0 var(--s5); font-size: var(--t1); }
+  .dl-req { margin: 0; color: var(--ink-2); font-size: var(--t-1); }
+  .dl-links { display: flex; gap: var(--s4); margin: var(--s4) 0 0; font-weight: 600; }
+  .dl-links a { color: var(--ink-2); text-underline-offset: 3px; }
+  .dl-links a:hover { color: var(--ink); }
+  @media (max-width: 860px) {
+    .dl-grid { grid-template-columns: 1fr; }
+    .dl-phone { order: 2; }
+    .dl-phone .phone-slot { --phone-w: min(52vw, 230px); }
+  }
+</style>

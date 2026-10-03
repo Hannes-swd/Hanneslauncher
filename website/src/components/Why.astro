@@ -1,0 +1,71 @@
+---
+// Pinned while scrolling: the three things that annoyed me fly in from the
+// right, get struck through and are thrown out to the left; then the three
+// answers come in and stay. Without motion it is simply two lists.
+import { t, type Lang } from '../i18n/strings';
+interface Props { lang: Lang }
+const s = t(Astro.props.lang).why;
+---
+<section id="why" class="why" data-chapter data-why>
+  <div class="why-stage">
+    <div class="wrap why-inner">
+      <p class="display why-lead" data-why-lead>{s.lead}</p>
+      <ul class="why-problems" role="list">
+        {s.problems.map((p, i) => (
+          <li class="why-card problem surface-l" data-why-problem style={`--i:${i}`}>
+            <span class="why-text">
+              {p}
+              <svg class="why-strike" viewBox="0 0 300 20" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M4 12 C 80 6, 180 16, 296 8" />
+              </svg>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p class="display why-turn" data-why-turn>{s.turn}</p>
+      <ul class="why-answers" role="list">
+        {s.answers.map((a, i) => (
+          <li class="why-card answer surface-l" data-why-answer style={`--i:${i}`}>
+            <b>{a.big}</b>
+            <span>{a.small}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+</section>
+
+<style>
+  .why-stage { min-height: 100svh; display: grid; align-items: center; padding-block: var(--s7); }
+  .why-inner { position: relative; display: grid; gap: var(--s5); }
+  .why-lead, .why-turn { font-size: clamp(var(--t3), 4.6vw, var(--t6)); max-width: 18ch; }
+  .why-turn { color: var(--accent); }
+  .why-problems, .why-answers { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s4); }
+  .why-card {
+    position: relative;
+    background: var(--card);
+    border-radius: var(--r-l);
+    padding: var(--s5) var(--s4);
+    min-height: 168px;
+  }
+  .problem { display: grid; align-items: end; font-size: var(--t2); font-weight: 400; letter-spacing: -0.02em; line-height: 1.2; }
+  .why-text { position: relative; justify-self: start; }
+  .why-strike { position: absolute; left: -4%; top: 50%; width: 108%; height: 0.8em; transform: translateY(-38%); overflow: visible; }
+  .why-strike path { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 320; stroke-dashoffset: 320; }
+  .answer { display: grid; align-content: end; gap: var(--s2); }
+  .answer b { font-size: var(--t3); font-weight: 650; letter-spacing: -0.03em; }
+  .answer span { color: var(--ink-2); }
+
+  /* With motion the two lists share one place and take turns */
+  :global(html.motion) .why-inner { grid-template-areas: 'stack'; }
+  :global(html.motion) .why-inner > * { grid-area: stack; }
+  :global(html.motion) .why-lead { align-self: start; }
+  :global(html.motion) .why-turn { align-self: start; opacity: 0; }
+  :global(html.motion) .why-problems, :global(html.motion) .why-answers { align-self: end; margin-top: 30vh; }
+
+  @media (max-width: 760px) {
+    .why-problems, .why-answers { grid-template-columns: 1fr; gap: var(--s3); }
+    .why-card { min-height: 0; padding: var(--s4); }
+    :global(html.motion) .why-problems, :global(html.motion) .why-answers { margin-top: 22vh; }
+  }
+</style>

@@ -1,0 +1,121 @@
+---
+// The app's Design screen, working: five themes, rounding and shadows with
+// the app's own bounds. They rewrite the page's custom properties, so the
+// whole site follows - the three preview cards are the app's own preview.
+import { t, type Lang } from '../i18n/strings';
+interface Props { lang: Lang }
+const s = t(Astro.props.lang).design;
+// lib/design_tokens.dart, the five themes: ground, card, text, quieter text, accent, lines
+const themes = [
+  ['grey', '#f4f3f0', '#ffffff', '#1b1a17', '#6c6860', '#a15b2d', '#e4e1da'],
+  ['rose', '#f7f1f1', '#fffbfb', '#20191a', '#756264', '#a63d5c', '#ebdddf'],
+  ['green', '#f0f3ef', '#fbfdfa', '#181c18', '#5f6b5f', '#3f7a52', '#dce3d9'],
+  ['blue', '#eff2f5', '#fafcfd', '#171b1f', '#5c6874', '#2e6c8e', '#dce3e9'],
+  ['dark', '#121211', '#1d1c1a', '#f2f0ec', '#a09c94', '#d98a4a', '#33322e'],
+];
+---
+<section id="design" class="des chapter" data-chapter>
+  <div class="wrap des-grid">
+    <div class="des-copy">
+      <p class="overline">{s.overline}</p>
+      <h2 class="display des-title" data-split>{s.title}</h2>
+      <p class="lede">{s.sub}</p>
+    </div>
+
+    <div class="des-controls surface-l" data-design>
+      <fieldset class="des-themes">
+        <legend class="overline">{s.theme}</legend>
+        {themes.map(([id, ground, card, ink, ink2, accent, line], i) => (
+          <label class="des-theme">
+            <input type="radio" name="theme" value={id} data-theme={JSON.stringify({ ground, card, ink, ink2, accent, line })} />
+            <span class="des-swatch" style={`--g:${ground};--c:${card};--a:${accent}`} aria-hidden="true"><i></i><i></i></span>
+            <span>{s.themes[i]}</span>
+          </label>
+        ))}
+      </fieldset>
+      <label class="des-slider">
+        <span class="overline">{s.rounding} <output data-out="r">24 px</output></span>
+        <input type="range" min="4" max="32" step="1" value="24" data-range="r" />
+      </label>
+      <label class="des-slider">
+        <span class="overline">{s.shadows} <output data-out="sh">50 %</output></span>
+        <input type="range" min="0" max="1" step="0.05" value="0.5" data-range="sh" />
+        <span class="des-ends" aria-hidden="true"><span>{s.shadowsOff}</span><span>{s.shadowsStrong}</span></span>
+      </label>
+      <button class="des-reset" type="button" data-design-reset>{s.reset}</button>
+    </div>
+
+    <div class="des-preview">
+      <div class="pv pv-l surface-l"><b>{s.cardLarge}</b><span>{s.cardText}</span></div>
+      <div class="pv-row">
+        <div class="pv pv-m surface-m"><b>{s.cardNormal}</b></div>
+        <div class="pv pv-s surface-s"><b>{s.cardSmall}</b></div>
+      </div>
+      <p class="des-golden">{s.golden}</p>
+    </div>
+
+    <div class="des-phone">
+      <div class="phone-slot" data-slot="design" data-clip="design_themes" data-yaw="-16" data-pitch="2" data-roll="-3">
+        <div class="phone-css"><img src="/media/clips/design_themes.webp" alt="" width="720" height="1600" loading="lazy" /></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { initDesign } from '../scripts/design';
+  initDesign();
+</script>
+
+<style>
+  .des-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(200px, 0.62fr);
+    grid-template-areas: 'copy copy phone' 'controls preview phone';
+    gap: var(--s5) clamp(var(--s4), 4vw, var(--s6));
+    align-items: start;
+  }
+  .des-copy { grid-area: copy; }
+  .des-title { font-size: clamp(var(--t4), 4.8vw, var(--t6)); margin: var(--s3) 0 var(--s4); max-width: 16ch; }
+  .des-controls { grid-area: controls; background: var(--card); border-radius: var(--r-l); padding: var(--s4); display: grid; gap: var(--s5); transition: background-color var(--slow) var(--ease); }
+  .des-preview { grid-area: preview; display: grid; gap: var(--s4); align-content: start; }
+  .des-phone { grid-area: phone; align-self: center; display: flex; justify-content: center; }
+  .des-phone .phone-slot { --phone-w: min(32vh, 250px); }
+
+  .des-themes { border: 0; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s2); }
+  .des-themes legend { margin-bottom: var(--s3); padding: 0; }
+  .des-theme { display: grid; justify-items: center; gap: var(--s2); cursor: pointer; font-size: var(--t-1); font-weight: 600; padding: var(--s2) 0; border-radius: var(--r-m); transition: background-color var(--fast) var(--ease); }
+  .des-theme input { position: absolute; opacity: 0; pointer-events: none; }
+  .des-theme:has(input:checked) { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  .des-theme:has(input:focus-visible) { outline: 2px solid var(--accent); }
+  .des-swatch { display: flex; gap: 4px; padding: 6px; border-radius: 99px; background: var(--g); box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.08); }
+  .des-swatch i { width: 14px; height: 14px; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.1); }
+  .des-swatch i + i { background: var(--a); box-shadow: none; }
+
+  .des-slider { display: grid; gap: var(--s2); }
+  .des-slider .overline { display: flex; justify-content: space-between; }
+  .des-slider output { font-family: var(--sans); letter-spacing: 0; text-transform: none; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .des-slider input { width: 100%; accent-color: var(--accent); height: 28px; }
+  .des-ends { display: flex; justify-content: space-between; font-size: var(--t-1); color: var(--ink-2); }
+  .des-reset { justify-self: start; border: 0; background: none; padding: 0; cursor: pointer; font-weight: 650; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+
+  .pv { background: var(--card); color: var(--ink); transition: background-color var(--slow) var(--ease), border-radius var(--normal) var(--ease), box-shadow var(--normal) var(--ease); }
+  .pv b { font-weight: 300; letter-spacing: -0.02em; }
+  .pv-l { border-radius: var(--r-l); padding: var(--s5) var(--s4); min-height: 190px; display: grid; align-content: start; gap: var(--s3); }
+  .pv-l b { font-size: var(--t4); line-height: 1; }
+  .pv-l span { color: var(--ink-2); font-size: var(--t1); line-height: 1.35; }
+  .pv-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+  .pv-m { border-radius: var(--r-m); padding: var(--s4); min-height: 108px; }
+  .pv-m b { font-size: var(--t2); font-weight: 600; }
+  .pv-s { border-radius: var(--r-s); padding: var(--s3); min-height: 70px; align-self: start; box-shadow: inset 0 0 0 1.5px var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--card)); }
+  .pv-s b { font-size: var(--t0); font-weight: 650; }
+  .des-golden { margin: var(--s2) 0 0; color: var(--ink-2); max-width: 44ch; }
+
+  @media (max-width: 1080px) {
+    .des-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: 'copy copy' 'controls preview' 'phone phone'; }
+  }
+  @media (max-width: 720px) {
+    .des-grid { grid-template-columns: 1fr; grid-template-areas: 'copy' 'controls' 'preview' 'phone'; }
+    .des-phone .phone-slot { --phone-w: min(52vw, 230px); }
+  }
+</style>

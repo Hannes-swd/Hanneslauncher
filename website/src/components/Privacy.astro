@@ -1,0 +1,114 @@
+---
+import Base from '../layouts/Base.astro';
+import Logo from './Logo.astro';
+import Footer from './Footer.astro';
+import { t, paths, type Lang } from '../i18n/strings';
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const s = t(lang);
+const de = lang === 'de';
+const rev = (v: string) => v.split('').reverse().join('');
+---
+<Base lang={lang} page="privacy" title={de ? 'Datenschutz — hanneslauncher' : 'Privacy — hanneslauncher'}>
+  <header class="p-top wrap">
+    <a href={paths[lang].home} class="p-brand"><Logo size={24} /> hanneslauncher</a>
+    <a href={paths[s.otherLang as Lang].privacy} hreflang={s.otherLang} class="p-lang">{s.otherLangLabel}</a>
+  </header>
+  <main id="main" class="wrap p-main">
+    {de ? (
+      <article class="p-text">
+        <p class="overline">Stand: Oktober 2026</p>
+        <h1 class="display">Datenschutz</h1>
+        <p class="p-lead">Kurz gesagt: Diese Seite setzt keine Cookies, lädt nichts von fremden Servern, solange du nichts erlaubst, und erstellt kein Profil von dir.</p>
+
+        <h2>Wer verantwortlich ist</h2>
+        <p>Hannes, Entwickler von hanneslauncher. Kontakt: <a href="#" data-mail data-u={rev('stellarfrog0')} data-h={rev('gmail.com')}>E-Mail</a> (die Adresse erscheint beim Antippen).</p>
+
+        <h2>Hosting bei Vercel</h2>
+        <p>Die Seite liegt bei Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA. Bei jedem Aufruf verarbeitet Vercel technisch nötige Daten (IP-Adresse, Zeitpunkt, aufgerufene Adresse, Browserkennung), um die Seite auszuliefern und vor Missbrauch zu schützen. Rechtsgrundlage ist das berechtigte Interesse an einem sicheren Betrieb (Art. 6 Abs. 1 lit. f DSGVO). Vercel ist unter dem EU-US Data Privacy Framework zertifiziert, was die Übermittlung in die USA absichert.</p>
+
+        <h2>Was im Browser gespeichert wird</h2>
+        <p>Keine Cookies. Im lokalen Speicher deines Browsers (localStorage) landen höchstens zwei Einträge: deine Auswahl im Cookie-Banner (<code>hl-consent-v1</code>) und, wenn du die Sprache von Hand umschaltest, diese Wahl (<code>hl-lang</code>). Beides verlässt deinen Browser nie und lässt sich über die Browsereinstellungen löschen.</p>
+
+        <h2>Schriften, Bilder, Videos, 3D-Modell</h2>
+        <p>Kommen alle von dieser Seite selbst. Es gibt keine Anfragen an Google Fonts, CDNs oder Ähnliches.</p>
+
+        <h2>Versionsnummer und Release-Liste</h2>
+        <p>Die aktuelle Version und die Release-Liste holt <em>unser Server</em> bei GitHub ab, nicht dein Browser. Erst wenn du auf einen GitHub-Link oder den Download klickst, verbindest du dich mit GitHub (GitHub, Inc., USA); dann gilt deren Datenschutzerklärung.</p>
+
+        <h2>Der Trailer (YouTube)</h2>
+        <p>Der Trailer wird erst geladen, wenn du ihn abspielst oder im Banner „Trailer (YouTube)“ erlaubst. Er kommt dann von youtube-nocookie.com, betrieben von Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland. Google erhält dabei unter anderem deine IP-Adresse und kann Cookies setzen. Rechtsgrundlage ist deine Einwilligung (Art. 6 Abs. 1 lit. a DSGVO). Mehr dazu in der <a href="https://policies.google.com/privacy" rel="noopener">Datenschutzerklärung von Google</a>.</p>
+
+        <h2>Besuchszahlen (Vercel Web Analytics)</h2>
+        <p>Nur wenn du „Besuchszahlen“ erlaubst. Vercel Web Analytics setzt keine Cookies. Erfasst werden die aufgerufene Seite, die Herkunftsseite, Browser, Betriebssystem, Gerätetyp und das Land. Wiederkehrende Aufrufe am selben Tag werden über einen Hash aus IP-Adresse und Browserkennung erkannt; die IP-Adresse selbst wird nicht gespeichert, der Hash verfällt nach einem Tag. Rechtsgrundlage ist deine Einwilligung (Art. 6 Abs. 1 lit. a DSGVO).</p>
+
+        <h2>Einwilligung ändern</h2>
+        <p>Jederzeit über <button type="button" class="p-inline" data-consent-open>Cookie-Einstellungen</button> (auch unten auf jeder Seite). Ein Widerruf gilt ab dem nächsten Laden; was vorher erlaubt verarbeitet wurde, bleibt rechtmäßig.</p>
+
+        <h2>E-Mail</h2>
+        <p>Wenn du mir schreibst, nutze ich deine Adresse und Nachricht nur, um zu antworten (Art. 6 Abs. 1 lit. b und f DSGVO). Das Postfach liegt bei Gmail (Google).</p>
+
+        <h2>Deine Rechte</h2>
+        <p>Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch, und du kannst Einwilligungen widerrufen. Außerdem kannst du dich bei einer Aufsichtsbehörde beschweren, in Italien beim <a href="https://www.garanteprivacy.it" rel="noopener">Garante per la protezione dei dati personali</a>.</p>
+
+        <h2>Und die App?</h2>
+        <p>Diese Erklärung gilt für die Webseite. Die App selbst enthält keine Werbe- oder Tracking-Bibliothek; was sie wofür braucht, steht in der <a href="https://github.com/Hannes-swd/Hanneslouncher#permissions" rel="noopener">README unter „Permissions“</a>.</p>
+      </article>
+    ) : (
+      <article class="p-text">
+        <p class="overline">Last updated: October 2026</p>
+        <h1 class="display">Privacy</h1>
+        <p class="p-lead">In short: this page sets no cookies, loads nothing from other servers until you allow it, and builds no profile of you.</p>
+
+        <h2>Who is responsible</h2>
+        <p>Hannes, developer of hanneslauncher. Contact: <a href="#" data-mail data-u={rev('stellarfrog0')} data-h={rev('gmail.com')}>email</a> (the address appears when you tap it).</p>
+
+        <h2>Hosting by Vercel</h2>
+        <p>The site is hosted by Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA. On every visit Vercel processes technically necessary data (IP address, time, requested address, browser identifier) to deliver the site and protect it against abuse. The legal basis is the legitimate interest in running it securely (Art. 6(1)(f) GDPR). Vercel is certified under the EU-U.S. Data Privacy Framework, which covers the transfer to the USA.</p>
+
+        <h2>What is stored in your browser</h2>
+        <p>No cookies. Your browser's local storage holds at most two entries: your choice in the cookie banner (<code>hl-consent-v1</code>) and, if you switch the language by hand, that choice (<code>hl-lang</code>). Neither ever leaves your browser, and both can be cleared in your browser settings.</p>
+
+        <h2>Fonts, pictures, videos, 3D model</h2>
+        <p>All come from this site itself. There are no requests to Google Fonts, CDNs or the like.</p>
+
+        <h2>Version number and release list</h2>
+        <p>The current version and the release list are fetched from GitHub by <em>our server</em>, not by your browser. Only when you click a GitHub link or the download do you connect to GitHub (GitHub, Inc., USA); their privacy policy applies then.</p>
+
+        <h2>The trailer (YouTube)</h2>
+        <p>The trailer only loads when you play it or allow “Trailer (YouTube)” in the banner. It then comes from youtube-nocookie.com, run by Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland. Google receives, among other things, your IP address and may set cookies. The legal basis is your consent (Art. 6(1)(a) GDPR). More in <a href="https://policies.google.com/privacy" rel="noopener">Google's privacy policy</a>.</p>
+
+        <h2>Visit counts (Vercel Web Analytics)</h2>
+        <p>Only if you allow “Visit counts”. Vercel Web Analytics sets no cookies. It records the page viewed, the referring page, browser, operating system, device type and country. Repeat views on the same day are recognised by a hash of IP address and browser identifier; the IP address itself is not stored and the hash expires after one day. The legal basis is your consent (Art. 6(1)(a) GDPR).</p>
+
+        <h2>Changing your consent</h2>
+        <p>Any time via <button type="button" class="p-inline" data-consent-open>Cookie settings</button> (also at the bottom of every page). Withdrawing applies from the next page load; processing allowed before stays lawful.</p>
+
+        <h2>Email</h2>
+        <p>If you write to me, I use your address and message only to reply (Art. 6(1)(b) and (f) GDPR). The mailbox is hosted by Gmail (Google).</p>
+
+        <h2>Your rights</h2>
+        <p>You have the right to access, rectification, erasure, restriction of processing, data portability and objection, and you can withdraw consent. You can also complain to a supervisory authority; in Italy that is the <a href="https://www.garanteprivacy.it" rel="noopener">Garante per la protezione dei dati personali</a>.</p>
+
+        <h2>And the app?</h2>
+        <p>This policy covers the website. The app itself contains no ad or tracking library; what it needs and why is listed in the <a href="https://github.com/Hannes-swd/Hanneslouncher#permissions" rel="noopener">README under “Permissions”</a>.</p>
+      </article>
+    )}
+  </main>
+  <Footer lang={lang} />
+</Base>
+
+<style>
+  .p-top { display: flex; justify-content: space-between; align-items: center; height: 72px; }
+  .p-brand { display: inline-flex; gap: var(--s3); align-items: center; font-weight: 650; text-decoration: none; }
+  .p-lang { color: var(--ink-2); font-weight: 600; text-decoration: none; }
+  .p-main { padding-block: var(--s6) var(--s7); }
+  .p-text { max-width: 720px; }
+  .p-text h1 { font-size: clamp(var(--t5), 7vw, var(--t6)); margin: var(--s3) 0 var(--s4); }
+  .p-lead { font-size: var(--t1); color: var(--ink-2); }
+  .p-text h2 { font-size: var(--t1); font-weight: 650; margin: var(--s5) 0 var(--s2); letter-spacing: -0.01em; }
+  .p-text p { line-height: 1.6; }
+  .p-text a { text-underline-offset: 3px; }
+  .p-text code { font-family: var(--mono); font-size: 1.05em; }
+  .p-inline { border: 0; background: none; padding: 0; font: inherit; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+</style>

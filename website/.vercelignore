@@ -1,0 +1,8 @@
+# never uploaded: the full-size trailer (on YouTube), reference screenshots,
+# raw recordings and Blender sources, local build output
+hanneslauncher_trailer_EN_youtube_16x9.mp4
+inspiration.png
+_source
+dist
+.astro
+node_modules

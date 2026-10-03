@@ -1,0 +1,69 @@
+---
+import '@fontsource-variable/hanken-grotesk/wght.css';
+import '@fontsource-variable/doto/full.css';
+import '@fontsource/ubuntu-mono/400.css';
+import '../styles/global.css';
+import Consent from '../components/Consent.astro';
+import { t, paths, type Lang } from '../i18n/strings';
+
+interface Props {
+  lang: Lang;
+  title?: string;
+  description?: string;
+  page?: 'home' | 'privacy';
+}
+const { lang, title, description, page = 'home' } = Astro.props;
+const s = t(lang);
+const site = Astro.site ?? new URL('https://hanneslauncher.vercel.app');
+const here = new URL(paths[lang][page], site).href;
+const alt = (l: Lang) => new URL(paths[l][page], site).href;
+const pageTitle = title ?? s.meta.title;
+const pageDescription = description ?? s.meta.description;
+const og = new URL('/img/og.png', site).href;
+---
+<!doctype html>
+<html lang={lang} class="no-js">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+    <link rel="canonical" href={here} />
+    <link rel="alternate" hreflang="en" href={alt('en')} />
+    <link rel="alternate" hreflang="de" href={alt('de')} />
+    <link rel="alternate" hreflang="x-default" href={alt('en')} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.png" type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    <meta name="theme-color" content="#f4f3f0" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="hanneslauncher" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:url" content={here} />
+    <meta property="og:image" content={og} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content={lang === 'de' ? 'de_DE' : 'en_GB'} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script is:inline define:vars={{ redirect: lang === 'en' && page === 'home' }}>
+      var d = document.documentElement;
+      d.classList.replace('no-js', 'js');
+      // decided before the first paint, so pinned chapters never jump
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) d.classList.add('motion');
+      // German browsers land on /de/ - unless someone picked a language
+      try {
+        var langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
+        if (redirect && !localStorage.getItem('hl-lang') && /^de\b/i.test(langs[0] || '')) {
+          location.replace('/de/' + location.hash);
+        }
+      } catch (e) {}
+    </script>
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip" href="#main">{s.skip}</a>
+    <slot />
+    <Consent lang={lang} />
+  </body>
+</html>

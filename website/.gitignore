@@ -1,0 +1,19 @@
+# Dependencies and build output
+node_modules/
+dist/
+.astro/
+.vercel/
+
+# The full trailer is 122 MB, over GitHub's 100 MB limit - it lives on
+# YouTube (https://youtu.be/mWlO2SYgNyM). Reference screenshots of other
+# sites are not ours to publish.
+hanneslauncher_trailer_EN_youtube_16x9.mp4
+inspiration.png
+
+# Raw screen recordings and Blender working files; only the encoded,
+# web-sized results under public/ are committed
+_source/raw/
+*.blend1
+
+# Local Vercel credentials: `vercel link` writes an OIDC token to .env.local
+.env*

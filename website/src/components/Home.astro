@@ -1,0 +1,65 @@
+---
+import Base from '../layouts/Base.astro';
+import TopBar from './TopBar.astro';
+import LetterBar from './LetterBar.astro';
+import Hero from './Hero.astro';
+import Note from './Note.astro';
+import Why from './Why.astro';
+import Alphabet from './Alphabet.astro';
+import Panel from './Panel.astro';
+import Widgets from './Widgets.astro';
+import Design from './Design.astro';
+import Clocks from './Clocks.astro';
+import More from './More.astro';
+import Trailer from './Trailer.astro';
+import Updates from './Updates.astro';
+import Download from './Download.astro';
+import Footer from './Footer.astro';
+import { t, type Lang } from '../i18n/strings';
+import { releasesAtBuild } from '../data/releases';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const s = t(lang);
+const data = await releasesAtBuild();
+
+// in page order; the letter bar sorts them alphabetically itself
+const chapters = (['start', 'note', 'why', 'alphabet', 'panel', 'widgets', 'design', 'clocks', 'more', 'trailer', 'updates', 'download'] as const)
+  .map((id) => ({ id, label: s.nav[id] }));
+---
+<Base lang={lang}>
+  <link slot="head" rel="preload" href="/models/phone.glb" as="fetch" type="model/gltf-binary" crossorigin />
+  <TopBar lang={lang} chapters={chapters} data={data} />
+  <LetterBar lang={lang} chapters={chapters} />
+  <canvas class="stage" data-stage aria-hidden="true"></canvas>
+  <main id="main">
+    <Hero lang={lang} data={data} />
+    <Note lang={lang} />
+    <Why lang={lang} />
+    <Alphabet lang={lang} />
+    <Panel lang={lang} />
+    <Widgets lang={lang} />
+    <Design lang={lang} />
+    <Clocks lang={lang} />
+    <More lang={lang} />
+    <Trailer lang={lang} />
+    <Updates lang={lang} data={data} />
+    <Download lang={lang} data={data} />
+  </main>
+  <Footer lang={lang} />
+  <script type="application/json" data-release-meta set:html={JSON.stringify({ latest: data.releases[0]?.version ?? null })} />
+</Base>
+
+<script>
+  import '../scripts/app';
+</script>
+
+<style>
+  .stage {
+    position: fixed; inset: 0; z-index: 40;
+    width: 100vw; height: 100vh; height: 100lvh;
+    pointer-events: none;
+    opacity: 0; transition: opacity 600ms var(--ease);
+  }
+  :global(html.gl-ready) .stage { opacity: 1; }
+</style>

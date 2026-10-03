@@ -1,0 +1,63 @@
+---
+// The eight clock styles, each a real screenshot of the home screen, laid
+// on an arc that turns while the chapter is pinned - the card at the top of
+// the arc is the one being shown. Without motion: a row that scrolls.
+import { t, type Lang } from '../i18n/strings';
+interface Props { lang: Lang }
+const s = t(Astro.props.lang).clocks;
+const order = ['custom', 'digital', 'roman', 'bars', 'dotmatrix', 'splitflap', 'orbit', 'vertical'] as const;
+---
+<section id="clocks" class="clk" data-chapter data-clocks>
+  <div class="clk-stage">
+    <div class="wrap clk-head" data-arc-head>
+      <div>
+        <p class="overline">{s.overline}</p>
+        <h2 class="display clk-title" data-split>{s.title}</h2>
+        <p class="lede">{s.sub}</p>
+      </div>
+      <p class="clk-name dots" data-arc-name aria-hidden="true"></p>
+    </div>
+    <div class="clk-arc" data-arc>
+      {order.map((id, i) => (
+        <figure class="clk-card" data-arc-card style={`--i:${i}`}>
+          <div class="clk-phone">
+            <img src={`/media/shots/clock_${id}.webp`} alt={s.names[id]} width="720" height="1600" loading="lazy" />
+          </div>
+          <figcaption>{s.names[id]}</figcaption>
+        </figure>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .clk-stage { position: relative; min-height: 100svh; overflow: hidden; padding-top: var(--s7); }
+  .clk-head { position: relative; z-index: 2; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--s5); }
+  @media (max-width: 760px) { .clk-head { grid-template-columns: 1fr; } .clk-name { text-align: left; justify-content: flex-start; } }
+  .clk-title { font-size: clamp(var(--t4), 5vw, var(--t6)); margin: var(--s3) 0 var(--s4); }
+  .clk-arc { position: relative; }
+  .clk-card { margin: 0; }
+  .clk-phone {
+    aspect-ratio: 720 / 1600; border-radius: 13% / 6%; padding: 3%;
+    background: #d8d5cf;
+    box-shadow: 0 24px 50px -18px rgb(27 26 23 / 0.35), 0 8px 18px -10px rgb(27 26 23 / 0.25);
+  }
+  .clk-phone img { width: 100%; height: 100%; object-fit: cover; border-radius: 11% / 5%; }
+  .clk-card figcaption { margin-top: var(--s3); text-align: center; font-weight: 600; font-size: var(--t-1); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
+  .clk-name { margin: 0 0 var(--s2); text-align: right; font-size: clamp(var(--t2), 3.6vw, var(--t5)); line-height: 1; color: var(--accent); max-width: 9ch; min-height: 2em; display: flex; align-items: end; justify-content: flex-end; }
+
+  /* without motion: a plain row that scrolls sideways */
+  :global(html:not(.motion)) .clk-arc { display: flex; gap: var(--s4); overflow-x: auto; padding: var(--s5) var(--gutter); scroll-snap-type: x mandatory; }
+  :global(html:not(.motion)) .clk-card { flex: none; width: 180px; scroll-snap-align: center; }
+  :global(html:not(.motion)) .clk-name { display: none; }
+
+  /* with motion: cards sit on a circle below the fold, JS turns it */
+  :global(html.motion) .clk-arc { position: absolute; inset: 0; pointer-events: none; }
+  :global(html.motion) .clk-card {
+    position: absolute; left: 50%; top: 0;
+    width: var(--cw, 160px);
+    transform-origin: 50% 50%;
+    will-change: transform;
+  }
+  :global(html.motion) .clk-card figcaption { opacity: 0; }
+</style>

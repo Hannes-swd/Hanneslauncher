@@ -1,0 +1,73 @@
+---
+// The newest releases as a strip of cards that slides sideways while the
+// chapter is pinned - built into the page, refreshed from /api/release.json.
+import { t, type Lang } from '../i18n/strings';
+import { RELEASES_URL, type ReleaseData } from '../data/releases';
+interface Props { lang: Lang; data: ReleaseData }
+const { lang, data } = Astro.props;
+const s = t(lang).updates;
+const locale = t(lang).date.locale;
+const since = data.first
+  ? new Date(data.first).toLocaleDateString(locale, { month: 'long', year: 'numeric' })
+  : '';
+const fmt = (d: string) => new Date(d).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
+const shown = data.releases.slice(0, 10);
+// templates for refreshing the strip in the browser (scripts/releases.ts)
+const i18n = {
+  locale,
+  sub: s.sub(1234567, '§since§').replace('1234567', '§n§'),
+  one: s.points(1),
+  many: s.points(1234567).replace('1234567', '§n§'),
+  baked: data.releases[0]?.version ?? null,
+};
+---
+<section id="updates" class="upd" data-chapter data-hscroll data-upd-i18n={JSON.stringify(i18n)}>
+  <div class="upd-stage" data-hscroll-stage>
+    <div class="wrap upd-head">
+      <p class="overline">{s.overline}</p>
+      <h2 class="display upd-title" data-split>{s.title}</h2>
+      {data.total === 0 ? (
+        <p class="lede">{s.offline}</p>
+      ) : (
+        <p class="lede" data-upd-sub hidden={data.partial}>{data.partial ? '' : s.sub(data.total, since)}</p>
+      )}
+      {s.notesLang && <p class="upd-lang">{s.notesLang}</p>}
+    </div>
+    <ol class="upd-track" data-hscroll-track data-upd-track>
+      {shown.map((r, i) => (
+        <li class:list={['rel', 'surface-m', { 'rel-new': i === 0 }]}>
+          <a href={r.url} rel="noopener">
+            <span class="rel-v dots">{r.version}</span>
+            <time datetime={r.date}>{fmt(r.date)}</time>
+            <span class="rel-t" lang="de">{r.title}</span>
+            {r.points > 0 && <span class="rel-p">{s.points(r.points)}</span>}
+          </a>
+        </li>
+      ))}
+      <li class="rel rel-all"><a href={RELEASES_URL} rel="noopener">{s.all} →</a></li>
+    </ol>
+  </div>
+</section>
+
+<style is:global>
+  .upd-stage { min-height: 100svh; display: grid; grid-template-columns: minmax(0, 100%); align-content: center; gap: var(--s5); padding-block: var(--s7) var(--s6); overflow: hidden; }
+  .upd-title { font-size: clamp(var(--t4), 5vw, var(--t6)); margin: var(--s3) 0 var(--s4); }
+  .upd-lang { margin: var(--s2) 0 0; font-size: var(--t-1); color: var(--ink-2); }
+  .upd-track {
+    list-style: none; margin: 0; display: flex; gap: var(--s3); align-items: stretch;
+    padding: var(--s2) calc(var(--gutter) + var(--bar)) var(--s4) var(--gutter);
+    width: max-content;
+  }
+  .rel { width: clamp(220px, 22vw, 290px); flex: none; border-radius: var(--r-l); background: var(--card); }
+  .rel a { display: grid; align-content: start; gap: var(--s2); height: 100%; padding: var(--s4); text-decoration: none; border-radius: inherit; }
+  .rel-v { font-size: var(--t4); line-height: 1; color: var(--ink); }
+  .rel-new .rel-v { color: var(--accent); }
+  .rel time { font-size: var(--t-1); font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+  .rel-t { margin-top: var(--s2); line-height: 1.35; }
+  .rel-p { margin-top: auto; padding-top: var(--s3); font-size: var(--t-1); color: var(--ink-2); }
+  .rel-all { display: grid; place-items: center; background: none; box-shadow: inset 0 0 0 1.5px var(--line); }
+  .rel-all a { place-content: center; font-weight: 650; }
+
+  html:not(.motion) .upd-track { width: auto; overflow-x: auto; scroll-snap-type: x mandatory; }
+  html:not(.motion) .rel { scroll-snap-align: start; }
+</style>

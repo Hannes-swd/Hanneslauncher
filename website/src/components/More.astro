@@ -1,0 +1,69 @@
+---
+// Everything else, as a stream: two real clips up front, then rows of
+// rounded "bubbles" that drift across as the page scrolls - each row its
+// own speed and direction, coming in on one side and leaving on the other.
+import { t, type Lang } from '../i18n/strings';
+interface Props { lang: Lang }
+const s = t(Astro.props.lang).more;
+const rows = [s.items.slice(0, 6), s.items.slice(6, 12), s.items.slice(12)];
+---
+<section id="more" class="more chapter" data-chapter>
+  <div class="wrap more-head">
+    <h2 class="display more-title" data-split><span class="overline more-over">{s.overline}</span> {s.title}</h2>
+  </div>
+
+  <div class="wrap more-clips">
+    <figure class="clip-card surface-l" data-drift="-6">
+      <div class="clip-screen"><video data-clip-video="draw" muted playsinline loop preload="none" poster="/media/clips/draw.webp" aria-hidden="true"></video></div>
+      <figcaption><b>{s.drawTitle}</b><span>{s.drawText}</span></figcaption>
+    </figure>
+    <figure class="clip-card surface-l" data-drift="6">
+      <div class="clip-screen"><video data-clip-video="search" muted playsinline loop preload="none" poster="/media/clips/search.webp" aria-hidden="true"></video></div>
+      <figcaption><b>{s.searchTitle}</b><span>{s.searchText}</span></figcaption>
+    </figure>
+  </div>
+
+  <div class="more-stream" aria-label={s.title}>
+    {rows.map((row, r) => (
+      <ul class="more-row" role="list" data-stream={r % 2 === 0 ? 'left' : 'right'} style={`--speed:${[1, 0.7, 1.25][r]}`}>
+        {[...row, ...row].map(([name, text], i) => (
+          <li class="bubble surface-m" aria-hidden={i >= row.length ? 'true' : undefined}>
+            <b>{name}</b><span>{text}</span>
+          </li>
+        ))}
+      </ul>
+    ))}
+  </div>
+</section>
+
+<style>
+  .more { overflow: hidden; }
+  .more-title { font-size: clamp(var(--t4), 5.4vw, var(--t7)); max-width: 14ch; }
+  .more-over { display: block; margin-bottom: var(--s3); font-family: var(--sans); }
+  .more-clips { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(var(--s4), 4vw, var(--s6)); margin-top: var(--s6); }
+  .clip-card { margin: 0; display: grid; grid-template-columns: minmax(120px, 38%) 1fr; gap: var(--s4); align-items: end; padding: var(--s4); border-radius: var(--r-l); background: var(--card); }
+  .clip-screen { aspect-ratio: 720 / 1600; border-radius: var(--r-m); overflow: hidden; background: #060608; }
+  .clip-screen video { width: 100%; height: 100%; object-fit: cover; }
+  .clip-card figcaption { display: grid; gap: var(--s2); padding-bottom: var(--s2); }
+  .clip-card b { font-size: var(--t2); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; }
+  .clip-card span { color: var(--ink-2); }
+
+  .more-stream { display: grid; gap: var(--s3); margin-top: var(--s7); }
+  .more-row { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--s3); width: max-content; will-change: transform; }
+  .bubble {
+    display: grid; gap: 2px; padding: var(--s3) var(--s4) var(--s3) var(--s4);
+    border-radius: 999px; background: var(--card); white-space: nowrap;
+    min-width: 0;
+  }
+  .bubble b { font-weight: 650; }
+  .bubble span { color: var(--ink-2); font-size: 0.92rem; }
+  .more-row[data-stream='right'] .bubble:nth-child(3n + 1) { background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
+  .more-row[data-stream='left'] .bubble:nth-child(4n + 2) { background: color-mix(in srgb, var(--sky) 10%, var(--card)); }
+
+  :global(html:not(.motion)) .more-row { width: auto; flex-wrap: wrap; padding-inline: var(--gutter); }
+  :global(html:not(.motion)) .more-row [aria-hidden='true'] { display: none; }
+
+  @media (max-width: 860px) {
+    .more-clips { grid-template-columns: 1fr; }
+  }
+</style>

@@ -1,0 +1,59 @@
+---
+// The AI banner, drawn as what it is: a note. It borrows the launcher's
+// notes block - the icon, the bold title, the checkbox list - and its
+// checklist says the one thing the banner is for.
+import { t, type Lang } from '../i18n/strings';
+interface Props { lang: Lang }
+const s = t(Astro.props.lang).note;
+---
+<section id="note" class="note-ch" data-chapter>
+  <div class="wrap">
+    <article class="note surface-l" data-note>
+      <header class="note-head">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="4" y="3.5" width="16" height="17" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 8.5h8M8 12h8M8 15.5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <b>{s.label}</b><span>· {s.author}</span>
+      </header>
+      <p class="note-body" data-words>{s.body}</p>
+      <ul class="note-todo">
+        {s.todo.map((item) => (
+          <li class:list={[{ done: item.done }]} data-todo>
+            <span class="box" aria-hidden="true">
+              {item.done && <svg viewBox="0 0 16 16"><path d="M3.5 8.4l3 3 6-6.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>}
+            </span>
+            <span class="visually-hidden">{item.done ? '☑' : '☐'}</span>
+            {item.text}
+          </li>
+        ))}
+      </ul>
+    </article>
+  </div>
+</section>
+
+<style>
+  .note-ch { padding-block: var(--s6) var(--s7); }
+  .note {
+    max-width: 980px;
+    padding: clamp(var(--s4), 4vw, var(--s6));
+    background: var(--card);
+    border-radius: var(--r-l);
+  }
+  .note-head { display: flex; align-items: center; gap: var(--s2); font-size: var(--t1); }
+  .note-head span { color: var(--ink-2); }
+  .note-body {
+    margin: var(--s4) 0 var(--s5);
+    font-size: clamp(1.35rem, 2.6vw, var(--t3));
+    font-weight: 330;
+    line-height: 1.32;
+    letter-spacing: -0.015em;
+    text-wrap: pretty;
+  }
+  .note-todo { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); font-size: var(--t1); }
+  .note-todo li { display: flex; align-items: center; gap: var(--s3); }
+  .box {
+    display: grid; place-items: center; width: 24px; height: 24px; flex: none;
+    border-radius: 6px; box-shadow: inset 0 0 0 2px var(--ink-2); color: var(--card);
+    transition: background-color var(--normal) var(--ease), box-shadow var(--normal) var(--ease);
+  }
+  .box svg { width: 16px; height: 16px; }
+  .done .box { background: var(--accent); box-shadow: none; }
+</style>

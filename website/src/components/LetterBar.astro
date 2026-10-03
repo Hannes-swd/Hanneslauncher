@@ -1,0 +1,137 @@
+---
+// The page's navigation is the launcher's letter bar: chapters stand in for
+// apps, the bar shows only the letters that hold one, alphabetically, and
+// the magnifier at the bottom opens a search. See scripts/letterbar.ts.
+import { t, type Lang } from '../i18n/strings';
+interface Props { lang: Lang; chapters: { id: string; label: string }[] }
+const { lang, chapters } = Astro.props;
+const s = t(lang);
+const groups = new Map<string, { id: string; label: string }[]>();
+for (const c of chapters) {
+  const letter = c.label[0].toUpperCase();
+  groups.set(letter, [...(groups.get(letter) ?? []), c]);
+}
+const letters = [...groups.keys()].sort((a, b) => a.localeCompare(b, lang));
+const searchItems = [
+  ...chapters.map((c) => ({ label: c.label, id: c.id })),
+  ...s.more.items.map(([name]) => ({ label: name, id: 'more' })),
+  ...s.panel.blocks.map((b) => ({ label: b.name, id: 'panel' })),
+  ...Object.values(s.clocks.names).map((n) => ({ label: n, id: 'clocks' })),
+];
+---
+<nav class="lbar" aria-label={s.nav.letterBar} data-letterbar>
+  <ol class="lbar-letters" data-letters>
+    {letters.map((l) => (
+      <li>
+        <button
+          type="button"
+          class="lbar-letter"
+          data-letter={l}
+          data-targets={JSON.stringify(groups.get(l))}
+          aria-label={groups.get(l)!.map((c) => c.label).join(', ')}
+        >{l}</button>
+      </li>
+    ))}
+    <li>
+      <button type="button" class="lbar-letter lbar-search" data-open-search aria-label={s.nav.search}>
+        <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+      </button>
+    </li>
+  </ol>
+</nav>
+
+<!-- What the bar reveals while it is being scrubbed: the letter's chapters
+     at the top left, over a blurred page, like the app list over the wallpaper -->
+<div class="lbar-veil" data-veil aria-hidden="true">
+  <p class="lbar-head" data-veil-head></p>
+  <ol class="lbar-rows" data-veil-rows></ol>
+</div>
+<div class="lbar-bubble" data-bubble aria-hidden="true"></div>
+
+<div class="search" data-search hidden role="dialog" aria-label={s.nav.search}>
+  <div class="search-box surface-l">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+    <input type="text" data-search-input autocomplete="off" spellcheck="false" placeholder={s.nav.search} aria-label={s.nav.search} />
+    <button type="button" class="search-close" data-search-close aria-label={s.nav.close}>×</button>
+  </div>
+  <ol class="search-results" data-search-results></ol>
+</div>
+<script type="application/json" data-search-items set:html={JSON.stringify(searchItems)} />
+
+<style is:global>
+  .lbar {
+    position: fixed; z-index: 60;
+    right: max(4px, env(safe-area-inset-right));
+    top: 50%; transform: translateY(-50%);
+    width: var(--bar);
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+  }
+  .lbar-letters { list-style: none; margin: 0; padding: var(--s2) 0; display: grid; justify-items: center; }
+  .lbar-letter {
+    display: grid; place-items: center;
+    width: 40px; height: clamp(22px, 3.4vh, 30px);
+    padding: 0; border: 0; background: none; cursor: pointer;
+    font-family: var(--sans); font-size: 13px; font-weight: 650; color: var(--ink);
+    transform-origin: right center;
+    will-change: transform;
+  }
+  .lbar-letter.is-on { color: var(--accent); }
+  .lbar-search { color: var(--ink); margin-top: 2px; }
+
+  .lbar-veil {
+    position: fixed; inset: 0; z-index: 55;
+    padding: calc(var(--s6) + 24px) var(--gutter);
+    background: color-mix(in srgb, var(--paper) 72%, transparent);
+    backdrop-filter: blur(16px) saturate(1.1);
+    -webkit-backdrop-filter: blur(16px) saturate(1.1);
+    opacity: 0; visibility: hidden;
+    transition: opacity var(--normal) var(--ease), visibility 0s linear var(--normal);
+    pointer-events: none;
+  }
+  .lbar-veil.is-open { opacity: 1; visibility: visible; transition: opacity var(--fast) var(--ease); }
+  .lbar-head { margin: 0 0 var(--s4); font-size: var(--t3); font-weight: 700; }
+  .lbar-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s1); max-width: 560px; }
+  .lbar-rows li {
+    display: flex; align-items: center; gap: var(--s4);
+    padding: var(--s3) var(--s4); border-radius: var(--r-s);
+    font-family: var(--mono); font-size: var(--t1);
+    transition: background-color var(--fast) var(--ease);
+  }
+  .lbar-rows li::before {
+    content: ''; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--card); box-shadow: inset 0 0 0 1.5px var(--line);
+  }
+  .lbar-rows li.is-target { background: color-mix(in srgb, var(--ink) 9%, transparent); }
+
+  .lbar-bubble {
+    position: fixed; z-index: 61; right: calc(var(--bar) + 32px);
+    font-size: var(--t4); font-weight: 700; line-height: 1;
+    opacity: 0; transform: translateY(-50%); pointer-events: none;
+    transition: opacity var(--fast) var(--ease);
+  }
+  .lbar-bubble.is-open { opacity: 1; }
+
+  .search { position: fixed; inset: 0; z-index: 70; padding: 12vh var(--gutter) 0; background: color-mix(in srgb, var(--paper) 80%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  .search[hidden] { display: none; }
+  .search-box {
+    display: flex; align-items: center; gap: var(--s3);
+    max-width: 640px; margin: 0 auto; padding: 0 var(--s4);
+    background: var(--card); border-radius: var(--r-l); min-height: 64px;
+  }
+  .search-box input { flex: 1; border: 0; outline: 0; background: none; font: inherit; font-size: var(--t1); color: var(--ink); min-width: 0; }
+  .search-close { border: 0; background: none; font-size: 28px; line-height: 1; cursor: pointer; color: var(--ink-2); padding: var(--s2); }
+  .search-results { list-style: none; max-width: 640px; margin: var(--s3) auto 0; padding: 0; display: grid; gap: var(--s1); }
+  .search-results button {
+    width: 100%; text-align: left; display: flex; justify-content: space-between; gap: var(--s3);
+    padding: var(--s3) var(--s4); border: 0; border-radius: var(--r-s); background: none; cursor: pointer;
+    font-family: var(--mono); font-size: var(--t1);
+  }
+  .search-results button:hover, .search-results button.is-first { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+  .search-results small { font-family: var(--sans); color: var(--ink-2); font-size: var(--t-1); align-self: center; }
+  .search-results .sum { font-family: var(--dots); font-variation-settings: 'ROND' 100; font-weight: 700; font-size: var(--t3); }
+
+  @media (max-width: 640px) {
+    .lbar-letter { width: 34px; font-size: 12px; }
+  }
+</style>

@@ -1,0 +1,184 @@
+---
+import Logo from './Logo.astro';
+import { t, paths, type Lang } from '../i18n/strings';
+import { RELEASES_URL, REPO_URL, type ReleaseData } from '../data/releases';
+interface Props { lang: Lang; chapters: { id: string; label: string }[]; data: ReleaseData }
+const { lang, chapters, data } = Astro.props;
+const s = t(lang);
+const latest = data.releases[0];
+const apk = latest?.apk?.url ?? RELEASES_URL + '/latest';
+---
+<header class="top" data-top>
+  <a class="brand" href={paths[lang].home} aria-label="hanneslauncher">
+    <Logo size={26} />
+    <span>hanneslauncher</span>
+  </a>
+  <button class="handle" type="button" data-panel-toggle aria-expanded="false" aria-controls="menu-panel">
+    <span class="handle-bar" aria-hidden="true"></span>
+    <span class="visually-hidden">{s.nav.menu}</span>
+  </button>
+  <div class="top-right">
+    <a class="lang-switch" href={paths[s.otherLang as Lang].home} hreflang={s.otherLang} lang={s.otherLang} data-lang-switch>
+      <span aria-hidden="true">{s.otherLangShort}</span><span class="visually-hidden">{s.otherLangLabel}</span>
+    </a>
+    <a class="btn btn-primary top-dl" href={apk} data-apk-link>
+      {s.download.button}
+      {latest && <small data-version>v{latest.version}</small>}
+    </a>
+  </div>
+</header>
+
+<div class="menu" id="menu-panel" data-panel aria-hidden="true">
+  <div class="menu-sheet" data-panel-sheet>
+    <button class="menu-head" type="button" data-panel-close aria-label={s.nav.close}>
+      <span class="handle-bar" aria-hidden="true"></span>
+    </button>
+    <div class="menu-apps surface-m">
+      <a href={apk} data-apk-link><span class="menu-ico">↓</span>{s.download.button}</a>
+      <a href="#trailer" data-goto="trailer"><span class="menu-ico">▶</span>{s.nav.trailer}</a>
+      <a href={REPO_URL} rel="noopener"><span class="menu-ico">{'</>'}</span>GitHub</a>
+      <a href={paths[s.otherLang as Lang].home} hreflang={s.otherLang}><span class="menu-ico">{s.otherLangShort}</span>{s.otherLangLabel}</a>
+    </div>
+    <ol class="menu-list surface-l">
+      {chapters.map((c) => <li><a href={`#${c.id}`} data-goto={c.id}>{c.label}</a></li>)}
+    </ol>
+  </div>
+</div>
+
+<script>
+  import { goTo } from '../scripts/nav';
+  // The menu is the launcher's panel: it follows the finger down from the
+  // handle, snaps open or shut on release, and a tap on its header bar
+  // closes it again.
+  const panel = document.querySelector<HTMLElement>('[data-panel]')!;
+  const sheet = panel.querySelector<HTMLElement>('[data-panel-sheet]')!;
+  const toggle = document.querySelector<HTMLButtonElement>('[data-panel-toggle]')!;
+  let open = false;
+  const set = (v: boolean) => {
+    open = v;
+    panel.classList.toggle('is-open', v);
+    panel.setAttribute('aria-hidden', String(!v));
+    toggle.setAttribute('aria-expanded', String(v));
+    sheet.style.transform = '';
+    sheet.style.transition = '';
+    if (v) (sheet.querySelector('a') as HTMLElement | null)?.focus({ preventScroll: true });
+  };
+  let startY = -1;
+  let dragged = false;
+  toggle.addEventListener('pointerdown', (e) => {
+    startY = e.clientY;
+    dragged = false;
+    toggle.setPointerCapture(e.pointerId);
+  });
+  toggle.addEventListener('pointermove', (e) => {
+    if (startY < 0) return;
+    const dy = e.clientY - startY;
+    if (!dragged && dy < 6) return;
+    dragged = true;
+    panel.classList.add('is-dragging');
+    const h = sheet.offsetHeight;
+    sheet.style.transition = 'none';
+    sheet.style.transform = `translateY(${Math.min(0, -h + dy)}px)`;
+  });
+  toggle.addEventListener('pointerup', (e) => {
+    const dy = e.clientY - startY;
+    startY = -1;
+    panel.classList.remove('is-dragging');
+    if (dragged) set(dy > Math.min(140, sheet.offsetHeight * 0.25));
+  });
+  toggle.addEventListener('click', () => {
+    if (!dragged) set(!open);
+  });
+  panel.querySelector('[data-panel-close]')!.addEventListener('click', () => set(false));
+  panel.addEventListener('click', (e) => {
+    if (e.target === panel) set(false);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && open) set(false);
+  });
+  document.querySelectorAll<HTMLAnchorElement>('[data-goto]').forEach((a) =>
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      set(false);
+      goTo(a.dataset.goto!);
+    }),
+  );
+  // A language picked by hand beats the browser's (see the redirect in Base)
+  document.querySelectorAll<HTMLAnchorElement>('a[hreflang]').forEach((a) =>
+    a.addEventListener('click', () => {
+      try { localStorage.setItem('hl-lang', a.hreflang); } catch { /* private mode */ }
+    }),
+  );
+  // The bar gets a ground once the page has scrolled under it
+  const top = document.querySelector<HTMLElement>('[data-top]')!;
+  const onScroll = () => top.classList.toggle('is-scrolled', scrollY > 12);
+  addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+</script>
+
+<style>
+  .top {
+    position: fixed; z-index: 65; inset: 0 0 auto 0;
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+    height: 68px;
+    padding: 0 var(--gutter) 0 var(--gutter);
+    transition: background-color var(--normal) var(--ease), box-shadow var(--normal) var(--ease), color var(--slow) var(--ease);
+  }
+  .top.is-scrolled {
+    background: color-mix(in srgb, var(--paper) 78%, transparent);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 7%, transparent);
+  }
+  .brand { display: inline-flex; align-items: center; gap: var(--s3); text-decoration: none; font-weight: 650; letter-spacing: -0.01em; font-size: 1.05rem; justify-self: start; }
+  .handle { justify-self: center; display: grid; place-items: center; width: 88px; height: 44px; border: 0; background: none; cursor: grab; touch-action: none; }
+  .handle-bar { display: block; width: 40px; height: 5px; border-radius: 99px; background: color-mix(in srgb, var(--ink) 28%, transparent); transition: width var(--fast) var(--ease), background-color var(--fast) var(--ease); }
+  .handle:hover .handle-bar { width: 52px; background: color-mix(in srgb, var(--ink) 50%, transparent); }
+  .top-right { justify-self: end; display: flex; align-items: center; gap: var(--s3); }
+  .lang-switch { font-weight: 700; font-size: var(--t-1); letter-spacing: 0.1em; text-decoration: none; padding: var(--s2); color: var(--ink-2); }
+  .lang-switch:hover { color: var(--ink); }
+  .top-dl { min-height: 40px; padding: 0 var(--s4); font-size: 0.94rem; }
+
+  .menu {
+    position: fixed; inset: 0; z-index: 80;
+    background: color-mix(in srgb, var(--ink) 0%, transparent);
+    visibility: hidden;
+    transition: background-color var(--normal) var(--ease), visibility 0s linear var(--slow);
+  }
+  .menu.is-open, .menu.is-dragging { visibility: visible; transition: background-color var(--normal) var(--ease); }
+  .menu.is-open { background: color-mix(in srgb, var(--ink) 22%, transparent); }
+  .menu-sheet {
+    position: absolute; inset: 0 0 auto 0; max-height: 100dvh; overflow: auto;
+    padding: 0 var(--gutter) var(--s5);
+    background: color-mix(in srgb, var(--paper) 92%, transparent);
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    border-radius: 0 0 var(--r-l) var(--r-l);
+    transform: translateY(-100%);
+    transition: transform var(--slow) var(--ease);
+  }
+  .menu.is-open .menu-sheet { transform: translateY(0); }
+  .menu-head { display: grid; place-items: center; width: 100%; height: 68px; border: 0; background: none; cursor: pointer; }
+  .menu-apps {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s2);
+    max-width: 640px; margin: 0 auto var(--s3); padding: var(--s4) var(--s3);
+    background: var(--card); border-radius: var(--r-l);
+  }
+  .menu-apps a { display: grid; justify-items: center; gap: var(--s2); text-decoration: none; font-size: var(--t-1); font-weight: 600; text-align: center; }
+  .menu-ico {
+    display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%;
+    background: var(--paper); font-weight: 700; font-size: 15px;
+  }
+  .menu-list {
+    list-style: none; max-width: 640px; margin: 0 auto; padding: var(--s3);
+    background: var(--card); border-radius: var(--r-l);
+    display: grid; grid-template-columns: 1fr 1fr; gap: var(--s1);
+  }
+  .menu-list a { display: block; padding: var(--s3) var(--s4); border-radius: var(--r-s); text-decoration: none; font-family: var(--mono); font-size: var(--t1); }
+  .menu-list a:hover { background: var(--paper); }
+
+  @media (max-width: 640px) {
+    .brand span { display: none; }
+    .top { grid-template-columns: auto 1fr auto; }
+    .top-dl small { display: none; }
+  }
+</style>
