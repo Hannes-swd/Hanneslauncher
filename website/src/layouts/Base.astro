@@ -5,6 +5,7 @@ import '@fontsource/ubuntu-mono/400.css';
 import '../styles/global.css';
 import Consent from '../components/Consent.astro';
 import { t, paths, type Lang } from '../i18n/strings';
+import { THEMES, DESIGN_KEY } from '../data/themes';
 
 interface Props {
   lang: Lang;
@@ -46,9 +47,36 @@ const og = new URL('/img/og.png', site).href;
     <meta property="og:image:height" content="630" />
     <meta property="og:locale" content={lang === 'de' ? 'de_DE' : 'en_GB'} />
     <meta name="twitter:card" content="summary_large_image" />
-    <script is:inline define:vars={{ redirect: lang === 'en' && page === 'home' }}>
+    <script is:inline define:vars={{ redirect: lang === 'en' && page === 'home', themes: THEMES, designKey: DESIGN_KEY }}>
       var d = document.documentElement;
       d.classList.replace('no-js', 'js');
+      // the visitor's design choice (or the system's dark mode) before the
+      // first paint, so a dark page never flashes light; scripts/design.ts
+      // takes over once loaded
+      try {
+        var st = JSON.parse(localStorage.getItem(designKey) || 'null');
+        if (!st && matchMedia('(prefers-color-scheme: dark)').matches) st = { theme: 'dark', r: 24, sh: 0.5 };
+        if (st) {
+          var th = st.theme && themes[st.theme];
+          if (th) {
+            d.style.setProperty('--paper', th.ground);
+            d.style.setProperty('--card', th.card);
+            d.style.setProperty('--ink', th.ink);
+            d.style.setProperty('--ink-2', th.ink2);
+            d.style.setProperty('--line', th.line);
+            d.style.setProperty('--accent', th.accent);
+            var tc = document.querySelector('meta[name="theme-color"]');
+            if (tc) tc.setAttribute('content', th.ground);
+          }
+          if (st.theme === 'dark') {
+            d.style.setProperty('--on-accent', '#1b1a17');
+            d.style.setProperty('--depth', '1.7');
+            d.classList.add('theme-dark');
+          }
+          if (st.r && st.r !== 24) d.style.setProperty('--r', st.r + 'px');
+          if (st.sh != null && st.sh !== 0.5) d.style.setProperty('--sh', String(st.sh * 2));
+        }
+      } catch (e) {}
       // decided before the first paint, so pinned chapters never jump
       if (!matchMedia('(prefers-reduced-motion: reduce)').matches) d.classList.add('motion');
       // German browsers land on /de/ - unless someone picked a language

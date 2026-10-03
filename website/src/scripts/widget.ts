@@ -5,6 +5,65 @@
 
 const SNAP = 6; // px
 
+/** The first time the card is on screen, a touch dot - the one Android
+ *  draws in the recordings - presses one piece, slides it aside and back,
+ *  so nobody has to guess that the card can be edited. Touching the card
+ *  yourself stops it. */
+export function showOnce(card: HTMLElement, target: HTMLElement | null) {
+  if (!target || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const io = new IntersectionObserver(async ([e]) => {
+    if (!e.isIntersecting) return;
+    io.disconnect();
+    const dot = document.createElement('span');
+    dot.className = 'ghost-dot';
+    card.append(dot);
+    const anims: Animation[] = [];
+    let stopped = false;
+    const stop = () => {
+      stopped = true;
+      anims.forEach((a) => a.cancel());
+      target.classList.remove('is-dragging');
+      dot.remove();
+    };
+    card.addEventListener('pointerdown', stop, { once: true });
+    const run = (el: HTMLElement, kf: Keyframe[], ms: number, delay = 0) => {
+      const a = el.animate(kf, { duration: ms, delay, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'forwards' });
+      anims.push(a);
+      return a.finished;
+    };
+    const cr = card.getBoundingClientRect();
+    const tr = target.getBoundingClientRect();
+    const tx = tr.left - cr.left + tr.width / 2 - 18;
+    const ty = tr.top - cr.top + tr.height / 2 - 18;
+    const dx = -cr.width * 0.24;
+    try {
+      await new Promise((r) => setTimeout(r, 700));
+      if (stopped) return;
+      await run(dot, [
+        { transform: `translate(${cr.width}px, ${cr.height}px) scale(1)`, opacity: 0 },
+        { transform: `translate(${tx}px, ${ty}px) scale(1)`, opacity: 1 },
+      ], 800);
+      await run(dot, [{ transform: `translate(${tx}px, ${ty}px) scale(1)` }, { transform: `translate(${tx}px, ${ty}px) scale(0.78)` }], 160);
+      target.classList.add('is-dragging');
+      await Promise.all([
+        run(dot, [{ transform: `translate(${tx}px, ${ty}px) scale(0.78)` }, { transform: `translate(${tx + dx}px, ${ty}px) scale(0.78)` }], 900),
+        run(target, [{ transform: 'translate(0, 0)' }, { transform: `translate(${dx}px, 0)` }], 900),
+      ]);
+      await new Promise((r) => setTimeout(r, 350));
+      await Promise.all([
+        run(dot, [{ transform: `translate(${tx + dx}px, ${ty}px) scale(0.78)` }, { transform: `translate(${tx}px, ${ty}px) scale(0.78)` }], 750),
+        run(target, [{ transform: `translate(${dx}px, 0)` }, { transform: 'translate(0, 0)' }], 750),
+      ]);
+      target.classList.remove('is-dragging');
+      await run(dot, [{ transform: `translate(${tx}px, ${ty}px) scale(0.78)`, opacity: 1 }, { transform: `translate(${tx}px, ${ty}px) scale(1.3)`, opacity: 0 }], 350);
+      stop();
+    } catch {
+      /* cancelled by a real touch */
+    }
+  }, { threshold: 0.7 });
+  io.observe(card);
+}
+
 export function initWidget() {
   const card = document.querySelector<HTMLElement>('[data-widget]');
   if (!card) return;
@@ -25,6 +84,8 @@ export function initWidget() {
   };
   fill();
   setInterval(fill, 15_000);
+
+  showOnce(card, card.querySelector<HTMLElement>('.el-icon'));
 
   els.forEach((el) => {
     let sx = 0, sy = 0, ox = 0, oy = 0;

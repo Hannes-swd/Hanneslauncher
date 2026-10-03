@@ -1,0 +1,56 @@
+---
+// The app's Design screen, working: five themes, rounding and shadows with
+// the app's own bounds (radiusRange 4..32, shadowRange 0..1). Rendered twice
+// - in the top bar and in the design chapter - and kept in sync by
+// scripts/design.ts.
+import { t, type Lang } from '../i18n/strings';
+import { THEMES, THEME_ORDER } from '../data/themes';
+interface Props { lang: Lang; id: string; class?: string }
+const { lang, id, class: cls = '' } = Astro.props;
+const s = t(lang).design;
+---
+<div class={`dc ${cls}`} data-design>
+  <fieldset class="dc-themes">
+    <legend class="overline">{s.theme}</legend>
+    {THEME_ORDER.map((key, i) => {
+      const th = THEMES[key];
+      return (
+        <label class="dc-theme">
+          <input type="radio" name={`theme-${id}`} value={key} />
+          <span class="dc-swatch" style={`--g:${th.ground};--c:${th.card};--a:${th.accent}`} aria-hidden="true"><i></i><i></i></span>
+          <span>{s.themes[i]}</span>
+        </label>
+      );
+    })}
+  </fieldset>
+  <label class="dc-slider">
+    <span class="overline">{s.rounding} <output data-out="r">24 px</output></span>
+    <input type="range" min="4" max="32" step="1" value="24" data-range="r" />
+  </label>
+  <label class="dc-slider">
+    <span class="overline">{s.shadows} <output data-out="sh">50 %</output></span>
+    <input type="range" min="0" max="1" step="0.05" value="0.5" data-range="sh" />
+    <span class="dc-ends" aria-hidden="true"><span>{s.shadowsOff}</span><span>{s.shadowsStrong}</span></span>
+  </label>
+  <button class="dc-reset" type="button" data-design-reset>{s.reset}</button>
+</div>
+
+<style is:global>
+  .dc { display: grid; gap: var(--s5); }
+  .dc-themes { border: 0; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s2); }
+  .dc-themes legend { margin-bottom: var(--s3); padding: 0; }
+  .dc-theme { position: relative; display: grid; justify-items: center; gap: var(--s2); cursor: pointer; font-size: var(--t-1); font-weight: 600; padding: var(--s2) 0; border-radius: var(--r-m); transition: background-color var(--fast) var(--ease); }
+  .dc-theme input { position: absolute; opacity: 0; pointer-events: none; }
+  .dc-theme:has(input:checked) { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  .dc-theme:has(input:focus-visible) { outline: 2px solid var(--accent); }
+  .dc-theme:hover .dc-swatch { transform: scale(1.08); }
+  .dc-swatch { display: flex; gap: 4px; padding: 6px; border-radius: 99px; background: var(--g); box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.1); transition: transform var(--fast) var(--ease); }
+  .dc-swatch i { width: 14px; height: 14px; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12); }
+  .dc-swatch i + i { background: var(--a); box-shadow: none; }
+  .dc-slider { display: grid; gap: var(--s2); }
+  .dc-slider .overline { display: flex; justify-content: space-between; }
+  .dc-slider output { font-family: var(--sans); letter-spacing: 0; text-transform: none; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .dc-slider input { width: 100%; accent-color: var(--accent); height: 28px; cursor: ew-resize; }
+  .dc-ends { display: flex; justify-content: space-between; font-size: var(--t-1); color: var(--ink-2); }
+  .dc-reset { justify-self: start; border: 0; background: none; padding: 0; cursor: pointer; font-weight: 650; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+</style>

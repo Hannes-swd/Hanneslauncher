@@ -31,7 +31,7 @@ const [appRow, widget, calendar, notes, code, notifs] = s.blocks;
         <h3>{widget.name}</h3><p>{widget.text}</p>
       </article>
       <article class="blk surface-l">
-        <div class="blk-art art-cal"><span><b>09:00</b> ——</span><span><b>13:30</b> ————</span><span><b>18:00</b> ——</span></div>
+        <div class="blk-art art-cal"><span><b>09:00</b><i class="ln" style="--w:34%"></i></span><span><b>13:30</b><i class="ln" style="--w:58%"></i></span><span><b>18:00</b><i class="ln" style="--w:42%"></i></span></div>
         <h3>{calendar.name}</h3><p>{calendar.text}</p>
       </article>
       <article class="blk surface-l">
@@ -43,7 +43,7 @@ const [appRow, widget, calendar, notes, code, notifs] = s.blocks;
         <h3>{code.name}</h3><p>{code.text}</p>
       </article>
       <article class="blk surface-l">
-        <div class="blk-art art-notif"><span><i></i>——— ——</span><span class="swipe"><i></i>—— ————</span></div>
+        <div class="blk-art art-notif"><span><i></i><i class="ln" style="--w:56%"></i></span><span class="swipe"><i></i><i class="ln" style="--w:44%"></i></span></div>
         <h3>{notifs.name}</h3><p>{notifs.text}</p>
       </article>
       <p class="pan-data">{s.data}</p>
@@ -75,7 +75,8 @@ const [appRow, widget, calendar, notes, code, notifs] = s.blocks;
   .art-widget { background: linear-gradient(135deg, #b9b6b0, #e4e1da 55%, #8f8b84); color: #1b1a17; justify-items: start; }
   .art-widget .dots { font-size: 2.2rem; line-height: 1; }
   .art-widget small { font-weight: 600; }
-  .art-cal span { display: flex; gap: var(--s3); color: var(--ink-2); font-size: 0.9rem; }
+  .art-cal span { display: flex; align-items: center; gap: var(--s3); color: var(--ink-2); font-size: 0.9rem; }
+  .ln { display: block; width: var(--w); height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 16%, transparent); }
   .art-cal b { color: var(--ink); font-variant-numeric: tabular-nums; }
   .art-notes { justify-items: start; font-size: 0.95rem; }
   .art-notes span { display: flex; align-items: center; gap: var(--s2); }
@@ -83,7 +84,7 @@ const [appRow, widget, calendar, notes, code, notifs] = s.blocks;
   .art-code { background: #300a24; color: #e9e3ee; }
   .art-code code { font-family: var(--mono); font-size: 0.92rem; line-height: 1.35; }
   .art-notif span { display: flex; align-items: center; gap: var(--s2); padding: var(--s2); border-radius: var(--r-s); background: var(--card); color: var(--ink-2); }
-  .art-notif i { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); opacity: 0.8; }
+  .art-notif i:not(.ln) { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); opacity: 0.8; }
   .art-notif .swipe { transform: translateX(28%); opacity: 0.55; }
   .pan-data { width: clamp(260px, 30vw, 380px); flex: none; align-self: center; margin: 0 0 0 var(--s4); font-size: var(--t1); line-height: 1.4; color: var(--ink); }
 

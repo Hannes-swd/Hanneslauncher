@@ -1,0 +1,8 @@
+---
+// One sign for "this part of the page can be touched": the same pill with a
+// pulsing dot on every editable area, so visitors learn it once.
+import { t, type Lang } from '../i18n/strings';
+interface Props { lang: Lang; label?: string }
+const { lang, label } = Astro.props;
+---
+<span class="try" aria-hidden="true"><i></i>{label ?? t(lang).ui.tryIt}</span>

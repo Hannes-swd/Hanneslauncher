@@ -6,20 +6,25 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText } from 'gsap/SplitText';
 import Lenis from 'lenis';
-import { setScroller } from './nav';
+import { goTo, setScroller } from './nav';
 import { initLetterBar } from './letterbar';
 import { clipCards, fallbackSlots, getClip } from './clips';
 import { refreshReleases } from './releases';
+import { initDesign } from './design';
+import { initStream } from './stream';
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 const root = document.documentElement;
 const motion = root.classList.contains('motion');
 const narrow = () => innerWidth < 760;
 
+initDesign();
 initLetterBar();
 clipCards();
 alphabetSteps();
 refreshReleases();
+initStream();
+downloadThenGuide();
 
 if (motion) {
   const lenis = new Lenis({ lerp: 0.11, smoothWheel: true });
@@ -106,18 +111,26 @@ function why() {
   const problems = sec.querySelectorAll('[data-why-problem]');
   const answers = sec.querySelectorAll('[data-why-answer]');
   const strikes = sec.querySelectorAll('.why-strike path');
+  // Off-screen positions are functions and re-measured on every refresh
+  // (invalidateOnRefresh): measured once, a window that grows after loading
+  // would start the answer cards in the middle of the problem cards.
+  const offRight = () => innerWidth * 1.15;
   const tl = gsap.timeline({
     defaults: { ease: 'power3.out' },
-    scrollTrigger: { trigger: sec, start: 'top top', end: () => `+=${innerHeight * 3}`, pin: sec.querySelector('.why-stage'), scrub: 0.7, anticipatePin: 1 },
+    scrollTrigger: {
+      trigger: sec, start: 'top top', end: () => `+=${innerHeight * 3}`,
+      pin: sec.querySelector('.why-stage'), scrub: 0.7, anticipatePin: 1, invalidateOnRefresh: true,
+    },
   });
-  gsap.set(problems, { x: () => innerWidth * 1.1, rotate: 7 });
-  gsap.set(answers, { x: () => innerWidth * 1.1, rotate: 5 });
-  problems.forEach((card, i) => tl.to(card, { x: 0, rotate: (i - 1) * 1.6, duration: 1 }, i * 0.55));
+  problems.forEach((card, i) =>
+    tl.fromTo(card, { x: offRight, rotate: 7 }, { x: 0, rotate: (i - 1) * 1.6, duration: 1, immediateRender: true }, i * 0.55));
+  answers.forEach((card) => tl.set(card, { x: offRight, rotate: 5 }, 0));
   strikes.forEach((path, i) => tl.to(path, { strokeDashoffset: 0, duration: 0.5, ease: 'power2.inOut' }, 1.9 + i * 0.25));
-  tl.to(problems, { x: () => -innerWidth * 1.2, rotate: -10, duration: 1.1, stagger: 0.12, ease: 'power3.in' }, 3.1);
+  // all three problems leave before the first answer comes in
+  tl.to(problems, { x: () => -innerWidth * 1.25, rotate: -10, duration: 0.9, stagger: 0.1, ease: 'power3.in' }, 3.1);
   tl.to('[data-why-lead]', { opacity: 0, y: -30, duration: 0.6 }, 3.2);
-  tl.fromTo('[data-why-turn]', { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.8 }, 3.75);
-  answers.forEach((card, i) => tl.to(card, { x: 0, rotate: 0, duration: 1 }, 4.1 + i * 0.4));
+  tl.fromTo('[data-why-turn]', { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.8 }, 4.0);
+  answers.forEach((card, i) => tl.fromTo(card, { x: offRight, rotate: 5 }, { x: 0, rotate: 0, duration: 1, immediateRender: false }, 4.35 + i * 0.4));
   tl.to({}, { duration: 0.8 });
 }
 
@@ -185,17 +198,27 @@ function clocks() {
   });
 }
 
-/** Bubble rows drift across, each its own speed and direction. */
-function stream() {
-  document.querySelectorAll<HTMLElement>('[data-stream]').forEach((row) => {
-    const speed = Number(getComputedStyle(row).getPropertyValue('--speed')) || 1;
-    const left = row.dataset.stream === 'left';
-    const travel = 34 * speed;
-    gsap.fromTo(row, { xPercent: left ? 0 : -travel }, {
-      xPercent: left ? -travel : 0, ease: 'none',
-      scrollTrigger: { trigger: row, start: 'top bottom', end: 'bottom top', scrub: 0.8 },
+/** The download buttons start the download and then take you down to the
+ *  steps, with the first one ticked off - so the next thing to do is right
+ *  there instead of somewhere further down the page. */
+function downloadThenGuide() {
+  const steps = document.querySelector<HTMLElement>('[data-dl-steps]');
+  if (!steps) return;
+  document.querySelectorAll<HTMLAnchorElement>('[data-apk-link]').forEach((a) => {
+    if (a.closest('#download')) return; // already there
+    a.addEventListener('click', () => {
+      // the link itself downloads (GitHub serves the APK as an attachment,
+      // so the page stays); the scroll follows a moment later
+      steps.classList.add('is-started');
+      setTimeout(() => goTo('download'), 250);
     });
   });
+  document.querySelectorAll<HTMLAnchorElement>('#download [data-apk-link]').forEach((a) =>
+    a.addEventListener('click', () => steps.classList.add('is-started')));
+}
+
+/** The clip cards in "the rest" drift a little against the scroll. */
+function stream() {
   document.querySelectorAll<HTMLElement>('[data-drift]').forEach((el) => {
     gsap.fromTo(el, { y: Number(el.dataset.drift) * 6 }, {
       y: Number(el.dataset.drift) * -6, ease: 'none',

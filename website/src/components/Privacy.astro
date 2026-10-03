@@ -9,7 +9,7 @@ const s = t(lang);
 const de = lang === 'de';
 const rev = (v: string) => v.split('').reverse().join('');
 ---
-<Base lang={lang} page="privacy" title={de ? 'Datenschutz — hanneslauncher' : 'Privacy — hanneslauncher'}>
+<Base lang={lang} page="privacy" title={de ? 'Datenschutz · hanneslauncher' : 'Privacy · hanneslauncher'}>
   <header class="p-top wrap">
     <a href={paths[lang].home} class="p-brand"><Logo size={24} /> hanneslauncher</a>
     <a href={paths[s.otherLang as Lang].privacy} hreflang={s.otherLang} class="p-lang">{s.otherLangLabel}</a>
@@ -28,7 +28,7 @@ const rev = (v: string) => v.split('').reverse().join('');
         <p>Die Seite liegt bei Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA. Bei jedem Aufruf verarbeitet Vercel technisch nötige Daten (IP-Adresse, Zeitpunkt, aufgerufene Adresse, Browserkennung), um die Seite auszuliefern und vor Missbrauch zu schützen. Rechtsgrundlage ist das berechtigte Interesse an einem sicheren Betrieb (Art. 6 Abs. 1 lit. f DSGVO). Vercel ist unter dem EU-US Data Privacy Framework zertifiziert, was die Übermittlung in die USA absichert.</p>
 
         <h2>Was im Browser gespeichert wird</h2>
-        <p>Keine Cookies. Im lokalen Speicher deines Browsers (localStorage) landen höchstens zwei Einträge: deine Auswahl im Cookie-Banner (<code>hl-consent-v1</code>) und, wenn du die Sprache von Hand umschaltest, diese Wahl (<code>hl-lang</code>). Beides verlässt deinen Browser nie und lässt sich über die Browsereinstellungen löschen.</p>
+        <p>Keine Cookies. Im lokalen Speicher deines Browsers (localStorage) landen höchstens drei Einträge: deine Auswahl im Cookie-Banner (<code>hl-consent-v1</code>), die Sprache, wenn du sie von Hand umschaltest (<code>hl-lang</code>), und das Aussehen, wenn du am Design-Schalter etwas änderst (<code>hl-design</code>: Farbschema, Rundung, Schatten). Nichts davon verlässt deinen Browser, und alles lässt sich über die Browsereinstellungen löschen.</p>
 
         <h2>Schriften, Bilder, Videos, 3D-Modell</h2>
         <p>Kommen alle von dieser Seite selbst. Es gibt keine Anfragen an Google Fonts, CDNs oder Ähnliches.</p>
@@ -67,7 +67,7 @@ const rev = (v: string) => v.split('').reverse().join('');
         <p>The site is hosted by Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, USA. On every visit Vercel processes technically necessary data (IP address, time, requested address, browser identifier) to deliver the site and protect it against abuse. The legal basis is the legitimate interest in running it securely (Art. 6(1)(f) GDPR). Vercel is certified under the EU-U.S. Data Privacy Framework, which covers the transfer to the USA.</p>
 
         <h2>What is stored in your browser</h2>
-        <p>No cookies. Your browser's local storage holds at most two entries: your choice in the cookie banner (<code>hl-consent-v1</code>) and, if you switch the language by hand, that choice (<code>hl-lang</code>). Neither ever leaves your browser, and both can be cleared in your browser settings.</p>
+        <p>No cookies. Your browser's local storage holds at most three entries: your choice in the cookie banner (<code>hl-consent-v1</code>), the language if you switch it by hand (<code>hl-lang</code>), and the look if you change something with the design switch (<code>hl-design</code>: colour theme, rounding, shadows). None of it ever leaves your browser, and all of it can be cleared in your browser settings.</p>
 
         <h2>Fonts, pictures, videos, 3D model</h2>
         <p>All come from this site itself. There are no requests to Google Fonts, CDNs or the like.</p>

@@ -9,7 +9,7 @@ const en = {
   otherLangLabel: 'Deutsch',
   otherLangShort: 'DE',
   meta: {
-    title: 'hanneslauncher — a free Android launcher without the noise',
+    title: 'hanneslauncher · a free Android launcher without the noise',
     description:
       'No app grid, no pages to swipe through. A clock, a few apps and the alphabet; everything else is one gesture away. Free, no ads, open source.',
   },
@@ -37,7 +37,7 @@ const en = {
   hero: {
     overline: 'Android launcher · free · open source',
     title: 'A clock, a few apps, the alphabet. That’s the whole home screen.',
-    sub: 'Everything else is one gesture away. I built it because the launchers I tried annoyed me — now I use it every day.',
+    sub: 'Everything else is one gesture away. I built it because the launchers I tried annoyed me. Now I use it every day.',
     download: 'Download APK',
     trailer: 'Watch the trailer',
     req: 'Android 7.0 or newer',
@@ -45,10 +45,10 @@ const en = {
   note: {
     label: 'Note',
     author: 'Hannes',
-    body: 'I’m Hannes. I can code — and I build hanneslauncher together with AI: the app, the trailer, this website. The AI makes me fast. What goes in, what gets cut, trying every build on my own phone, fixing what breaks: that part is mine. And it won’t be left to rot. I use it myself, every single day.',
+    body: 'I’m Hannes, and I’ll say it plainly: everything in this project was made with AI. The app’s code, the trailer, this website. Yes, it’s vibe-coded. But not blindly. I can program, I read what the AI writes, I decide what goes in and what gets cut, I try every build on my own phone and I fix what breaks. And it won’t be left to rot, because I use it myself every single day.',
     todo: [
-      { text: 'built with AI', done: true },
-      { text: 'checked by me', done: true },
+      { text: 'made entirely with AI', done: true },
+      { text: 'understood and checked by me', done: true },
       { text: 'give up', done: false },
     ],
   },
@@ -65,7 +65,7 @@ const en = {
   alphabet: {
     overline: 'The letter bar',
     title: 'Every app, one motion.',
-    steps: ['Run your finger down the letters', 'Slide left to pick a row', 'Let go — it opens'],
+    steps: ['Run your finger down the letters', 'Slide left to pick a row', 'Let go, and it opens'],
     note: 'The bar only shows letters that actually hold something. At the bottom sits the magnifier for a full search.',
     try: 'This page has one too. Try it on the right edge.',
     tryTouch: 'This page has one too. Drag along the right edge.',
@@ -96,7 +96,7 @@ const en = {
   design: {
     overline: 'Design',
     title: 'Change everything. Break nothing.',
-    sub: 'Every value has bounds, so no combination of them can look broken. Try it — this page follows.',
+    sub: 'Every value has bounds, so no combination of them can look broken. Try it with the design switch at the top: it changes this whole page.',
     theme: 'Color theme',
     themes: ['Grey', 'Rose', 'Green', 'Blue', 'Dark'],
     rounding: 'Rounding',
@@ -104,7 +104,7 @@ const en = {
     shadowsOff: 'off',
     shadowsStrong: 'strong',
     reset: 'Back to default',
-    golden: 'Every size comes from the golden ratio. Spacing runs 4, 8, 12, 20, 32, 52 — each the sum of the two before it.',
+    golden: 'Every size comes from the golden ratio. Spacing runs 4, 8, 12, 20, 32, 52, and each step is the sum of the two before it.',
     cardLarge: 'Large',
     cardNormal: 'Normal',
     cardSmall: 'Small',
@@ -132,6 +132,7 @@ const en = {
     drawText: 'A heart, a house, a zigzag. It’s recognised anywhere on the home screen, at any size.',
     searchTitle: 'Search that ranks.',
     searchText: '“ytm” finds YouTube Music. “17*24” answers 408.',
+    drag: 'Grab the rows and pull them sideways',
     items: [
       ['Terminal', 'Ubuntu syntax on Android’s own shell'],
       ['Code widgets', 'HTML, CSS and JavaScript on your panel'],
@@ -143,7 +144,7 @@ const en = {
       ['Kept shortcuts', 'A chat becomes an icon on your home screen'],
       ['Secret folder', 'Apps hidden behind a password'],
       ['Offline mode', 'Clock on black, landscape, screen stays on'],
-      ['Badges', 'A dot or a number — only the count is read'],
+      ['Badges', 'A dot or a number, and only the count is read'],
       ['Backups', 'Once a day, and right before every update'],
       ['Wallpapers', 'Picture, GIF or video, silent, still when hidden'],
       ['Lock screen', 'Sets Android’s own lock screen too'],
@@ -173,14 +174,22 @@ const en = {
     overline: 'Download',
     title: 'Three steps.',
     steps: [
-      { title: 'Download the APK', text: 'Straight from GitHub.' },
-      { title: 'Install it', text: 'Your browser asks to allow installing apps. That’s normal for apps from outside the Play Store.' },
-      { title: 'Make it your home app', text: 'The launcher helps on first start. Later updates arrive inside the app.' },
+      { title: 'Download the APK', text: 'Straight from GitHub. The file is called hanneslauncher plus the version number.' },
+      { title: 'Install it', text: 'Open the file from your downloads. The first time, Android asks whether your browser may install apps: allow it, go back and tap Install. That’s normal for apps from outside the Play Store.' },
+      { title: 'Make it your home app', text: 'Open hanneslauncher once. It walks you through making it your home app, and the same switch stays under Settings, App, Default home app. Later updates arrive inside the app.' },
     ],
+    started: 'Download started. Here’s what comes next:',
+    badges: 'For notification badges and the notification block, Android first blocks notification access for apps from outside the Play Store. Open the app info, tap the three dots at the top right and choose “Allow restricted settings”.',
     button: 'Download',
     req: 'Android 7.0 or newer',
     source: 'Source code',
     all: 'All releases',
+  },
+  ui: {
+    design: 'Design',
+    designOpen: 'Change the look of this page',
+    tryIt: 'Try it',
+    dragMe: 'Drag me',
   },
   footer: {
     made: 'Made by Hannes',
@@ -188,7 +197,7 @@ const en = {
     privacy: 'Privacy',
     cookies: 'Cookie settings',
     license: 'MIT license',
-    ai: 'Built with AI, maintained by a human.',
+    ai: 'Vibe-coded with AI, by someone who can code.',
   },
   consent: {
     title: 'Two things need your OK',
@@ -212,7 +221,7 @@ const de: typeof en = {
   otherLangLabel: 'English',
   otherLangShort: 'EN',
   meta: {
-    title: 'hanneslauncher — ein kostenloser Android-Launcher ohne Lärm',
+    title: 'hanneslauncher · ein kostenloser Android-Launcher ohne Lärm',
     description:
       'Kein App-Raster, keine Seiten zum Wischen. Eine Uhr, ein paar Apps und das Alphabet; alles andere ist eine Geste entfernt. Kostenlos, ohne Werbung, Open Source.',
   },
@@ -238,7 +247,7 @@ const de: typeof en = {
   hero: {
     overline: 'Android-Launcher · kostenlos · Open Source',
     title: 'Eine Uhr, ein paar Apps, das Alphabet. Mehr ist auf dem Startbildschirm nicht.',
-    sub: 'Alles andere ist eine Geste entfernt. Ich habe ihn gebaut, weil mich die Launcher genervt haben, die ich ausprobiert hatte — jetzt benutze ich ihn jeden Tag.',
+    sub: 'Alles andere ist eine Geste entfernt. Ich habe ihn gebaut, weil mich die Launcher genervt haben, die ich ausprobiert hatte. Jetzt benutze ich ihn jeden Tag.',
     download: 'APK laden',
     trailer: 'Trailer ansehen',
     req: 'Android 7.0 oder neuer',
@@ -246,10 +255,10 @@ const de: typeof en = {
   note: {
     label: 'Notiz',
     author: 'Hannes',
-    body: 'Ich bin Hannes. Ich kann programmieren — und baue hanneslauncher zusammen mit KI: die App, den Trailer, diese Webseite. Die KI macht mich schnell. Was reinkommt, was rausfliegt, jeden Build auf meinem eigenen Handy ausprobieren, reparieren, was kaputtgeht: Das ist mein Teil. Und er wird nicht liegen gelassen. Ich benutze ihn selbst, jeden einzelnen Tag.',
+    body: 'Ich bin Hannes, und ich sage es gerade heraus: Alles an diesem Projekt ist mit KI entstanden. Der Code der App, der Trailer, diese Webseite. Ja, das ist gevibecodet. Aber nicht blind. Ich kann programmieren, ich lese, was die KI schreibt, ich entscheide, was reinkommt und was rausfliegt, ich teste jeden Build auf meinem eigenen Handy und repariere, was kaputtgeht. Und liegen gelassen wird hier nichts, denn ich benutze den Launcher selbst, jeden einzelnen Tag.',
     todo: [
-      { text: 'mit KI gebaut', done: true },
-      { text: 'von mir geprüft', done: true },
+      { text: 'komplett mit KI gemacht', done: true },
+      { text: 'von mir verstanden und geprüft', done: true },
       { text: 'aufgeben', done: false },
     ],
   },
@@ -266,7 +275,7 @@ const de: typeof en = {
   alphabet: {
     overline: 'Die Buchstabenleiste',
     title: 'Jede App, eine Bewegung.',
-    steps: ['Mit dem Finger die Buchstaben runter', 'Nach links ziehen wählt die Zeile', 'Loslassen — sie öffnet sich'],
+    steps: ['Mit dem Finger die Buchstaben runter', 'Nach links ziehen wählt die Zeile', 'Loslassen, und sie öffnet sich'],
     note: 'Die Leiste zeigt nur Buchstaben, hinter denen wirklich etwas liegt. Ganz unten sitzt die Lupe für die volle Suche.',
     try: 'Diese Seite hat auch eine. Probier sie rechts am Rand aus.',
     tryTouch: 'Diese Seite hat auch eine. Zieh am rechten Rand entlang.',
@@ -297,7 +306,7 @@ const de: typeof en = {
   design: {
     overline: 'Design',
     title: 'Alles verstellbar. Nichts kaputtzukriegen.',
-    sub: 'Jeder Wert hat Grenzen, deshalb kann keine Kombination kaputt aussehen. Probier’s aus — diese Seite macht mit.',
+    sub: 'Jeder Wert hat Grenzen, deshalb kann keine Kombination kaputt aussehen. Probier es mit dem Design-Schalter ganz oben aus: Er verändert die ganze Seite.',
     theme: 'Farbschema',
     themes: ['Grau', 'Rosa', 'Grün', 'Blau', 'Dunkel'],
     rounding: 'Rundung',
@@ -305,7 +314,7 @@ const de: typeof en = {
     shadowsOff: 'aus',
     shadowsStrong: 'stark',
     reset: 'Zurück zum Standard',
-    golden: 'Jede Größe kommt aus dem Goldenen Schnitt. Die Abstände laufen 4, 8, 12, 20, 32, 52 — jeder die Summe der beiden davor.',
+    golden: 'Jede Größe kommt aus dem Goldenen Schnitt. Die Abstände laufen 4, 8, 12, 20, 32, 52, und jeder Schritt ist die Summe der beiden davor.',
     cardLarge: 'Groß',
     cardNormal: 'Normal',
     cardSmall: 'Klein',
@@ -333,6 +342,7 @@ const de: typeof en = {
     drawText: 'Ein Herz, ein Haus, ein Zickzack. Erkannt überall auf dem Startbildschirm, in jeder Größe.',
     searchTitle: 'Suche, die sortiert.',
     searchText: '„ytm“ findet YouTube Music. „17*24“ antwortet 408.',
+    drag: 'Pack die Reihen und zieh sie zur Seite',
     items: [
       ['Terminal', 'Ubuntu-Syntax auf Androids eigener Shell'],
       ['Code-Widgets', 'HTML, CSS und JavaScript im Panel'],
@@ -344,7 +354,7 @@ const de: typeof en = {
       ['Gemerkte Shortcuts', 'Ein Chat wird ein Icon auf dem Startbildschirm'],
       ['Geheimer Ordner', 'Apps hinter einem Passwort versteckt'],
       ['Offline-Modus', 'Uhr auf Schwarz, quer, Bildschirm bleibt an'],
-      ['Badges', 'Ein Punkt oder eine Zahl — gelesen wird nur die Anzahl'],
+      ['Badges', 'Ein Punkt oder eine Zahl, gelesen wird nur die Anzahl'],
       ['Backups', 'Einmal am Tag und direkt vor jedem Update'],
       ['Hintergründe', 'Bild, GIF oder Video, stumm, still, wenn verdeckt'],
       ['Sperrbildschirm', 'Setzt auch Androids eigenen Sperrbildschirm'],
@@ -374,14 +384,22 @@ const de: typeof en = {
     overline: 'Download',
     title: 'Drei Schritte.',
     steps: [
-      { title: 'APK laden', text: 'Direkt von GitHub.' },
-      { title: 'Installieren', text: 'Dein Browser fragt, ob er Apps installieren darf. Das ist normal bei Apps, die nicht aus dem Play Store kommen.' },
-      { title: 'Als Startbildschirm setzen', text: 'Beim ersten Start hilft der Launcher dabei. Spätere Updates kommen in der App selbst.' },
+      { title: 'APK laden', text: 'Direkt von GitHub. Die Datei heißt hanneslauncher plus Versionsnummer.' },
+      { title: 'Installieren', text: 'Öffne die Datei aus deinen Downloads. Beim ersten Mal fragt Android, ob dein Browser Apps installieren darf: erlauben, zurück und auf Installieren tippen. Das ist normal bei Apps, die nicht aus dem Play Store kommen.' },
+      { title: 'Als Startbildschirm setzen', text: 'Öffne hanneslauncher einmal. Er führt dich hin, und derselbe Schalter bleibt unter Einstellungen, App, Standard-Start-App. Spätere Updates kommen in der App selbst.' },
     ],
+    started: 'Der Download läuft. So geht es weiter:',
+    badges: 'Für Benachrichtigungs-Badges und den Benachrichtigungs-Block sperrt Android den Zugriff bei Apps außerhalb des Play Stores erst einmal. Öffne die App-Info, tippe oben rechts auf die drei Punkte und wähle „Eingeschränkte Einstellungen zulassen“.',
     button: 'Laden',
     req: 'Android 7.0 oder neuer',
     source: 'Quellcode',
     all: 'Alle Releases',
+  },
+  ui: {
+    design: 'Design',
+    designOpen: 'Aussehen dieser Seite ändern',
+    tryIt: 'Ausprobieren',
+    dragMe: 'Zieh mich',
   },
   footer: {
     made: 'Gemacht von Hannes',
@@ -389,7 +407,7 @@ const de: typeof en = {
     privacy: 'Datenschutz',
     cookies: 'Cookie-Einstellungen',
     license: 'MIT-Lizenz',
-    ai: 'Mit KI gebaut, von einem Menschen gepflegt.',
+    ai: 'Mit KI gevibecodet, von jemandem, der programmieren kann.',
   },
   consent: {
     title: 'Zwei Dinge brauchen dein OK',

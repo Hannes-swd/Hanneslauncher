@@ -1,10 +1,12 @@
 ---
 // Everything else, as a stream: two real clips up front, then rows of
-// rounded "bubbles" that drift across as the page scrolls - each row its
-// own speed and direction, coming in on one side and leaving on the other.
+// rounded "bubbles" that drift on their own and can be grabbed and flung
+// sideways, wrapping round without end (scripts/stream.ts).
+import TryBadge from './TryBadge.astro';
 import { t, type Lang } from '../i18n/strings';
 interface Props { lang: Lang }
-const s = t(Astro.props.lang).more;
+const { lang } = Astro.props;
+const s = t(lang).more;
 const rows = [s.items.slice(0, 6), s.items.slice(6, 12), s.items.slice(12)];
 ---
 <section id="more" class="more chapter" data-chapter>
@@ -23,10 +25,15 @@ const rows = [s.items.slice(0, 6), s.items.slice(6, 12), s.items.slice(12)];
     </figure>
   </div>
 
-  <div class="more-stream" aria-label={s.title}>
+  <div class="more-stream editable" aria-label={s.title} data-stream-box>
+    <TryBadge lang={lang} />
+    <p class="more-drag" aria-hidden="true">
+      <svg viewBox="0 0 48 16" width="44" height="15"><path d="M2 8h44M2 8l6-6M2 8l6 6M46 8l-6-6M46 8l-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      {s.drag}
+    </p>
     {rows.map((row, r) => (
       <ul class="more-row" role="list" data-stream={r % 2 === 0 ? 'left' : 'right'} style={`--speed:${[1, 0.7, 1.25][r]}`}>
-        {[...row, ...row].map(([name, text], i) => (
+        {[...row, ...row, ...row].map(([name, text], i) => (
           <li class="bubble surface-m" aria-hidden={i >= row.length ? 'true' : undefined}>
             <b>{name}</b><span>{text}</span>
           </li>
@@ -48,8 +55,18 @@ const rows = [s.items.slice(0, 6), s.items.slice(6, 12), s.items.slice(12)];
   .clip-card b { font-size: var(--t2); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; }
   .clip-card span { color: var(--ink-2); }
 
-  .more-stream { display: grid; gap: var(--s3); margin-top: var(--s7); }
-  .more-row { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--s3); width: max-content; will-change: transform; }
+  /* one column the width of the screen; the rows overflow it on purpose */
+  .more-stream { display: grid; grid-template-columns: minmax(0, 100%); gap: var(--s3); margin-top: var(--s7); padding-top: var(--s5); }
+  .more-stream :global(.try) { left: var(--gutter); right: auto; top: 0; }
+  .more-drag {
+    display: flex; align-items: center; gap: var(--s3); margin: 0 0 var(--s2);
+    padding-inline: calc(var(--gutter) + 120px) var(--gutter);
+    font-size: var(--t-1); font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2);
+  }
+  .more-drag svg { color: var(--accent); animation: sway 2.2s var(--ease) infinite; }
+  @keyframes sway { 0%, 100% { transform: translateX(-4px); } 50% { transform: translateX(4px); } }
+  .more-row { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s3); padding-inline: var(--gutter); }
+  .more-row [aria-hidden='true'] { display: none; }
   .bubble {
     display: grid; gap: 2px; padding: var(--s3) var(--s4) var(--s3) var(--s4);
     border-radius: 999px; background: var(--card); white-space: nowrap;
@@ -60,10 +77,18 @@ const rows = [s.items.slice(0, 6), s.items.slice(6, 12), s.items.slice(12)];
   .more-row[data-stream='right'] .bubble:nth-child(3n + 1) { background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
   .more-row[data-stream='left'] .bubble:nth-child(4n + 2) { background: color-mix(in srgb, var(--sky) 10%, var(--card)); }
 
-  :global(html:not(.motion)) .more-row { width: auto; flex-wrap: wrap; padding-inline: var(--gutter); }
-  :global(html:not(.motion)) .more-row [aria-hidden='true'] { display: none; }
+  /* with the script running: endless rows you can grab */
+  .more-stream.is-live .more-row {
+    flex-wrap: nowrap; width: max-content; padding-inline: 0;
+    will-change: transform; cursor: grab;
+    touch-action: pan-y; user-select: none; -webkit-user-select: none;
+  }
+  .more-stream.is-live .more-row [aria-hidden='true'] { display: grid; }
+  .more-stream.is-live .more-row.is-grabbed { cursor: grabbing; }
+  .more-stream.is-live .more-row.is-grabbed .bubble { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--accent) 40%, transparent); }
 
   @media (max-width: 860px) {
     .more-clips { grid-template-columns: 1fr; }
+    .more-drag { padding-left: calc(var(--gutter) + 130px); }
   }
 </style>

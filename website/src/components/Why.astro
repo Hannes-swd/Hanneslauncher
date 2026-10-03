@@ -66,6 +66,8 @@ const s = t(Astro.props.lang).why;
   @media (max-width: 760px) {
     .why-problems, .why-answers { grid-template-columns: 1fr; gap: var(--s3); }
     .why-card { min-height: 0; padding: var(--s4); }
+    /* one line each, so the strike runs through the words, not between lines */
+    .problem { font-size: clamp(1.05rem, 4.9vw, 1.3rem); }
     :global(html.motion) .why-problems, :global(html.motion) .why-answers { margin-top: 22vh; }
   }
 </style>

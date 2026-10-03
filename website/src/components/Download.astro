@@ -18,14 +18,20 @@ const mb = latest?.apk ? Math.round(latest.apk.size / 1e6) : null;
     <div class="dl-copy">
       <p class="overline">{s.overline}</p>
       <h2 class="display dl-title" data-split>{s.title}</h2>
-      <ol class="dl-steps">
-        {s.steps.map((step, i) => (
-          <li class="dl-step surface-m">
-            <span class="dots dl-n" aria-hidden="true">{i + 1}</span>
-            <span><b>{step.title}</b><span>{step.text}</span></span>
-          </li>
-        ))}
-      </ol>
+      <div class="dl-flow" data-dl-steps>
+        <p class="dl-started" role="status">{s.started}</p>
+        <ol class="dl-steps">
+          {s.steps.map((step, i) => (
+            <li class="dl-step surface-m">
+              <span class="dl-n" aria-hidden="true">
+                <span class="dots">{i + 1}</span>
+                {i === 0 && <svg class="dl-tick" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>}
+              </span>
+              <span><b>{step.title}</b><span>{step.text}</span></span>
+            </li>
+          ))}
+        </ol>
+      </div>
       <div class="dl-cta">
         <a class="btn btn-primary dl-btn" href={apk} data-apk-link>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -39,6 +45,7 @@ const mb = latest?.apk ? Math.round(latest.apk.size / 1e6) : null;
         <a href={RELEASES_URL} rel="noopener">{s.all}</a>
         <a href={REPO_URL} rel="noopener">{s.source}</a>
       </p>
+      <p class="dl-badges">{s.badges}</p>
     </div>
   </div>
 </section>
@@ -54,7 +61,17 @@ const mb = latest?.apk ? Math.round(latest.apk.size / 1e6) : null;
   .dl-step > span:last-child { display: grid; gap: 2px; }
   .dl-step b { font-size: var(--t1); font-weight: 650; letter-spacing: -0.01em; }
   .dl-step span span { color: var(--ink-2); }
-  .dl-n { font-size: var(--t3); line-height: 1; color: var(--accent); width: 1.1em; flex: none; }
+  .dl-n { position: relative; font-size: var(--t3); line-height: 1; color: var(--accent); width: 1.1em; flex: none; }
+  .dl-tick { position: absolute; left: -2px; top: 0; width: 1em; height: 1em; opacity: 0; transform: scale(0.5); transition: opacity var(--normal) var(--ease), transform var(--normal) var(--ease); }
+  .dl-started { margin: 0 0 var(--s3); font-weight: 650; color: var(--accent); display: none; }
+  /* after a click on any download button: step one is done, step two is next */
+  .dl-flow.is-started .dl-started { display: block; animation: dl-in var(--slow) var(--ease); }
+  .dl-flow.is-started .dl-step:first-child { opacity: 0.6; }
+  .dl-flow.is-started .dl-step:first-child .dots { opacity: 0; }
+  .dl-flow.is-started .dl-tick { opacity: 1; transform: none; }
+  .dl-flow.is-started .dl-step:nth-child(2) { box-shadow: 0 0 0 2px var(--accent), 0 12px 32px color-mix(in srgb, var(--accent) 18%, transparent); }
+  @keyframes dl-in { from { opacity: 0; transform: translateY(6px); } }
+  .dl-badges { margin: var(--s5) 0 0; max-width: 620px; font-size: var(--t-1); line-height: 1.5; color: var(--ink-2); }
   .dl-cta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s4); margin-top: var(--s5); }
   .dl-btn { min-height: 60px; padding: 0 var(--s5); font-size: var(--t1); }
   .dl-req { margin: 0; color: var(--ink-2); font-size: var(--t-1); }

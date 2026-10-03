@@ -2,6 +2,7 @@
 // A widget card to play with: its pieces drag like they do in the app's
 // widget editor, with the same snapping guides, and the two placeholders
 // fill in live. The phone beside it plays the real editor.
+import TryBadge from './TryBadge.astro';
 import { t, type Lang } from '../i18n/strings';
 interface Props { lang: Lang }
 const s = t(Astro.props.lang).widgets;
@@ -15,7 +16,8 @@ const chips = ['{{zeit}}', '{{datum}}', '{{wochentag}}', '{{ort}}', '{{akku}}', 
       <p class="lede">{s.sub}</p>
     </div>
 
-    <div class="wid-play">
+    <div class="wid-play editable">
+      <TryBadge lang={Astro.props.lang} label={t(Astro.props.lang).ui.dragMe} />
       <div class="wid-card surface-l" data-widget aria-label={s.hint}>
         <img class="wid-bg" src="/img/wall-mountains-light.webp" alt="" loading="lazy" />
         <span class="guide guide-x" data-guide-x hidden></span>
@@ -63,7 +65,7 @@ const chips = ['{{zeit}}', '{{datum}}', '{{wochentag}}', '{{ort}}', '{{akku}}', 
   }
   .wid-copy { grid-area: copy; }
   .wid-title { font-size: clamp(var(--t4), 4.6vw, var(--t6)); margin: var(--s3) 0 var(--s4); max-width: 17ch; }
-  .wid-play { grid-area: play; }
+  .wid-play { grid-area: play; max-width: 640px; }
   .wid-phone { grid-area: phone; align-self: center; display: flex; justify-content: center; }
   .wid-phone .phone-slot { --phone-w: min(30vh, 250px); }
   .wid-sources { grid-area: src; color: var(--ink-2); }
@@ -76,13 +78,25 @@ const chips = ['{{zeit}}', '{{datum}}', '{{wochentag}}', '{{ort}}', '{{akku}}', 
     touch-action: none; user-select: none; -webkit-user-select: none;
   }
   .wid-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 78%; pointer-events: none; }
+  /* every piece says it can be moved: a dashed edge like the editor's
+     selection, and a move handle (always shown on touch screens) */
   .wid-el {
     position: absolute; left: var(--x); top: var(--y);
     width: var(--w, auto); height: var(--h, auto);
     cursor: grab; color: #263238;
-    transition: box-shadow var(--fast) var(--ease);
+    outline: 1.5px dashed rgb(38 50 56 / 0.38); outline-offset: 4px; border-radius: var(--r-s);
+    transition: box-shadow var(--fast) var(--ease), outline-color var(--fast) var(--ease);
   }
-  .wid-el.is-dragging { cursor: grabbing; box-shadow: 0 0 0 2px var(--accent); border-radius: var(--r-s); }
+  .wid-el::after {
+    content: ''; position: absolute; left: -13px; top: -13px; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3'/%3E%3C/svg%3E") center / 14px no-repeat;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.25);
+    opacity: 0; transform: scale(0.6); transition: opacity var(--fast) var(--ease), transform var(--fast) var(--ease);
+  }
+  .wid-el:hover { outline-color: var(--accent); }
+  .wid-el:hover::after, .wid-el.is-dragging::after { opacity: 1; transform: none; }
+  @media (hover: none) { .wid-el::after { opacity: 1; transform: none; } }
+  .wid-el.is-dragging { cursor: grabbing; outline: 2px solid var(--accent); }
   .el-box { background: rgb(255 255 255 / 0.55); border-radius: var(--r-m); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
   .el-time { font-size: clamp(1.8rem, 4.4vw, 3rem); line-height: 1; }
   .el-day { font-size: clamp(0.95rem, 1.8vw, 1.2rem); font-weight: 600; }

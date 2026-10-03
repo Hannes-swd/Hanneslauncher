@@ -2,17 +2,12 @@
 // The app's Design screen, working: five themes, rounding and shadows with
 // the app's own bounds. They rewrite the page's custom properties, so the
 // whole site follows - the three preview cards are the app's own preview.
+import DesignControls from './DesignControls.astro';
+import TryBadge from './TryBadge.astro';
 import { t, type Lang } from '../i18n/strings';
 interface Props { lang: Lang }
-const s = t(Astro.props.lang).design;
-// lib/design_tokens.dart, the five themes: ground, card, text, quieter text, accent, lines
-const themes = [
-  ['grey', '#f4f3f0', '#ffffff', '#1b1a17', '#6c6860', '#a15b2d', '#e4e1da'],
-  ['rose', '#f7f1f1', '#fffbfb', '#20191a', '#756264', '#a63d5c', '#ebdddf'],
-  ['green', '#f0f3ef', '#fbfdfa', '#181c18', '#5f6b5f', '#3f7a52', '#dce3d9'],
-  ['blue', '#eff2f5', '#fafcfd', '#171b1f', '#5c6874', '#2e6c8e', '#dce3e9'],
-  ['dark', '#121211', '#1d1c1a', '#f2f0ec', '#a09c94', '#d98a4a', '#33322e'],
-];
+const { lang } = Astro.props;
+const s = t(lang).design;
 ---
 <section id="design" class="des chapter" data-chapter>
   <div class="wrap des-grid">
@@ -22,27 +17,9 @@ const themes = [
       <p class="lede">{s.sub}</p>
     </div>
 
-    <div class="des-controls surface-l" data-design>
-      <fieldset class="des-themes">
-        <legend class="overline">{s.theme}</legend>
-        {themes.map(([id, ground, card, ink, ink2, accent, line], i) => (
-          <label class="des-theme">
-            <input type="radio" name="theme" value={id} data-theme={JSON.stringify({ ground, card, ink, ink2, accent, line })} />
-            <span class="des-swatch" style={`--g:${ground};--c:${card};--a:${accent}`} aria-hidden="true"><i></i><i></i></span>
-            <span>{s.themes[i]}</span>
-          </label>
-        ))}
-      </fieldset>
-      <label class="des-slider">
-        <span class="overline">{s.rounding} <output data-out="r">24 px</output></span>
-        <input type="range" min="4" max="32" step="1" value="24" data-range="r" />
-      </label>
-      <label class="des-slider">
-        <span class="overline">{s.shadows} <output data-out="sh">50 %</output></span>
-        <input type="range" min="0" max="1" step="0.05" value="0.5" data-range="sh" />
-        <span class="des-ends" aria-hidden="true"><span>{s.shadowsOff}</span><span>{s.shadowsStrong}</span></span>
-      </label>
-      <button class="des-reset" type="button" data-design-reset>{s.reset}</button>
+    <div class="des-controls surface-l editable">
+      <TryBadge lang={lang} />
+      <DesignControls lang={lang} id="chapter" />
     </div>
 
     <div class="des-preview">
@@ -61,11 +38,6 @@ const themes = [
     </div>
   </div>
 </section>
-
-<script>
-  import { initDesign } from '../scripts/design';
-  initDesign();
-</script>
 
 <style>
   .des-grid {
