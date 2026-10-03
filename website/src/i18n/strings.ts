@@ -184,10 +184,6 @@ const en = {
     source: 'Source code',
     all: 'All releases',
   },
-  ui: {
-    tryIt: 'Try it',
-    dragMe: 'Drag me',
-  },
   footer: {
     made: 'Made by Hannes',
     write: 'Write me',
@@ -390,10 +386,6 @@ const de: typeof en = {
     req: 'Android 7.0 oder neuer',
     source: 'Quellcode',
     all: 'Alle Releases',
-  },
-  ui: {
-    tryIt: 'Ausprobieren',
-    dragMe: 'Zieh mich',
   },
   footer: {
     made: 'Gemacht von Hannes',

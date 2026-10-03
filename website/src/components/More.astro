@@ -2,7 +2,6 @@
 // Everything else, as a stream: two real clips up front, then rows of
 // rounded "bubbles" that drift on their own and can be grabbed and flung
 // sideways, wrapping round without end (scripts/stream.ts).
-import TryBadge from './TryBadge.astro';
 import { t, type Lang } from '../i18n/strings';
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -25,8 +24,7 @@ const rows = [s.items.slice(0, 6), s.items.slice(6, 12), s.items.slice(12)];
     </figure>
   </div>
 
-  <div class="more-stream editable" aria-label={s.title} data-stream-box>
-    <TryBadge lang={lang} />
+  <div class="more-stream" aria-label={s.title} data-stream-box>
     <p class="more-drag" aria-hidden="true">
       <svg viewBox="0 0 48 16" width="44" height="15"><path d="M2 8h44M2 8l6-6M2 8l6 6M46 8l-6-6M46 8l-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       {s.drag}
@@ -56,11 +54,10 @@ const rows = [s.items.slice(0, 6), s.items.slice(6, 12), s.items.slice(12)];
   .clip-card span { color: var(--ink-2); }
 
   /* one column the width of the screen; the rows overflow it on purpose */
-  .more-stream { display: grid; grid-template-columns: minmax(0, 100%); gap: var(--s3); margin-top: var(--s7); padding-top: var(--s5); }
-  .more-stream :global(.try) { left: var(--gutter); right: auto; top: 0; }
+  .more-stream { display: grid; grid-template-columns: minmax(0, 100%); gap: var(--s3); margin-top: var(--s7); }
   .more-drag {
     display: flex; align-items: center; gap: var(--s3); margin: 0 0 var(--s2);
-    padding-inline: calc(var(--gutter) + 120px) var(--gutter);
+    padding-inline: var(--gutter);
     font-size: var(--t-1); font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2);
   }
   .more-drag svg { color: var(--accent); animation: sway 2.2s var(--ease) infinite; }
@@ -89,6 +86,5 @@ const rows = [s.items.slice(0, 6), s.items.slice(6, 12), s.items.slice(12)];
 
   @media (max-width: 860px) {
     .more-clips { grid-template-columns: 1fr; }
-    .more-drag { padding-left: calc(var(--gutter) + 130px); }
   }
 </style>

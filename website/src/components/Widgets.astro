@@ -2,7 +2,6 @@
 // A widget card to play with: its pieces drag like they do in the app's
 // widget editor, with the same snapping guides, and the two placeholders
 // fill in live. The phone beside it plays the real editor.
-import TryBadge from './TryBadge.astro';
 import { t, type Lang } from '../i18n/strings';
 interface Props { lang: Lang }
 const s = t(Astro.props.lang).widgets;
@@ -16,8 +15,7 @@ const chips = ['{{zeit}}', '{{datum}}', '{{wochentag}}', '{{ort}}', '{{akku}}', 
       <p class="lede">{s.sub}</p>
     </div>
 
-    <div class="wid-play editable">
-      <TryBadge lang={Astro.props.lang} label={t(Astro.props.lang).ui.dragMe} />
+    <div class="wid-play">
       <div class="wid-card surface-l" data-widget aria-label={s.hint}>
         <img class="wid-bg" src="/img/wall-mountains-light.webp" alt="" loading="lazy" />
         <span class="guide guide-x" data-guide-x hidden></span>

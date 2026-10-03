@@ -3,7 +3,6 @@
 // the app's own bounds. They rewrite the page's custom properties, so the
 // whole site follows - the three preview cards are the app's own preview.
 import DesignControls from './DesignControls.astro';
-import TryBadge from './TryBadge.astro';
 import { t, type Lang } from '../i18n/strings';
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -17,8 +16,7 @@ const s = t(lang).design;
       <p class="lede">{s.sub}</p>
     </div>
 
-    <div class="des-controls surface-l editable">
-      <TryBadge lang={lang} />
+    <div class="des-controls surface-l">
       <DesignControls lang={lang} id="chapter" />
     </div>
 

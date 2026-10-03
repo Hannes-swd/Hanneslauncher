@@ -231,25 +231,7 @@ html.in-night .top .handle-bar { background: rgb(255 255 255 / 0.4); }
 html.in-night .top .lang-switch { color: #aab3ff; }
 html.in-night .top-ico { color: #eef0ff; background: rgb(255 255 255 / 0.1); }
 
-/* ---- "You can touch this": one sign for every editable area ---- */
-.editable { position: relative; }
-.try {
-  position: absolute; z-index: 4; top: -13px; right: var(--s4);
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 5px 12px 5px 10px; border-radius: 999px;
-  background: var(--accent); color: var(--on-accent);
-  font-size: 11.5px; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase;
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 35%, transparent);
-  pointer-events: none;
-}
-.try i { position: relative; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-.try i::after {
-  content: ''; position: absolute; inset: -4px; border-radius: 50%;
-  border: 2px solid currentColor; opacity: 0;
-  animation: try-pulse 1.8s var(--ease) infinite;
-}
-@keyframes try-pulse { 0% { transform: scale(0.4); opacity: 0.9; } 100% { transform: scale(1.6); opacity: 0; } }
-
+/* the touch dot that shows the widget drag once */
 .ghost-dot {
   position: absolute; left: 0; top: 0; z-index: 5; width: 36px; height: 36px; border-radius: 50%;
   background: rgb(255 255 255 / 0.7); box-shadow: inset 0 0 0 2px rgb(38 50 56 / 0.45), 0 4px 12px rgb(0 0 0 / 0.2);
