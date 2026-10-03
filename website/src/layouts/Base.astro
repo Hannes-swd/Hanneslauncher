@@ -93,5 +93,9 @@ const og = new URL('/img/og.png', site).href;
     <a class="skip" href="#main">{s.skip}</a>
     <slot />
     <Consent lang={lang} />
+    <script>
+      import { initTabTitle } from '../scripts/tabtitle';
+      initTabTitle();
+    </script>
   </body>
 </html>

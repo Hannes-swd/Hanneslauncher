@@ -73,6 +73,16 @@ function set(next: Partial<DesignState>) {
 export function initDesign() {
   applyDesign(state);
   sync();
+  // nothing picked by hand: follow the system's light/dark live, also when
+  // it switches while the page is open (e.g. automatic dark at sunset)
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    let picked = false;
+    try { picked = !!localStorage.getItem(DESIGN_KEY); } catch { /* private mode */ }
+    if (picked) return;
+    state = { ...state, theme: e.matches ? 'dark' : null };
+    applyDesign(state);
+    sync();
+  });
   document.querySelectorAll<HTMLElement>('[data-design]').forEach((box) => {
     box.querySelectorAll<HTMLInputElement>('input[type=radio]').forEach((radio) =>
       radio.addEventListener('change', () => radio.checked && set({ theme: radio.value as ThemeId })));
