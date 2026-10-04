@@ -21,7 +21,8 @@ const rad = THREE.MathUtils.degToRad;
 
 export async function startStage(canvas: HTMLCanvasElement) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const pixelRatio = isMobileDevice ? Math.min(devicePixelRatio, 1.5) : Math.min(devicePixelRatio, 2);
+  renderer.setPixelRatio(pixelRatio);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = 1.0;
@@ -98,9 +99,10 @@ export async function startStage(canvas: HTMLCanvasElement) {
       else tex = loader.load(slot.dataset.screen!);
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.flipY = false; // glTF UVs
+      tex.generateMipmaps = true;
       tex.magFilter = THREE.LinearFilter;
-      tex.minFilter = isMobileDevice ? THREE.LinearFilter : THREE.LinearMipmapLinearFilter;
-      tex.anisotropy = isMobileDevice ? 1 : Math.min(4, renderer.capabilities.getMaxAnisotropy());
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.anisotropy = isMobileDevice ? 2 : Math.min(8, renderer.capabilities.getMaxAnisotropy());
       textures.set(key, tex);
     }
     return tex;
