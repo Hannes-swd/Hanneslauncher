@@ -153,12 +153,15 @@ export async function startStage(canvas: HTMLCanvasElement) {
     fade = 0;
   }
 
-  // pointer parallax
+  // pointer parallax - disabled on touch devices to prevent jitter on mobile
   let px = 0, py = 0, tpx = 0, tpy = 0;
-  addEventListener('pointermove', (e) => {
-    tpx = (e.clientX / innerWidth) * 2 - 1;
-    tpy = (e.clientY / innerHeight) * 2 - 1;
-  }, { passive: true });
+  const isTouch = () => matchMedia('(hover: none)').matches;
+  if (!isTouch()) {
+    addEventListener('pointermove', (e) => {
+      tpx = (e.clientX / innerWidth) * 2 - 1;
+      tpy = (e.clientY / innerHeight) * 2 - 1;
+    }, { passive: true });
+  }
 
   function resize() {
     w = canvas.clientWidth;
@@ -218,11 +221,16 @@ export async function startStage(canvas: HTMLCanvasElement) {
       py = lerp(py, tpy, 0.06);
       const t = now / 1000;
       const turn = spin * ease(flightT) - spin;
-      phone.position.set(p.x, p.y + Math.sin(t * 0.9) * 0.0012 * p.s, 0);
+      const isMobile = w < 768;
+      const bobAmount = isMobile ? 0 : 0.0012;
+      const sineAmount = isMobile ? 0 : 0.6;
+      const parallaxX = isMobile ? 0 : px * 7;
+      const parallaxY = isMobile ? 0 : py * 4;
+      phone.position.set(p.x, p.y + Math.sin(t * 0.9) * bobAmount * p.s, 0);
       phone.scale.setScalar(p.s);
       phone.rotation.set(
-        rad(p.pitch + py * 4 + Math.sin(t * 0.7) * 0.6),
-        rad(p.yaw + px * 7) + turn,
+        rad(p.pitch + parallaxY + Math.sin(t * 0.7) * sineAmount),
+        rad(p.yaw + parallaxX) + turn,
         rad(p.roll),
         'YXZ',
       );
