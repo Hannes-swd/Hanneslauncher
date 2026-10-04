@@ -21,8 +21,7 @@ const rad = THREE.MathUtils.degToRad;
 
 export async function startStage(canvas: HTMLCanvasElement) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-  const pixelRatio = isMobileDevice ? Math.min(devicePixelRatio, 1.5) : Math.min(devicePixelRatio, 2);
-  renderer.setPixelRatio(pixelRatio);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = 1.0;
