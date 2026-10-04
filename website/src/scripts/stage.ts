@@ -38,6 +38,8 @@ export async function startStage(canvas: HTMLCanvasElement) {
   camera.position.set(0, 0, DIST);
   const visibleH = 2 * Math.tan(rad(FOV / 2)) * DIST;
 
+  let isMobileDevice = innerWidth < 768;
+
   // ---- the model ----------------------------------------------------------
   const gltf = await new GLTFLoader().loadAsync('/models/phone.glb');
   const model = gltf.scene;
@@ -96,7 +98,9 @@ export async function startStage(canvas: HTMLCanvasElement) {
       else tex = loader.load(slot.dataset.screen!);
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.flipY = false; // glTF UVs
-      tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      tex.magFilter = THREE.LinearFilter;
+      tex.minFilter = isMobileDevice ? THREE.LinearFilter : THREE.LinearMipmapLinearFilter;
+      tex.anisotropy = isMobileDevice ? 1 : Math.min(4, renderer.capabilities.getMaxAnisotropy());
       textures.set(key, tex);
     }
     return tex;
@@ -221,11 +225,10 @@ export async function startStage(canvas: HTMLCanvasElement) {
       py = lerp(py, tpy, 0.06);
       const t = now / 1000;
       const turn = spin * ease(flightT) - spin;
-      const isMobile = w < 768;
-      const bobAmount = isMobile ? 0 : 0.0012;
-      const sineAmount = isMobile ? 0 : 0.6;
-      const parallaxX = isMobile ? 0 : px * 7;
-      const parallaxY = isMobile ? 0 : py * 4;
+      const bobAmount = isMobileDevice ? 0 : 0.0012;
+      const sineAmount = isMobileDevice ? 0 : 0.6;
+      const parallaxX = isMobileDevice ? 0 : px * 7;
+      const parallaxY = isMobileDevice ? 0 : py * 4;
       phone.position.set(p.x, p.y + Math.sin(t * 0.9) * bobAmount * p.s, 0);
       phone.scale.setScalar(p.s);
       phone.rotation.set(
@@ -240,13 +243,16 @@ export async function startStage(canvas: HTMLCanvasElement) {
       (shadow.material as THREE.MeshBasicMaterial).opacity = 0.2 * (1 - Math.abs(Math.sin(turn / 2)) * 0.5);
     }
 
-    // crossfade the display
+    // crossfade the display - simplified on mobile to reduce flickering
     if (fade > 0 && fade < 1) {
-      fade = Math.min(1, fade + dt / 0.3);
+      const crossfadeDuration = isMobileDevice ? 0.15 : 0.3;
+      fade = Math.min(1, fade + dt / crossfadeDuration);
       matB.opacity = fade;
+      matB.needsUpdate = true;
       if (fade >= 1) {
         matA.map = matB.map; matA.needsUpdate = true;
         matB.opacity = 0;
+        matB.needsUpdate = true;
         shown = current;
       }
     }
