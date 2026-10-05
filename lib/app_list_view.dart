@@ -19,6 +19,7 @@ import 'folder_sheet.dart';
 import 'gesture_home_layer.dart';
 import 'gesture_shortcuts_controller.dart';
 import 'haptics.dart';
+import 'home_edit_sheet.dart';
 import 'home_reset.dart';
 import 'installed_packages_watch.dart';
 import 'launcher_entries_controller.dart';
@@ -648,6 +649,9 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
               showTrail: GestureDrawingController.instance.value.showTrail,
               trail: _strokeTrail,
               onStrokeFinished: _onStrokeFinished,
+              onLongPress: _activeLetter == null && !_searchMode
+                  ? () => showHomeEditSheet(context)
+                  : null,
               onPanelDragStart: widget.onPanelDragStart,
               onPanelDragUpdate: widget.onPanelDragUpdate,
               onPanelDragEnd: widget.onPanelDragEnd,

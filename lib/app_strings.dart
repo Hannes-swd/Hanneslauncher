@@ -626,6 +626,40 @@ class AppStrings {
             'hinzufügen.';
   String get emptyAppRow =>
       _en ? 'No apps selected yet' : 'Noch keine Apps ausgewählt';
+  // The edit menu on a long press on the home screen, and the one on a
+  // held card of the panel.
+  String get editHome => _en ? 'Edit home screen' : 'Homescreen bearbeiten';
+  String get editHomeHint => _en
+      ? 'Hold the screen anywhere to open this.'
+      : 'Den Homescreen irgendwo gedrückt halten, um das hier zu öffnen.';
+  String get addApp => _en ? 'Add app' : 'App hinzufügen';
+  String get addAppSubtitle => _en
+      ? 'Pick an app, folder or web app'
+      : 'App, Ordner oder Web-App auswählen';
+  String get newWebAppAndPin => _en ? 'New web app' : 'Neue Web-App';
+  String get webAppPinnedNote => _en
+      ? 'Pinned to the home screen.'
+      : 'An den Homescreen angeheftet.';
+  String get noPinnedYet => _en
+      ? 'No apps pinned yet. Add up to six.'
+      : 'Noch keine Apps angeheftet. Bis zu sechs möglich.';
+  String get removeFromHome => _en ? 'Unpin' : 'Lösen';
+  String get homeEditClock => _en ? 'Clock' : 'Uhr';
+  String get homeEditWallpaper => _en ? 'Wallpaper' : 'Hintergrund';
+  String get homeEditMore => _en
+      ? 'More options (spacing, badges)'
+      : 'Mehr Optionen (Abstand, Marken)';
+  String get allSettings => _en ? 'All settings' : 'Alle Einstellungen';
+  String get moveUp => _en ? 'Move up' : 'Nach oben';
+  String get moveDown => _en ? 'Move down' : 'Nach unten';
+  String get deleteBlockQuestion =>
+      _en ? 'Delete this block?' : 'Diesen Block löschen?';
+  String get deleteBlockWarning => _en
+      ? 'It and everything in it will be gone.'
+      : 'Er und alles darin ist danach weg.';
+  String get blockMenuHint => _en
+      ? 'Or drag the card to move it.'
+      : 'Oder die Karte ziehen, um sie zu verschieben.';
   String get editBlock => _en ? 'Edit' : 'Bearbeiten';
   String get deleteBlock => _en ? 'Delete' : 'Löschen';
   String get columnsLabel => _en ? 'Per row' : 'Pro Zeile';

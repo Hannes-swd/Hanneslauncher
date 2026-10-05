@@ -58,6 +58,7 @@ class HomeGestureLayer extends StatelessWidget {
     required this.showTrail,
     required this.trail,
     required this.onStrokeFinished,
+    this.onLongPress,
     this.onPanelDragStart,
     this.onPanelDragUpdate,
     this.onPanelDragEnd,
@@ -79,6 +80,10 @@ class HomeGestureLayer extends StatelessWidget {
   final ValueNotifier<List<Offset>> trail;
 
   final ValueChanged<List<Offset>> onStrokeFinished;
+
+  /// Holding a finger still on empty home screen. Null while the app list is
+  /// in use, so nothing is listening for it then.
+  final VoidCallback? onLongPress;
 
   final GestureDragStartCallback? onPanelDragStart;
   final GestureDragUpdateCallback? onPanelDragUpdate;
@@ -114,6 +119,15 @@ class HomeGestureLayer extends StatelessWidget {
                       trail.value = const [];
                     };
                 },
+              ),
+        // Loses to the drag or the shape the moment the finger moves, and
+        // to an icon's own long press (deeper in the tree), so it only
+        // fires for a finger resting on the bare screen.
+        if (onLongPress != null)
+          LongPressGestureRecognizer:
+              GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
+                () => LongPressGestureRecognizer(debugOwner: this),
+                (recognizer) => recognizer.onLongPress = onLongPress,
               ),
         VerticalDragGestureRecognizer:
             GestureRecognizerFactoryWithHandlers<

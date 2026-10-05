@@ -300,6 +300,98 @@ class _PanelViewState extends State<PanelView> {
     await Navigator.of(context).push(MaterialPageRoute(builder: builder));
   }
 
+  String _blockName(PanelBlock block, AppStrings s) {
+    if (block.title.trim().isNotEmpty) return block.title;
+    return switch (block.type) {
+      PanelBlockType.appRow => s.blockAppRowTitle,
+      PanelBlockType.widget => s.blockWidget,
+      PanelBlockType.calendar => s.blockCalendar,
+      PanelBlockType.notes => s.blockNotes,
+      PanelBlockType.notifications => s.notifications,
+      PanelBlockType.code => s.blockCode,
+    };
+  }
+
+  /// What holding a card opens: the things that used to need the editor's
+  /// own screen (or a drag) to reach, one tap away.
+  Future<void> _showBlockMenu(PanelBlock block, AppStrings s) async {
+    final blocks = PanelBlocksController.instance.value;
+    final index = blocks.indexWhere((b) => b.id == block.id);
+    if (index < 0) return;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(
+                _blockName(block, s),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              subtitle: Text(s.blockMenuHint),
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: Text(s.editBlock),
+              onTap: () => Navigator.of(context).pop('edit'),
+            ),
+            if (index > 0)
+              ListTile(
+                leading: const Icon(Icons.arrow_upward),
+                title: Text(s.moveUp),
+                onTap: () => Navigator.of(context).pop('up'),
+              ),
+            if (index < blocks.length - 1)
+              ListTile(
+                leading: const Icon(Icons.arrow_downward),
+                title: Text(s.moveDown),
+                onTap: () => Navigator.of(context).pop('down'),
+              ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: Text(s.deleteBlock),
+              onTap: () => Navigator.of(context).pop('delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (choice == null || !mounted) return;
+    final controller = PanelBlocksController.instance;
+    switch (choice) {
+      case 'edit':
+        await _edit(block);
+      case 'up':
+        await controller.reorder(index, index - 1);
+      case 'down':
+        // reorder takes the raw target slot, with the block still counted.
+        await controller.reorder(index, index + 2);
+      case 'delete':
+        // Asked first: a code widget takes its files with it, and a note
+        // its text - a mis-tap in a menu may not cost that.
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(s.deleteBlockQuestion),
+            content: Text(s.deleteBlockWarning),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(s.cancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(s.deleteBlock),
+              ),
+            ],
+          ),
+        );
+        if (confirmed == true) await controller.remove(block.id);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<AppLanguage>(
@@ -448,10 +540,10 @@ class _PanelViewState extends State<PanelView> {
               );
             },
             onReorderEnd: (index) {
-              // Held and released without moving: that's the edit gesture.
+              // Held and released without moving: the menu for that card.
               if (_reordered) return;
               final blocks = PanelBlocksController.instance.value;
-              if (index < blocks.length) _edit(blocks[index]);
+              if (index < blocks.length) _showBlockMenu(blocks[index], s);
             },
             itemBuilder: (context, index) {
               final block = blocks[index];

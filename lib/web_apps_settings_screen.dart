@@ -28,7 +28,7 @@ class WebAppsSettingsScreen extends StatelessWidget {
             return Scaffold(
               appBar: AppBar(title: Text(s.webApps)),
               floatingActionButton: FloatingActionButton.extended(
-                onPressed: () => _addWebApp(context, s),
+                onPressed: () => addWebApp(context, s),
                 icon: const Icon(Icons.add),
                 label: Text(s.addWebApp),
               ),
@@ -58,7 +58,7 @@ class WebAppsSettingsScreen extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          onTap: () => _openOptions(context, s, webApp),
+                          onTap: () => openOptions(context, s, webApp),
                         );
                       },
                     ),
@@ -69,13 +69,18 @@ class WebAppsSettingsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _addWebApp(BuildContext context, AppStrings s) async {
+  /// Asks for a name and an address and saves the web app. Null when the
+  /// dialog was dismissed or left incomplete. Also what the home screen's
+  /// edit menu calls, so there is one way to make a web app.
+  static Future<WebApp?> addWebApp(BuildContext context, AppStrings s) async {
     final result = await _promptNameAndUrl(context, s);
-    if (result == null) return;
-    await WebAppsController.instance.add(name: result.name, url: result.url);
+    if (result == null) return null;
+    return WebAppsController.instance.add(name: result.name, url: result.url);
   }
 
-  Future<void> _openOptions(
+  /// Icon, name, address, browser, remove - the one menu for a saved web app,
+  /// shared with the home screen's edit menu.
+  static Future<void> openOptions(
     BuildContext context,
     AppStrings s,
     WebApp webApp,
@@ -138,7 +143,7 @@ class WebAppsSettingsScreen extends StatelessWidget {
 
   /// Lets the user aim this one web app at a specific browser, or hand it
   /// back to the system default.
-  Future<void> _pickBrowser(
+  static Future<void> _pickBrowser(
     BuildContext context,
     AppStrings s,
     WebApp webApp,
@@ -186,21 +191,21 @@ class WebAppsSettingsScreen extends StatelessWidget {
 
   /// The browser's own icon, taken from the already-loaded app list - a
   /// browser is a launchable app, so it's in there.
-  Widget _browserIcon(String package) {
+  static Widget _browserIcon(String package) {
     final icon = LauncherEntriesController.instance.byKey(package)?.systemIcon;
     if (icon == null) return const Icon(Icons.public);
     return Image.memory(icon, width: 24, height: 24);
   }
 
   /// What to show under "Browser" for the current choice.
-  String _browserName(String? package, AppStrings s) {
+  static String _browserName(String? package, AppStrings s) {
     if (package == null) return s.systemDefaultBrowser;
     // The package name is the fallback for a browser that's no longer
     // installed - saying which one it was beats showing nothing.
     return LauncherEntriesController.instance.byKey(package)?.name ?? package;
   }
 
-  Widget _browserOption(
+  static Widget _browserOption(
     BuildContext context, {
     required Widget icon,
     required String label,
@@ -218,7 +223,7 @@ class WebAppsSettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _option(
+  static Widget _option(
     BuildContext context,
     IconData icon,
     String label,
@@ -236,7 +241,7 @@ class WebAppsSettingsScreen extends StatelessWidget {
     );
   }
 
-  Future<({String name, String url})?> _promptNameAndUrl(
+  static Future<({String name, String url})?> _promptNameAndUrl(
     BuildContext context,
     AppStrings s,
   ) async {
@@ -256,7 +261,7 @@ class WebAppsSettingsScreen extends StatelessWidget {
     return result;
   }
 
-  Future<String?> _promptText(
+  static Future<String?> _promptText(
     BuildContext context, {
     required String title,
     required String label,
