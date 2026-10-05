@@ -149,8 +149,10 @@ export async function startStage(canvas: HTMLCanvasElement) {
   function setScreen(slot: HTMLElement, instant = false) {
     const tex = textureFor(slot);
     if (slot.dataset.clip) play(getClip(slot.dataset.clip), true);
-    if (instant || !matA.map) {
+    if (instant || !matA.map || isMobileDevice) {
       matA.map = tex; matA.needsUpdate = true;
+      matB.opacity = 0;
+      matB.needsUpdate = true;
       shown = slot;
       return;
     }
@@ -219,7 +221,17 @@ export async function startStage(canvas: HTMLCanvasElement) {
         };
         // halfway, while it is turned away, the screen changes
         if (flightT > 0.45 && fade === 0) fade = 0.0001;
-      } else p = target;
+      } else {
+        if (!rendered) p = target;
+        else p = {
+          x: lerp(rendered.x, target.x, 0.08),
+          y: lerp(rendered.y, target.y, 0.08),
+          s: lerp(rendered.s, target.s, 0.08),
+          yaw: lerp(rendered.yaw, target.yaw, 0.08),
+          pitch: lerp(rendered.pitch, target.pitch, 0.08),
+          roll: lerp(rendered.roll, target.roll, 0.08),
+        };
+      }
       rendered = p;
 
       px = lerp(px, tpx, 0.06);
