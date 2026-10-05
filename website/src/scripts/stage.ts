@@ -170,6 +170,33 @@ export async function startStage(canvas: HTMLCanvasElement) {
     }, { passive: true });
   }
 
+  // device orientation parallax - on mobile devices with gyroscope
+  let dx = 0, dy = 0;
+  if (isTouch() && 'DeviceOrientationEvent' in window) {
+    addEventListener('deviceorientation', (e) => {
+      if (e.gamma !== null && e.beta !== null) {
+        dx = Math.max(-1, Math.min(1, e.gamma / 45));
+        dy = Math.max(-1, Math.min(1, e.beta / 45 - 0.2));
+      }
+    }, { passive: true });
+
+    if ('requestPermission' in DeviceOrientationEvent) {
+      addEventListener('click', async () => {
+        try {
+          const permission = await (DeviceOrientationEvent as any).requestPermission();
+          if (permission === 'granted') {
+            addEventListener('deviceorientation', (e) => {
+              if (e.gamma !== null && e.beta !== null) {
+                dx = Math.max(-1, Math.min(1, e.gamma / 45));
+                dy = Math.max(-1, Math.min(1, e.beta / 45 - 0.2));
+              }
+            }, { passive: true });
+          }
+        } catch (e) {}
+      }, { once: true, passive: true });
+    }
+  }
+
   function resize() {
     w = canvas.clientWidth;
     h = canvas.clientHeight;
@@ -240,8 +267,8 @@ export async function startStage(canvas: HTMLCanvasElement) {
       const turn = spin * ease(flightT) - spin;
       const bobAmount = isMobileDevice ? 0 : 0.0012;
       const sineAmount = isMobileDevice ? 0 : 0.6;
-      const parallaxX = isMobileDevice ? 0 : px * 7;
-      const parallaxY = isMobileDevice ? 0 : py * 4;
+      const parallaxX = isMobileDevice ? dx * 15 : px * 7;
+      const parallaxY = isMobileDevice ? dy * 10 : py * 4;
       phone.position.set(p.x, p.y + Math.sin(t * 0.9) * bobAmount * p.s, 0);
       phone.scale.setScalar(p.s);
       phone.rotation.set(
