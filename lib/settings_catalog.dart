@@ -4,6 +4,8 @@ import 'app_customize_screen.dart';
 import 'app_list_settings_screen.dart';
 import 'app_pairs_settings_screen.dart';
 import 'app_strings.dart';
+import 'charging_animation_controller.dart';
+import 'charging_animation_settings_screen.dart';
 import 'clock_settings_screen.dart';
 import 'code_widgets_settings_screen.dart';
 import 'data_sources_settings_screen.dart';
@@ -316,6 +318,21 @@ List<SettingsEntry> buildSettingsCatalog({
           ? CircleAvatar(radius: 12, backgroundColor: iconTheme.color)
           : null,
       onTap: (context) => _push(context, const IconThemeSettingsScreen()),
+    ),
+    SettingsEntry(
+      icon: Icons.bolt_outlined,
+      title: s.chargingAnimation,
+      section: SettingsSection.appearance,
+      subtitle: ChargingAnimationController.instance.value.enabled
+          ? s.chargingAnimationEnabled
+          : s.chargingAnimationOff,
+      keywords: const [
+        'laden', 'lade', 'ladeanimation', 'charging', 'charge', 'kabel',
+        'cable', 'strom', 'power', 'akku', 'battery', 'animation', 'blitz',
+        'regenbogen', 'rainbow', 'rand', 'edge',
+      ],
+      onTap: (context) =>
+          _push(context, const ChargingAnimationSettingsScreen()),
     ),
     SettingsEntry(
       icon: Icons.push_pin_outlined,

@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'app_list_settings_controller.dart';
 import 'app_overrides_controller.dart';
 import 'app_pairs_controller.dart';
+import 'charging_animation_controller.dart';
 import 'clock_settings_controller.dart';
 import 'code_widget_store.dart';
 import 'color_swatch_picker.dart' show autoColorIndex;
@@ -108,6 +109,7 @@ class SettingsBackupService {
         'digitalFontFamily': offline.digitalFontFamily,
         'burnInProtection': offline.burnInProtection,
       },
+      'chargingAnimation': ChargingAnimationController.instance.value.toJson(),
       'appList': {
         'colorIndex': appList.colorIndex,
         'fontFamily': appList.fontFamily,
@@ -471,6 +473,13 @@ class SettingsBackupService {
           digitalFontFamily: offlineJson['digitalFontFamily'] as String? ?? '',
           burnInProtection: offlineJson['burnInProtection'] as bool? ?? true,
         ),
+      );
+    }
+
+    final chargingJson = decoded['chargingAnimation'] as Map<String, dynamic>?;
+    if (chargingJson != null) {
+      await ChargingAnimationController.instance.update(
+        ChargingAnimationSettings.fromJson(chargingJson),
       );
     }
 

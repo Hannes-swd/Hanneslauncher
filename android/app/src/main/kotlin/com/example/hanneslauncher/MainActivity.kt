@@ -666,9 +666,37 @@ class MainActivity : FlutterActivity() {
                 }
             }
 
+        // The charging animation. Dart only listens; the receiver below says
+        // when a cable went in.
+        chargingChannel =
+            MethodChannel(flutterEngine.dartExecutor.binaryMessenger, chargingChannelName)
+
         // Last, once every channel above exists: the receiver can fire the
         // moment it is registered.
         registerPackageReceiver()
+        registerPowerReceiver()
+    }
+
+    private val chargingChannelName = "hanneslauncher/charging"
+    private var chargingChannel: MethodChannel? = null
+
+    // ACTION_POWER_CONNECTED cannot be declared in the manifest since
+    // Android 8 either, but a running launcher is a running process - and an
+    // animation only makes sense while the launcher is there to draw it.
+    private val powerReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action != Intent.ACTION_POWER_CONNECTED) return
+            val level = (batteryInfo()["percent"] as? Number)?.toInt()
+            chargingChannel?.invokeMethod("powerConnected", mapOf("level" to level))
+        }
+    }
+
+    private fun registerPowerReceiver() {
+        try {
+            registerReceiver(powerReceiver, IntentFilter(Intent.ACTION_POWER_CONNECTED))
+        } catch (e: Exception) {
+            // No animation then; nothing else depends on it.
+        }
     }
 
     // Empty whenever the permission is missing, which the Dart side tells
@@ -1655,6 +1683,11 @@ class MainActivity : FlutterActivity() {
             unregisterReceiver(packageReceiver)
         } catch (e: Exception) {
             // Never registered, or already gone.
+        }
+        try {
+            unregisterReceiver(powerReceiver)
+        } catch (e: Exception) {
+            // Same.
         }
         super.onDestroy()
     }

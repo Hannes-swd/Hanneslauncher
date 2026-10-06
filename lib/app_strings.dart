@@ -481,6 +481,35 @@ class AppStrings {
       : (_en
             ? '$count ${count == 1 ? 'widget' : 'widgets'}'
             : '$count Widget${count == 1 ? '' : 's'}');
+  String get chargingAnimation =>
+      _en ? 'Charging animation' : 'Lade-Animation';
+  String get chargingAnimationOff => _en ? 'Off' : 'Aus';
+  String get chargingAnimationEnabled => _en
+      ? 'Play when a cable is plugged in'
+      : 'Beim Anstecken des Kabels abspielen';
+  String get chargingAnimationHint => _en
+      ? 'Plays over the home screen while the launcher is in front. Touches '
+            'go through it.'
+      : 'Läuft über dem Homescreen, solange der Launcher vorne ist. Berührungen '
+            'gehen durch.';
+  String chargingAnimationDuration(double seconds) => _en
+      ? 'Duration: ${seconds.toStringAsFixed(1)} s'
+      : 'Dauer: ${seconds.toStringAsFixed(1).replaceAll('.', ',')} s';
+  String get chargingAnimationPresets => _en ? 'Built in' : 'Vorlagen';
+  String get chargingAnimationOwn => _en ? 'Your own' : 'Eigene';
+  String get chargingAnimationNew =>
+      _en ? 'New animation' : 'Neue Animation';
+  String get chargingAnimationCopy =>
+      _en ? 'Copy and edit' : 'Kopieren & bearbeiten';
+  String get chargingAnimationPreview => _en ? 'Preview' : 'Vorschau';
+  String get chargingAnimationDelete => _en ? 'Delete' : 'Löschen';
+  String get chargingAnimationCodeHelp => _en
+      ? 'HTML with <style> and <script>. Available: charge.duration (ms), '
+            'charge.level (0-100), CSS var(--duration) and var(--level) (0-1). '
+            'Keep the background transparent.'
+      : 'HTML mit <style> und <script>. Verfügbar: charge.duration (ms), '
+            'charge.level (0-100), CSS var(--duration) und var(--level) (0-1). '
+            'Hintergrund transparent lassen.';
   String get codeWidgetName => _en ? 'Name' : 'Name';
   String get addCodeWidget => _en ? 'New code widget' : 'Neues Code-Widget';
   String get emptyCodeWidget => _en

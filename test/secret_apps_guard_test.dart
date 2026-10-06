@@ -129,6 +129,8 @@ void main() {
       'hanneslauncher/backup',
       'hanneslauncher/browsers',
       'hanneslauncher/calendar',
+      // Only 'a cable went in' and the battery level - nothing about apps.
+      'hanneslauncher/charging',
       'hanneslauncher/contacts',
       'hanneslauncher/device_stats',
       'hanneslauncher/media',

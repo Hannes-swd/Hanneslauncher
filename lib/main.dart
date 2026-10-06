@@ -5,6 +5,8 @@ import 'app_list_settings_controller.dart';
 import 'app_list_view.dart';
 import 'auto_backup_service.dart';
 import 'calendar_controller.dart';
+import 'charging_animation_controller.dart';
+import 'charging_animation_overlay.dart';
 import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
 import 'default_launcher_controller.dart';
@@ -55,6 +57,11 @@ class MyApp extends StatelessWidget {
           themeAnimationDuration: tokens.motionNormal,
           themeAnimationCurve: tokens.motionCurve,
           navigatorObservers: [_GestureExclusionObserver()],
+          // Above the navigator, so the charging animation plays over
+          // whichever page is up - and its preview over its own settings.
+          builder: (context, child) => Stack(
+            children: [child!, const ChargingAnimationOverlay()],
+          ),
           home: child,
         );
       },
@@ -142,6 +149,7 @@ class _LauncherRootState extends State<LauncherRoot>
     // installed. Does nothing at all while another style is picked.
     IconPacksController.instance.start();
     OfflineModeController.instance.load();
+    ChargingAnimationController.instance.load();
     // Reads the installed version and the last check's result from disk, so
     // the settings button already carries the update mark on the first
     // frame. The check itself waits for the panel to be opened.
@@ -194,6 +202,7 @@ class _LauncherRootState extends State<LauncherRoot>
     // at: another app opened on top, the screen turned off, the notification
     // shade pulled down.
     _inForeground = state == AppLifecycleState.resumed;
+    ChargingAnimationController.instance.inForeground = _inForeground;
     // Tapping an app in the panel leaves it open behind that app, so coming
     // back from it would land in the panel instead of on the home screen.
     // Snapped shut rather than animated: nobody is looking at this moment,
