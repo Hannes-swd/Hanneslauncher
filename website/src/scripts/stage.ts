@@ -110,13 +110,19 @@ export async function startStage(canvas: HTMLCanvasElement) {
   // ---- slots ---------------------------------------------------------------
   const slots = [...document.querySelectorAll<HTMLElement>('[data-slot]')];
   let w = 1, h = 1;
+  let cachedPoses = new Map<HTMLElement, Pose>();
+
+  // Preload all slot textures asap so mobile doesn't have to wait when the slot scrolls into view
+  for (const slot of slots) {
+    textureFor(slot);
+  }
 
   function poseOf(slot: HTMLElement): Pose {
     const r = slot.getBoundingClientRect();
     const cx = r.left + r.width / 2;
     const cy = r.top + r.height / 2;
     const aspect = w / h;
-    return {
+    const pose: Pose = {
       x: ((cx / w) * 2 - 1) * (visibleH * aspect) / 2,
       y: -((cy / h) * 2 - 1) * visibleH / 2,
       s: (r.height / h) * visibleH / PHONE_H,
@@ -124,6 +130,8 @@ export async function startStage(canvas: HTMLCanvasElement) {
       pitch: Number(slot.dataset.pitch ?? 0),
       roll: Number(slot.dataset.roll ?? 0),
     };
+    cachedPoses.set(slot, pose);
+    return pose;
   }
 
   /** The slot on stage: the visible one closest to the middle of the screen. */
@@ -250,14 +258,25 @@ export async function startStage(canvas: HTMLCanvasElement) {
         if (flightT > 0.45 && fade === 0) fade = 0.0001;
       } else {
         if (!rendered) p = target;
-        else p = {
-          x: lerp(rendered.x, target.x, 0.08),
-          y: lerp(rendered.y, target.y, 0.08),
-          s: lerp(rendered.s, target.s, 0.08),
-          yaw: lerp(rendered.yaw, target.yaw, 0.08),
-          pitch: lerp(rendered.pitch, target.pitch, 0.08),
-          roll: lerp(rendered.roll, target.roll, 0.08),
-        };
+        else {
+          // Snap to target immediately if changes are very small (jitter fix during scroll)
+          const dx = Math.abs(target.x - rendered.x);
+          const dy = Math.abs(target.y - rendered.y);
+          if (dx < 0.001 && dy < 0.001) {
+            p = target;
+          } else {
+            // Follow the target faster (0.16 instead of 0.08) to avoid lag on mobile
+            const factor = 0.16;
+            p = {
+              x: lerp(rendered.x, target.x, factor),
+              y: lerp(rendered.y, target.y, factor),
+              s: lerp(rendered.s, target.s, factor),
+              yaw: lerp(rendered.yaw, target.yaw, factor),
+              pitch: lerp(rendered.pitch, target.pitch, factor),
+              roll: lerp(rendered.roll, target.roll, factor),
+            };
+          }
+        }
       }
       rendered = p;
 
