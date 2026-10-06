@@ -17,3 +17,4 @@ _source/raw/
 
 # Local Vercel credentials: `vercel link` writes an OIDC token to .env.local
 .env*
+!.env.example

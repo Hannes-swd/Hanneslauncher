@@ -5,6 +5,7 @@ import '@fontsource/ubuntu-mono/400.css';
 import '../styles/global.css';
 import Consent from '../components/Consent.astro';
 import { t, paths, type Lang } from '../i18n/strings';
+import { REPO_URL, RELEASES_URL } from '../data/releases';
 import { THEMES, DESIGN_KEY } from '../data/themes';
 
 interface Props {
@@ -21,6 +22,24 @@ const alt = (l: Lang) => new URL(paths[l][page], site).href;
 const pageTitle = title ?? s.meta.title;
 const pageDescription = description ?? s.meta.description;
 const og = new URL('/img/og.png', site).href;
+const other: Lang = lang === 'de' ? 'en' : 'de';
+// structured data: lets search engines show the app as a free Android app
+const jsonLd = page === 'home' ? {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'hanneslauncher',
+  description: pageDescription,
+  url: here,
+  image: og,
+  inLanguage: lang,
+  applicationCategory: 'UtilitiesApplication',
+  operatingSystem: 'Android',
+  isAccessibleForFree: true,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+  downloadUrl: RELEASES_URL,
+  codeRepositoryURL: REPO_URL,
+  author: { '@type': 'Person', name: 'Hannes' },
+} : null;
 ---
 <!doctype html>
 <html lang={lang} class="no-js">
@@ -46,7 +65,14 @@ const og = new URL('/img/og.png', site).href;
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:locale" content={lang === 'de' ? 'de_DE' : 'en_GB'} />
+    <meta property="og:locale:alternate" content={other === 'de' ? 'de_DE' : 'en_GB'} />
+    <meta property="og:image:alt" content={s.meta.title} />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={pageDescription} />
+    <meta name="twitter:image" content={og} />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
     <script is:inline define:vars={{ redirect: lang === 'en' && page === 'home', themes: THEMES, designKey: DESIGN_KEY }}>
       var d = document.documentElement;
       d.classList.replace('no-js', 'js');
