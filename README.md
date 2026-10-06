@@ -350,6 +350,36 @@ in **[CODE_WIDGETS.md](CODE_WIDGETS.md)**.
 
 ---
 
+## Charging animations
+
+Plugging in a cable plays a short animation over the home screen, for as long
+as you set (0.5 to 10 seconds). Five come built in - a rainbow wave around the
+edge, a black and white edge, a lightning bolt in the middle, current flowing
+up from the port, and the battery filling to its level - and any of them can
+be copied and changed, or a new one written from scratch.
+
+An animation is HTML, CSS and JavaScript on a transparent page, with the
+duration and the battery level handed in:
+
+```js
+charge.duration   // milliseconds on screen
+charge.level      // battery 0-100, -1 if unknown
+```
+
+```css
+animation: glow var(--duration) ease forwards;   /* follows the slider */
+height: calc(var(--level) * 100%);               /* 0 to 1 */
+```
+
+Set up under *Settings → Appearance → Charging animation*, with a preview
+button on every entry and in the editor. It plays while the launcher is in
+front; touches go through it.
+
+The commands, examples and a CSS cheat sheet are in
+**[CHARGING_ANIMATIONS.md](CHARGING_ANIMATIONS.md)**.
+
+---
+
 ## Terminal
 
 A terminal in Ubuntu's colours and with Ubuntu's syntax, sitting in the app
@@ -521,6 +551,7 @@ which is what makes the window grow out of it.
 |---|---|
 | [PLACEHOLDERS.md](PLACEHOLDERS.md) | Every widget placeholder |
 | [CODE_WIDGETS.md](CODE_WIDGETS.md) | Writing a widget in HTML, CSS and JavaScript |
+| [CHARGING_ANIMATIONS.md](CHARGING_ANIMATIONS.md) | Writing your own charging animation |
 | [RELEASE.md](RELEASE.md) | Bump the version, build, publish on GitHub |
 
 ## License
