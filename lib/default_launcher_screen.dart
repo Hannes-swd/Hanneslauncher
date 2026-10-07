@@ -4,6 +4,7 @@ import 'app_strings.dart';
 import 'default_launcher_controller.dart';
 import 'design_tokens.dart';
 import 'locale_controller.dart';
+import 'settings_backup_screen.dart';
 
 /// Explains how to make this the app the home button opens, and offers the
 /// one button that gets there directly.
@@ -76,6 +77,41 @@ class _DefaultLauncherScreenState extends State<DefaultLauncherScreen>
                       style: TextStyle(color: context.design.textSecondary),
                     ),
                   ],
+                  const SizedBox(height: 32),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Text(
+                    s.leaveLauncher,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  if (state.isDefault) ...[
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _chooseOther(context, s),
+                        icon: const Icon(Icons.swap_horiz),
+                        label: Text(s.chooseOtherLauncher),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      s.chooseOtherLauncherHint,
+                      style: TextStyle(color: context.design.textSecondary),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.error,
+                      ),
+                      onPressed: () => _uninstall(context, s),
+                      icon: const Icon(Icons.delete_outline),
+                      label: Text(s.uninstallLauncher),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -83,6 +119,52 @@ class _DefaultLauncherScreenState extends State<DefaultLauncherScreen>
         );
       },
     );
+  }
+
+  Future<void> _chooseOther(BuildContext context, AppStrings s) async {
+    final opened = await DefaultLauncherController.instance.openHomeSettings();
+    if (opened || !context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(s.defaultLauncherOpenFailed)));
+  }
+
+  /// Asked here first, because Android's own confirmation only says
+  /// "uninstall?" - not that every setting goes with it.
+  Future<void> _uninstall(BuildContext context, AppStrings s) async {
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(s.uninstallLauncher),
+        content: Text(s.uninstallLauncherWarning),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop('backup'),
+            child: Text(s.uninstallLauncherBackupFirst),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop('uninstall'),
+            child: Text(s.uninstallLauncherAnyway),
+          ),
+        ],
+      ),
+    );
+    if (!context.mounted) return;
+    if (choice == 'backup') {
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => const SettingsBackupScreen()),
+      );
+    } else if (choice == 'uninstall') {
+      final started = await DefaultLauncherController.instance.uninstallSelf();
+      if (!started && context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(s.uninstallFailed)));
+      }
+    }
   }
 
   Widget _status(AppStrings s, DefaultLauncherState state) {

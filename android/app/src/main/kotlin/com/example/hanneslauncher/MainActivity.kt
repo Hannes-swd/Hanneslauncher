@@ -243,6 +243,19 @@ class MainActivity : FlutterActivity() {
                     "defaultLauncher" -> result.success(defaultLauncher())
                     "chooseDefaultLauncher" ->
                         result.success(chooseDefaultLauncher())
+                    // The way back out. The role dialog only asks to *take*
+                    // the role, so handing it to another launcher goes
+                    // through the system's own home-app list instead.
+                    "openHomeSettings" -> result.success(
+                        startOrFalse(Intent(Settings.ACTION_HOME_SETTINGS)) ||
+                            startOrFalse(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)),
+                    )
+                    // Android's own uninstall confirmation for this app.
+                    "uninstallSelf" -> result.success(
+                        startOrFalse(
+                            Intent(Intent.ACTION_DELETE, android.net.Uri.parse("package:$packageName")),
+                        ),
+                    )
                     else -> result.notImplemented()
                 }
             }

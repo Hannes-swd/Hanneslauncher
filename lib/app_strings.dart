@@ -1191,6 +1191,28 @@ class AppStrings {
       : 'Android hat dafür keinen Bildschirm angeboten - siehe die Schritte '
             'darunter';
 
+  String get leaveLauncher =>
+      _en ? 'Stop using this launcher' : 'Launcher nicht mehr nutzen';
+  String get chooseOtherLauncher =>
+      _en ? 'Choose another home app' : 'Andere Start-App wählen';
+  String get chooseOtherLauncherHint => _en
+      ? 'Keeps this launcher installed with all its settings - you can '
+            'switch back any time.'
+      : 'Der Launcher bleibt mit allen Einstellungen installiert - '
+            'zurückwechseln geht jederzeit.';
+  String get uninstallLauncher =>
+      _en ? 'Uninstall launcher' : 'Launcher deinstallieren';
+  String get uninstallLauncherWarning => _en
+      ? 'Uninstalling deletes every setting of this launcher: home screen, '
+            'widgets, folders, notes, animations. Export a backup first if '
+            'you might want them back.'
+      : 'Beim Deinstallieren werden alle Einstellungen dieses Launchers '
+            'gelöscht: Homescreen, Widgets, Ordner, Notizen, Animationen. '
+            'Vorher eine Sicherung exportieren, falls du sie zurückhaben '
+            'willst.';
+  String get uninstallLauncherBackupFirst =>
+      _en ? 'Back up first' : 'Erst sichern';
+  String get uninstallLauncherAnyway => _en ? 'Uninstall' : 'Deinstallieren';
   String get backup => _en ? 'Backup' : 'Sicherung';
   String get backupSubtitle => _en
       ? 'Export or import all settings as a file'

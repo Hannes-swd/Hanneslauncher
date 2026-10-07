@@ -102,4 +102,19 @@ class DefaultLauncherController extends ValueNotifier<DefaultLauncherState> {
       return false;
     }
   }
+
+  /// Opens the system's home-app list, to hand the home button to another
+  /// launcher.
+  Future<bool> openHomeSettings() => _call('openHomeSettings');
+
+  /// Android's own "uninstall this app?" confirmation, for this launcher.
+  Future<bool> uninstallSelf() => _call('uninstallSelf');
+
+  Future<bool> _call(String method) async {
+    try {
+      return await _channel.invokeMethod<bool>(method) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
 }

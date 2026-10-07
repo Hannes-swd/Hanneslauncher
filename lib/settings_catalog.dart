@@ -471,7 +471,9 @@ List<SettingsEntry> buildSettingsCatalog({
       keywords: const [
         'standard', 'default', 'launcher', 'start-app', 'startapp', 'home',
         'home-taste', 'homescreen', 'startbildschirm', 'home screen',
-        'festlegen', 'set', 'einrichten', 'setup',
+        'festlegen', 'set', 'einrichten', 'setup', 'deinstallieren',
+        'uninstall', 'entfernen', 'remove', 'wechseln', 'switch', 'anderer',
+        'other',
       ],
       onTap: (context) => _push(context, const DefaultLauncherScreen()),
     ),
