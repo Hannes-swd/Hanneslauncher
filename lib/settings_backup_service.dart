@@ -29,6 +29,7 @@ import 'panel_blocks_controller.dart';
 import 'pinned_apps_controller.dart';
 import 'secret_apps_controller.dart';
 import 'saved_shortcuts_controller.dart';
+import 'users_controller.dart';
 import 'wallpaper_controller.dart';
 import 'web_apps_controller.dart';
 
@@ -36,6 +37,8 @@ import 'web_apps_controller.dart';
 /// positions, the panel's widgets and calendar/app blocks, pinned apps,
 /// folders, web apps, saved app shortcuts, data sources, app renames, the
 /// secret folder, clock and offline mode style, the design, and language.
+/// That is the active user; the other users follow in the 'users' section
+/// (see [_buildUsers]).
 ///
 /// The code widgets are the one part that isn't held by a block: their
 /// files are written alongside the document by [buildWithFiles].
@@ -54,8 +57,9 @@ import 'web_apps_controller.dart';
 class SettingsBackupService {
   // 2 adds the 'pictures' section. Nothing else changed shape, so a
   // version-1 document still restores completely - it simply has no
-  // pictures in it, which is what those installs had.
-  static const _formatVersion = 2;
+  // pictures in it, which is what those installs had. 3 adds the 'users'
+  // section the same way: an older document restores into the active user.
+  static const _formatVersion = 3;
 
   /// Per picture, not for the document as a whole: 8 MB covers any still
   /// wallpaper at any screen size this runs on, and every icon many times
@@ -248,24 +252,66 @@ class SettingsBackupService {
   /// of empty cards. Uploaded pictures come along too, up to
   /// [CodeWidgetStore.maxBackedUpFileBytes] each - past that the file would
   /// do more harm to the backup's size than good.
-  static Future<Map<String, dynamic>> buildWithFiles() async {
-    // Before anything is read out of it: [build] takes the secret folder's
-    // list straight off the controller, and an automatic backup is written
-    // when the panel is first pulled down - which can be before that list
-    // has been read off disk. An empty list written into the file would not
-    // look like a fault, it would look like an empty secret folder, and
-    // restoring it would un-hide every app in there.
-    await SecretAppsController.instance.loadedKeys();
-    final document = build();
-    final widgets = <String, dynamic>{};
-    for (final block in PanelBlocksController.instance.value) {
-      if (block.type != PanelBlockType.code) continue;
-      widgets[block.id] = await CodeWidgetStore.instance.exportBlock(block.id);
+  static Future<Map<String, dynamic>> buildWithFiles() =>
+      // Held still for the whole document - see [UsersController.steady].
+      UsersController.instance.steady(() async {
+        // Before anything is read out of it: [build] takes the secret
+        // folder's list straight off the controller, and an automatic
+        // backup is written when the panel is first pulled down - which can
+        // be before that list has been read off disk. An empty list written
+        // into the file would not look like a fault, it would look like an
+        // empty secret folder, and restoring it would un-hide every app in
+        // there.
+        await SecretAppsController.instance.loadedKeys();
+        final document = build();
+        final widgets = <String, dynamic>{};
+        for (final block in PanelBlocksController.instance.value) {
+          if (block.type != PanelBlockType.code) continue;
+          widgets[block.id] = await CodeWidgetStore.instance.exportBlock(
+            block.id,
+          );
+        }
+        if (widgets.isNotEmpty) document['codeWidgets'] = widgets;
+        final pictures = await _buildPictures();
+        if (pictures.isNotEmpty) document['pictures'] = pictures;
+        document['users'] = await _buildUsers();
+        return document;
+      });
+
+  /// The users: who exists, who is active, and everyone who isn't.
+  ///
+  /// Everything above this is the active user, built the usual way. The
+  /// others travel as their parked keys exactly as users_controller.dart
+  /// keeps them - plus, for the same reason as [_buildPictures], the
+  /// pictures those keys name by path and the files of their code widgets.
+  /// Without those a restored second user would come back as a list of
+  /// settings pointing at files that no longer exist.
+  static Future<Map<String, dynamic>> _buildUsers() async {
+    final users = UsersController.instance;
+    final parked = <String, dynamic>{};
+    for (final entry in (await users.parkedForBackup()).entries) {
+      final stash = entry.value;
+      final pictures = <String, dynamic>{};
+      for (final text in UsersController.stringsIn(stash)) {
+        if (!p.isAbsolute(text) || !File(text).existsSync()) continue;
+        final encoded = await _encodePicture(File(text));
+        if (encoded != null) pictures[text] = encoded;
+      }
+      final widgets = <String, dynamic>{};
+      for (final blockId in UsersController.codeBlockIdsIn(stash)) {
+        widgets[blockId] = await CodeWidgetStore.instance.exportBlock(blockId);
+      }
+      parked[entry.key] = {
+        'settings': stash,
+        if (pictures.isNotEmpty) 'pictures': pictures,
+        if (widgets.isNotEmpty) 'codeWidgets': widgets,
+      };
     }
-    if (widgets.isNotEmpty) document['codeWidgets'] = widgets;
-    final pictures = await _buildPictures();
-    if (pictures.isNotEmpty) document['pictures'] = pictures;
-    return document;
+    return {
+      'active': users.value.activeId,
+      'list': [for (final user in users.value.users) user.toJson()],
+      if (parked.isNotEmpty) 'parked': parked,
+    };
   }
 
   /// Every picture the user chose, as bytes.
@@ -781,6 +827,69 @@ class SettingsBackupService {
         ),
       );
     }
+
+    // Last, because everything above went into the active user's keys - the
+    // backup's active user, whoever was active on this phone before.
+    await _applyUsers(decoded['users']);
+  }
+
+  /// Brings back the users a backup carried - see [_buildUsers].
+  ///
+  /// A document from before there were users has no such section; it is
+  /// then simply restored into whichever user is active, and the others are
+  /// left alone.
+  static Future<void> _applyUsers(Object? json) async {
+    if (json is! Map<String, dynamic>) return;
+    final listJson = json['list'];
+    if (listJson is! List) return;
+    final users = [
+      for (final entry in listJson) ?LauncherUser.fromJson(entry),
+    ];
+    final parkedJson = json['parked'];
+    final parked = <String, Map<String, dynamic>>{};
+    if (parkedJson is Map<String, dynamic>) {
+      for (final entry in parkedJson.entries) {
+        final user = entry.value;
+        if (user is! Map<String, dynamic>) continue;
+        final settings = user['settings'];
+        if (settings is! Map<String, dynamic>) continue;
+
+        // Each picture onto a new file of this install's own, and the keys
+        // pointed at it instead of at the path from the old install.
+        final moved = <String, String>{};
+        final pictures = user['pictures'];
+        if (pictures is Map<String, dynamic>) {
+          for (final picture in pictures.entries) {
+            final file = await _decodePicture(
+              picture.value,
+              'user_${entry.key}_${p.basenameWithoutExtension(picture.key)}',
+            );
+            if (file != null) moved[picture.key] = file.path;
+          }
+        }
+
+        final widgets = user['codeWidgets'];
+        if (widgets is Map<String, dynamic>) {
+          for (final widget in widgets.entries) {
+            final files = widget.value;
+            if (files is! Map<String, dynamic>) continue;
+            try {
+              await CodeWidgetStore.instance.importBlock(widget.key, files);
+            } catch (_) {
+              // Same as for the active user's widgets: the block is there
+              // either way, just empty.
+            }
+          }
+        }
+
+        parked[entry.key] = UsersController.withMovedPaths(settings, moved);
+      }
+    }
+    await UsersController.instance.restoreFromBackup(
+      users: users,
+      activeId: json['active'] as String? ?? mainUserId,
+      parked: parked,
+    );
   }
 
   /// Writes the pictures out of a backup back into this install's own

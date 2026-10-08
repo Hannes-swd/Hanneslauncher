@@ -102,6 +102,14 @@ class FoldersController extends ValueNotifier<List<LauncherFolder>> {
   @visibleForTesting
   void debugResetLoadedForTest() => _loaded = false;
 
+  /// Forgets what is in memory and reads again - a user switch replaced
+  /// what is stored (see users_controller.dart).
+  Future<void> reload() async {
+    _loaded = false;
+    value = const [];
+    await load();
+  }
+
   LauncherFolder? byId(String id) {
     for (final folder in value) {
       if (folder.id == id) return folder;

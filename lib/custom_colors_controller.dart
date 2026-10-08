@@ -29,6 +29,14 @@ class CustomColorsController extends ValueNotifier<List<Color>> {
     ];
   }
 
+  /// Reads again - a user switch replaced what is stored (see
+  /// users_controller.dart). Each user has their own list, so every
+  /// `colorIndex` they saved points into the list it was saved against.
+  Future<void> reload() async {
+    _loaded = false;
+    await load();
+  }
+
   /// Adds a color, unless it's already in the custom list - picking the same
   /// one twice would otherwise just clutter the row with a duplicate.
   Future<void> add(Color color) async {

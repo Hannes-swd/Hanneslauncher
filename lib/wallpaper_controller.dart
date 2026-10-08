@@ -88,6 +88,15 @@ class WallpaperController extends ValueNotifier<Wallpaper?> {
     }
   }
 
+  /// Reads again after a user switch replaced what is stored (see
+  /// users_controller.dart). Unlike [load], a missing path means none: the
+  /// file still in [value] is the other user's, and leaving it there would
+  /// have the next pick here throw it away as "the previous wallpaper".
+  Future<void> reload() async {
+    value = null;
+    await load();
+  }
+
   /// Opens the gallery for a picture *or* a video and makes the pick the new
   /// wallpaper.
   Future<void> pickAndSet() async {

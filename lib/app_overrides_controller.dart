@@ -71,6 +71,16 @@ class AppOverridesController extends ValueNotifier<Map<String, AppOverride>> {
     }
   }
 
+  /// Forgets what is in memory and reads again. Only for a user switch
+  /// (users_controller.dart), which has just replaced what is stored - what
+  /// is in memory then belongs to the other user, and keeping it would
+  /// delete their pictures the next time an icon is changed here.
+  Future<void> reload() async {
+    _loaded = false;
+    value = const {};
+    await load();
+  }
+
   AppOverride? forPackage(String packageName) => value[packageName];
 
   /// The name to display for an app: the user's own if set, else the

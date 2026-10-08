@@ -1217,6 +1217,49 @@ class AppStrings {
   String get backupSubtitle => _en
       ? 'Export or import all settings as a file'
       : 'Alle Einstellungen als Datei exportieren oder importieren';
+  // Users (users_controller.dart): more than one home screen on one phone.
+  String get users => _en ? 'Users' : 'Benutzer';
+  String get mainUser => _en ? 'Main' : 'Standard';
+  String usersSubtitle(String active, int count) => count <= 1
+      ? (_en ? 'Only $active so far' : 'Bisher nur $active')
+      : (_en
+            ? '$active active · $count users'
+            : '$active aktiv · $count Benutzer');
+  String get usersHint => _en
+      ? 'Every user is a home screen of its own: wallpaper, design, clock, '
+            'pinned apps, folders, the panel and its widgets. A new one '
+            'starts out empty. The language, the lock screen and the secret '
+            'folder stay the same for everyone.'
+      : 'Jeder Benutzer ist ein eigener Homescreen: Hintergrund, Design, '
+            'Uhr, angepinnte Apps, Ordner, das Panel und seine Widgets. Ein '
+            'neuer fängt leer an. Sprache, Sperrbildschirm und Geheimordner '
+            'bleiben für alle gleich.';
+  String get addUser => _en ? 'New user' : 'Neuer Benutzer';
+  String get editUser => _en ? 'Edit user' : 'Benutzer bearbeiten';
+  String get userName => 'Name';
+  String get userIcon => _en ? 'Icon' : 'Symbol';
+  String get userIconInitial =>
+      _en ? 'Initial instead of an icon' : 'Anfangsbuchstabe statt Symbol';
+  String moreUsers(int count) =>
+      _en ? '$count more users' : '$count weitere Benutzer';
+  String get userActive => _en ? 'Active' : 'Aktiv';
+  String get switchUser => _en ? 'Switch user' : 'Benutzer wechseln';
+  String get deleteUser => _en ? 'Delete user' : 'Benutzer löschen';
+  String deleteUserQuestion(String name) =>
+      _en ? 'Delete $name?' : '$name löschen?';
+  String get deleteUserWarning => _en
+      ? 'Everything set up for this user goes with it - wallpaper, panel, '
+            'widgets, folders. The other users stay as they are.'
+      : 'Alles, was für diesen Benutzer eingerichtet ist, geht mit - '
+            'Hintergrund, Panel, Widgets, Ordner. Die anderen Benutzer '
+            'bleiben, wie sie sind.';
+  String get deleteUserConfirm => _en ? 'Delete' : 'Löschen';
+  String switchedToUser(String name) => _en ? 'Now: $name' : 'Jetzt: $name';
+  String newUserReady(String name) => _en
+      ? '$name starts out empty - everything you set up now belongs to it '
+            'alone.'
+      : '$name fängt leer an - alles, was du jetzt einrichtest, gehört nur '
+            'zu diesem Benutzer.';
   // The notification block on the panel (notifications_block_view.dart).
   String get notifications => _en ? 'Notifications' : 'Benachrichtigungen';
   String get notificationsHint => _en

@@ -283,6 +283,16 @@ class PanelBlocksController extends ValueNotifier<List<PanelBlock>> {
   @visibleForTesting
   void debugResetLoadedForTest() => _loaded = false;
 
+  /// Forgets what is in memory and reads again - a user switch replaced
+  /// what is stored (see users_controller.dart). The code widgets' folders
+  /// stay where they are: they are named after block ids, which no two
+  /// users share.
+  Future<void> reload() async {
+    _loaded = false;
+    value = const [];
+    await load();
+  }
+
   PanelBlock? byId(String id) {
     for (final block in value) {
       if (block.id == id) return block;

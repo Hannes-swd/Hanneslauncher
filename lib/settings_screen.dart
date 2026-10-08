@@ -15,6 +15,7 @@ import 'pinned_apps_controller.dart';
 import 'settings_catalog.dart';
 import 'update_controller.dart';
 import 'update_screen.dart';
+import 'users_controller.dart';
 import 'wallpaper_controller.dart';
 import 'web_apps_controller.dart';
 
@@ -45,6 +46,7 @@ List<SettingsEntry> _catalog(AppStrings s) {
     language: LocaleController.instance.value,
     update: UpdateController.instance.value,
     defaultLauncher: DefaultLauncherController.instance.value,
+    users: UsersController.instance.value,
   );
 }
 
@@ -66,6 +68,7 @@ Listenable _settingsSources() => Listenable.merge([
   PanelBlocksController.instance,
   UpdateController.instance,
   DefaultLauncherController.instance,
+  UsersController.instance,
 ]);
 
 /// The settings overview: the four groups as sub-pages, with a search field

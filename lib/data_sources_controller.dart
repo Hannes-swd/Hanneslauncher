@@ -183,6 +183,15 @@ class DataSourcesController extends ValueNotifier<List<DataSource>> {
     _errors.clear();
   }
 
+  /// Forgets what is in memory and reads again - a user switch replaced
+  /// what is stored (see users_controller.dart). The cache is shared and
+  /// keyed by source id, so it is simply read back.
+  Future<void> reload() async {
+    debugResetLoadedForTest();
+    value = const [];
+    await load();
+  }
+
   DataSource? byId(String id) {
     for (final source in value) {
       if (source.id == id) return source;

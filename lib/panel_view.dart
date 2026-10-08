@@ -20,6 +20,7 @@ import 'panel_blocks_controller.dart';
 import 'settings_screen.dart';
 import 'text_prompt_dialog.dart';
 import 'update_screen.dart';
+import 'users_settings_screen.dart';
 import 'widget_editor_screen.dart';
 import 'widget_element.dart';
 
@@ -445,8 +446,16 @@ class _PanelViewState extends State<PanelView> {
             ),
           ),
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              // Opposite the add button: who is active, and one tap to any
+              // other user - only once there are others. At most three
+              // round icons wide, which keeps it clear of the grab bar in
+              // the middle on any phone.
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: UserQuickSwitch(s: s),
+              ),
+              const Spacer(),
               IconButton(
                 icon: const Icon(Icons.add),
                 tooltip: s.addBlock,

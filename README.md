@@ -425,6 +425,46 @@ any output line naming one is dropped before it reaches the screen.
 
 ---
 
+## Users
+
+One phone, as many home screens as you like. A user isn't an account and
+has nothing to log into - it is simply *how everything is set up*: wallpaper,
+design, clock, offline mode, charging animation, icons, the app list's look,
+pinned apps, folders, web apps, app pairs, drawn shapes, the panel with all
+its widgets, notes and code widgets, and the data sources.
+
+There is always the first one, called **Standard** in German and **Main**
+in English until you give it a name of your own. Under *Settings → App →
+Users* you add as many more as you want, with no limit. A new user starts
+out **empty**, exactly like a fresh install - no wallpaper, the digital
+clock, nothing pinned, an empty panel - and the launcher switches to it
+straight away so you can set it up from scratch. From then on you have two
+home screens, and switching back brings the first one back exactly as it
+was.
+
+Every user gets an icon - work, home, music, the night and twenty more -
+or, without one, its initial. Switching is one tap without going near the
+settings: as soon as there is a second user, the top left of the panel,
+opposite the button that adds a block, shows them as round icons, the
+active one filled. Up to three fit there; with more, two are shown - the
+active one always among them - next to a **+N** that opens the rest as a
+dropdown (four users: two icons and "+2").
+
+Name and icon can be changed at any time, and every user except the first
+can be deleted, which also throws away its wallpaper, icons and code widget
+files.
+
+A few things belong to the phone rather than to a home screen and stay the
+same for everyone: the **language**, Android's **lock screen** wallpaper
+and the **secret folder**. That last one is deliberate - a fresh user with
+its own empty secret folder would show every hidden app in plain sight.
+
+Every user is in the backup, wallpapers and code widgets included, so a
+restore brings all of them back. A backup from before there were users
+restores into whichever user is active.
+
+---
+
 ## More features
 
 - **Folders**, nestable to any depth, each with its own color
@@ -449,8 +489,10 @@ any output line naming one is dropped before it reaches the screen.
 - **Backup**: the app keeps its own, in `Download/hanneslauncher`, once a day
   and always right before it installs an update - the folder survives
   uninstalling the app, which is the moment the copy is for. Restore one with
-  a tap, or send a copy off the phone. Everything is in it, pictures included
-  (see below)
+  a tap, or send a copy off the phone. Everything is in it, pictures and
+  every user included (see below)
+- **Users**: several complete home screens on one phone, each set up on its
+  own (see above)
 - **Update**: the app checks GitHub for new releases and installs the APK
   directly (see [RELEASE.md](RELEASE.md))
 - **Settings search**: across every setting, in both languages at once, so
@@ -526,6 +568,17 @@ Nothing picks a color, a corner radius or a text size of its own:
 `design_tokens.dart` holds them all, hands them to Material as a `ThemeData`
 plus a `ThemeExtension`, and everything else reads `context.design`. The home
 screen is the one thing outside it, for the reason given above.
+
+Users don't reach into any of those controllers. They keep reading and
+writing their own keys, which always hold the active user; every other user
+is parked as a copy of their keys under one key of its own
+(`users_controller.dart`). A switch parks the active user, puts the other
+one's keys in place and has every controller read again. Which keys move is
+decided by `settings_keys.dart`, not by a list in the users code: everything
+the backup carries, minus the few keys marked as shared - so a setting added
+later follows the user without anyone having to remember it, and
+`test/users_test.dart` fails if a controller owning such a key isn't read
+again on a switch.
 
 Code widgets are the one part that doesn't live in `SharedPreferences`: each
 one keeps its HTML, CSS, JavaScript and uploaded files in its own folder

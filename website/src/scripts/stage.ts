@@ -89,13 +89,29 @@ export async function startStage(canvas: HTMLCanvasElement) {
 
   // ---- textures for clips and stills --------------------------------------
   const textures = new Map<string, THREE.Texture>();
+  const loaded = new Map<THREE.Texture, Promise<void>>();
   const loader = new THREE.TextureLoader();
   function textureFor(slot: HTMLElement): THREE.Texture {
     const key = slot.dataset.clip ?? slot.dataset.screen ?? '';
     let tex = textures.get(key);
     if (!tex) {
       if (slot.dataset.clip) tex = new THREE.VideoTexture(getClip(slot.dataset.clip));
-      else tex = loader.load(slot.dataset.screen!);
+      else {
+        let done!: () => void;
+        const ready = new Promise<void>((r) => (done = r));
+        tex = loader.load(slot.dataset.screen!, () => done(), undefined, () => done());
+        loaded.set(tex, ready);
+        // A drawn screen (data: URL, the users chapter's fresh user) is
+        // redrawn every minute; only the one on display is worth keeping.
+        if (key.startsWith('data:')) {
+          for (const [k, old] of textures) {
+            if (!k.startsWith('data:') || old === matA.map || old === matB.map) continue;
+            old.dispose();
+            textures.delete(k);
+            loaded.delete(old);
+          }
+        }
+      }
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.flipY = false; // glTF UVs
       tex.generateMipmaps = true;
@@ -167,6 +183,23 @@ export async function startStage(canvas: HTMLCanvasElement) {
     matB.map = tex; matB.needsUpdate = true;
     fade = 0;
   }
+
+  // A slot can change its picture while the phone stands in it - the users
+  // chapter switching between home screens. The new one is loaded first and
+  // then faded in, so the screen never shows empty in between.
+  const screenChanges = new MutationObserver(async (records) => {
+    for (const slot of new Set(records.map((r) => r.target as HTMLElement))) {
+      const wanted = slot.dataset.screen;
+      await loaded.get(textureFor(slot));
+      // switched again while that was loading, or no longer on stage
+      if (slot.dataset.screen !== wanted || slot !== current) continue;
+      setScreen(slot);
+      // standing still, nothing else starts the fade (in flight, the
+      // half-way point does)
+      if (flightT >= 1 && fade === 0) fade = 0.0001;
+    }
+  });
+  for (const slot of slots) screenChanges.observe(slot, { attributes: true, attributeFilter: ['data-screen'] });
 
   // pointer parallax - disabled on touch devices to prevent jitter on mobile
   let px = 0, py = 0, tpx = 0, tpy = 0;

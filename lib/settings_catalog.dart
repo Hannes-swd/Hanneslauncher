@@ -26,6 +26,8 @@ import 'pinned_apps_settings_screen.dart';
 import 'settings_backup_screen.dart';
 import 'update_controller.dart';
 import 'update_screen.dart';
+import 'users_controller.dart';
+import 'users_settings_screen.dart';
 import 'wallpaper_controller.dart';
 import 'wallpaper_settings_screen.dart';
 import 'web_apps_settings_screen.dart';
@@ -162,6 +164,7 @@ List<SettingsEntry> buildSettingsCatalog({
   required AppLanguage language,
   required UpdateState update,
   required DefaultLauncherState defaultLauncher,
+  UsersState users = const UsersState(),
 }) {
   return [
     SettingsEntry(
@@ -491,6 +494,23 @@ List<SettingsEntry> buildSettingsCatalog({
         'übersetzung', 'uebersetzung', 'system', 'systemsprache',
       ],
       onTap: (context) => _pickLanguage(context, s),
+    ),
+    SettingsEntry(
+      icon: Icons.people_outline,
+      title: s.users,
+      section: SettingsSection.app,
+      subtitle: s.usersSubtitle(
+        userDisplayName(users.active, s),
+        users.users.length,
+      ),
+      keywords: const [
+        'benutzer', 'nutzer', 'user', 'users', 'profil', 'profile',
+        'profiles', 'konto', 'account', 'person', 'homescreens',
+        'home screens', 'startbildschirme', 'wechseln', 'umschalten',
+        'switch', 'mehrere', 'multiple', 'zweiter', 'second', 'arbeit',
+        'work', 'privat', 'private', 'main', 'einrichtung', 'setup',
+      ],
+      onTap: (context) => _push(context, const UsersSettingsScreen()),
     ),
     SettingsEntry(
       icon: Icons.save_outlined,

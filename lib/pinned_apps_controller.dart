@@ -24,6 +24,13 @@ class PinnedAppsController extends ValueNotifier<List<String>> {
     value = prefs.getStringList(_key) ?? const [];
   }
 
+  /// Reads again - a user switch replaced what is stored (see
+  /// users_controller.dart).
+  Future<void> reload() async {
+    _loaded = false;
+    await load();
+  }
+
   bool isPinned(String packageName) => value.contains(packageName);
 
   bool get isFull => value.length >= maxPinned;

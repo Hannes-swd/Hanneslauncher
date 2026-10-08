@@ -132,6 +132,14 @@ class GestureShortcutsController extends ValueNotifier<List<GestureShortcut>> {
   @visibleForTesting
   void debugResetLoadedForTest() => _loaded = false;
 
+  /// Forgets what is in memory and reads again - a user switch replaced
+  /// what is stored (see users_controller.dart).
+  Future<void> reload() async {
+    _loaded = false;
+    value = const [];
+    await load();
+  }
+
   GestureShortcut? byId(String id) {
     for (final shortcut in value) {
       if (shortcut.id == id) return shortcut;
@@ -342,6 +350,13 @@ class GestureDrawingController extends ValueNotifier<GestureDrawingSettings> {
   /// the one-shot [load] read again.
   @visibleForTesting
   void debugResetLoadedForTest() => _loaded = false;
+
+  /// Reads again - a user switch replaced what is stored (see
+  /// users_controller.dart).
+  Future<void> reload() async {
+    _loaded = false;
+    await load();
+  }
 
   Future<void> update(GestureDrawingSettings settings) async {
     value = settings;

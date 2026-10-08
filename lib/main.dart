@@ -26,6 +26,7 @@ import 'panel_view.dart';
 import 'panel_visibility.dart';
 import 'system_gesture_exclusion.dart';
 import 'update_controller.dart';
+import 'users_controller.dart';
 import 'wallpaper_controller.dart';
 import 'wallpaper_view.dart';
 import 'widget_input_store.dart';
@@ -137,6 +138,9 @@ class _LauncherRootState extends State<LauncherRoot>
     _controller.addListener(_updateHomeVisible);
     _controller.addListener(_tidyClosedPanel);
     AppListSettingsController.instance.addListener(_onAppListSettingsChanged);
+    // First, so the settings screen knows who is active - and so a switch
+    // that was cut off last time is finished before anyone looks.
+    UsersController.instance.load();
     WallpaperController.instance.load();
     // Only so the settings can show the picture that is on the lock screen -
     // Android draws it from here on, whether this app is running or not.
@@ -495,7 +499,7 @@ class _LauncherRootState extends State<LauncherRoot>
                     // the wallpaper and everything the launcher draws.
                     final design = context.design;
                     final radius = _panelRadius(design);
-                    return Scaffold(
+                    final panel = Scaffold(
                       backgroundColor: Colors.transparent,
                       body: AnimatedContainer(
                         duration: design.motionFast,
@@ -522,6 +526,18 @@ class _LauncherRootState extends State<LauncherRoot>
                         ),
                       ),
                     );
+                    // Its own messenger, so the panel is not a second
+                    // Scaffold of the app's one. That one shows every
+                    // snackbar in each Scaffold it knows that has none
+                    // above it - here the home screen's and the panel's,
+                    // two in the same route - and a snackbar is a Hero
+                    // tagged by its text. Two Heroes with one tag in a route
+                    // is an error the moment the route animates, so going
+                    // back to the home screen while a message from any
+                    // settings page was still up threw. A message from the
+                    // panel's own cards now shows in the panel, which is
+                    // where it was read anyway.
+                    return ScaffoldMessenger(child: panel);
                   },
                 ),
               ),

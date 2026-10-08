@@ -44,7 +44,68 @@ const Map<String, KeyFate> settingsKeyPrefixes = {
   // What a code widget's page put in launcher.store(), one key per block.
   // In the backup inside that widget's own entry, next to its HTML and CSS.
   'code_widget_state_': KeyFate.backedUp,
+  // One parked setup per user that isn't the active one - see
+  // users_controller.dart. In the backup as the 'users' section.
+  'users_stash_': KeyFate.backedUp,
 };
+
+/// The keys every user shares, whichever one is active - see
+/// users_controller.dart.
+///
+/// Everything else that is [KeyFate.backedUp] belongs to one user, because
+/// a user *is* "how the home screen is set up", and a setting added later is
+/// far more likely to be part of that than not. So the default is to follow
+/// the user, and staying the same for all of them is what has to be argued
+/// for - here, with the reason, for the same cause as [settingsKeyNotes].
+const Map<String, String> sharedUserKeys = {
+  'app_language':
+      'The language the person reads, not part of a home screen. Switching '
+      'users and suddenly reading English would be a surprise, not a setup.',
+  'lock_wallpaper_asset': 'Goes with lock_wallpaper_path.',
+  'lock_wallpaper_path':
+      "Android's own lock screen, which is one per phone. Switching users "
+      'does not set it, so the settings must keep saying what is on it.',
+  'secret_app_keys':
+      'The secret folder hides apps from everything. If each user had their '
+      'own, creating a fresh user would put every hidden app back in plain '
+      'sight.',
+  'secret_password_hash': 'Goes with secret_app_keys.',
+  'secret_password_salt': 'Goes with secret_app_keys.',
+  'secret_recovery_hash': 'Goes with secret_app_keys.',
+  'secret_recovery_salt': 'Goes with secret_app_keys.',
+  'users_active': 'Which user is active - the list of users itself.',
+  'users_list': 'The list of users itself.',
+};
+
+/// Prefixes that stay put on a switch, like [sharedUserKeys].
+const Map<String, String> sharedUserPrefixes = {
+  'code_widget_state_':
+      'Named after its block, whose id is unique across every user, so two '
+      'users can never write the same key. The block itself does move.',
+  'users_stash_': 'The parked users themselves.',
+};
+
+/// [KeyFate.deviceLocal] keys that still have to move with the user.
+const Set<String> deviceLocalUserKeys = {
+  // Read as the icon style whenever icon_theme_style was never written, so
+  // it is part of how the current user's icons look until then.
+  'icon_theme_enabled',
+};
+
+/// Whether [key] belongs to the active user and is parked with them on a
+/// switch. The one rule users_controller.dart moves keys by.
+bool isUserKey(String key) {
+  if (sharedUserKeys.containsKey(key)) return false;
+  if (deviceLocalUserKeys.contains(key)) return true;
+  final fate = settingsKeyRegistry[key];
+  if (fate != null) return fate == KeyFate.backedUp;
+  for (final entry in settingsKeyPrefixes.entries) {
+    if (!key.startsWith(entry.key)) continue;
+    return entry.value == KeyFate.backedUp &&
+        !sharedUserPrefixes.containsKey(entry.key);
+  }
+  return false;
+}
 
 /// Why each [KeyFate.deviceLocal] key is one. Kept as prose rather than a
 /// comment so the test can insist every exclusion has a reason at all - an
@@ -181,6 +242,8 @@ const Map<String, KeyFate> settingsKeyRegistry = {
   'steps_last_raw_date': KeyFate.deviceLocal,
   'update_checked_at': KeyFate.deviceLocal,
   'update_latest_release': KeyFate.deviceLocal,
+  'users_active': KeyFate.backedUp,
+  'users_list': KeyFate.backedUp,
   'wallpaper_asset': KeyFate.backedUp,
   'wallpaper_image_path': KeyFate.backedUp,
   'web_apps': KeyFate.backedUp,

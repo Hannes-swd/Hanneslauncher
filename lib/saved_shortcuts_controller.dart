@@ -121,6 +121,14 @@ class SavedShortcutsController extends ValueNotifier<List<SavedShortcut>> {
   @visibleForTesting
   void debugResetLoadedForTest() => _loaded = false;
 
+  /// Forgets what is in memory and reads again - a user switch replaced
+  /// what is stored (see users_controller.dart).
+  Future<void> reload() async {
+    _loaded = false;
+    value = const [];
+    await load();
+  }
+
   SavedShortcut? byId(String id) {
     for (final shortcut in value) {
       if (shortcut.id == id) return shortcut;

@@ -1,0 +1,218 @@
+---
+// Several users, working: the chips switch the 3D phone between two real
+// home screens, and "New user" adds one the way the app does - empty. A
+// fresh user is a white screen with the digital clock in the middle and
+// nothing pinned, which is what a fresh install shows; it is drawn rather
+// than screenshotted, so its clock can tell the real time. The phone picks
+// the new picture up off data-screen (scripts/stage.ts).
+import { t, type Lang } from '../i18n/strings';
+interface Props { lang: Lang }
+const s = t(Astro.props.lang).users;
+const first = '/media/shots/user_main.webp';
+---
+<section id="users" class="usr chapter" data-chapter data-users data-new-name={s.newName}>
+  <div class="wrap usr-grid">
+    <div class="usr-copy">
+      <h2 class="display usr-title" data-split>{s.title}</h2>
+      <p class="lede">{s.sub}</p>
+      <ul class="usr-facts" role="list">
+        {s.facts.map((fact) => (
+          <li class="surface-s"><b>{fact.name}</b><span>{fact.text}</span></li>
+        ))}
+      </ul>
+    </div>
+
+    <div class="usr-demo">
+      <div class="usr-switch surface-m" role="group" aria-label={s.switcher}>
+        <div class="usr-chips" data-users-chips>
+          <button type="button" class="usr-chip" data-user="main" data-shot={first} aria-pressed="true"><span class="usr-dot" aria-hidden="true"></span>{s.main}</button>
+          <button type="button" class="usr-chip" data-user="second" data-shot="/media/shots/user_second.webp" aria-pressed="false"><span class="usr-dot" aria-hidden="true"></span>{s.second}</button>
+        </div>
+        <button type="button" class="usr-add" data-users-add>
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          {s.add}
+        </button>
+      </div>
+
+      <div class="usr-phone">
+        <div class="phone-slot" data-slot="users" data-screen={first} data-yaw="16" data-pitch="2" data-roll="3" data-users-slot>
+          <div class="phone-css"><img src={first} alt="" width="450" height="985" loading="lazy" data-users-fallback /></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const section = document.querySelector<HTMLElement>('[data-users]');
+  if (section) initUsers(section);
+
+  function initUsers(section: HTMLElement) {
+    const chips = section.querySelector<HTMLElement>('[data-users-chips]')!;
+    const add = section.querySelector<HTMLButtonElement>('[data-users-add]')!;
+    const slot = section.querySelector<HTMLElement>('[data-users-slot]')!;
+    const fallback = section.querySelector<HTMLImageElement>('[data-users-fallback]')!;
+    const pattern = section.dataset.newName ?? '{n}';
+    let count = chips.children.length;
+    let active = 'main';
+    let freshMinute = '';
+    let freshUrl = '';
+
+    // Both the 3D phone (through data-screen) and the flat one shown
+    // without WebGL take the same picture.
+    const showPicture = (url: string) => {
+      slot.dataset.screen = url;
+      fallback.src = url;
+    };
+
+    const show = (id: string) => {
+      active = id;
+      let shot = '';
+      for (const chip of chips.querySelectorAll<HTMLElement>('[data-user]')) {
+        const on = chip.dataset.user === id;
+        chip.setAttribute('aria-pressed', String(on));
+        if (on) shot = chip.dataset.shot ?? '';
+      }
+      showPicture(shot || fresh());
+    };
+
+    chips.addEventListener('click', (event) => {
+      const chip = (event.target as HTMLElement).closest<HTMLElement>('[data-user]');
+      if (chip?.dataset.user) show(chip.dataset.user);
+    });
+
+    // Like the app: a new user is added, switched to straight away, and
+    // starts out with nothing set up. There is no limit in the app, so
+    // there is none here either - the row just scrolls.
+    add.addEventListener('click', () => {
+      count += 1;
+      // Cloned from one that exists rather than built, so it keeps the
+      // attribute Astro scopes this component's styles by.
+      const chip = chips.querySelector('[data-user]')!.cloneNode(true) as HTMLElement;
+      chip.dataset.user = `u${count}`;
+      delete chip.dataset.shot;
+      chip.lastChild!.textContent = pattern.replace('{n}', String(count));
+      chips.append(chip);
+      chips.scrollTo({ left: chips.scrollWidth, behavior: 'smooth' });
+      show(chip.dataset.user);
+    });
+
+    // A fresh user's screen, drawn: white, the digital clock centred at the
+    // top with the date under it, the letter bar on the right, nothing
+    // pinned. Same size and layout as the recordings, 720 x 1600.
+    function fresh(): string {
+      const now = new Date();
+      const two = (n: number) => String(n).padStart(2, '0');
+      const time = `${two(now.getHours())}:${two(now.getMinutes())}`;
+      if (time === freshMinute) return freshUrl;
+      const date = `${two(now.getDate())}.${two(now.getMonth() + 1)}.${now.getFullYear()}`;
+      const font = getComputedStyle(document.body).fontFamily;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 720;
+      canvas.height = 1600;
+      const g = canvas.getContext('2d')!;
+      g.fillStyle = '#ffffff';
+      g.fillRect(0, 0, 720, 1600);
+
+      g.textAlign = 'center';
+      g.fillStyle = '#1b1a17';
+      g.font = `300 124px ${font}`;
+      g.fillText(time, 360, 250);
+      g.fillStyle = '#6c6860';
+      g.font = `400 30px ${font}`;
+      g.fillText(date, 360, 300);
+
+      g.fillStyle = '#1b1a17';
+      g.font = `700 20px ${font}`;
+      'CDFGHMOPSTY'.split('').forEach((letter, i) => g.fillText(letter, 700, 683 + i * 53));
+      g.strokeStyle = '#1b1a17';
+      g.lineWidth = 3.4;
+      g.lineCap = 'round';
+      g.beginPath();
+      g.arc(696, 1257, 9, 0, Math.PI * 2);
+      g.moveTo(703, 1264);
+      g.lineTo(711, 1272);
+      g.stroke();
+
+      // the gesture bar along the bottom
+      g.fillStyle = 'rgb(27 26 23 / 0.75)';
+      g.beginPath();
+      g.roundRect(265, 1584, 190, 7, 3.5);
+      g.fill();
+
+      freshMinute = time;
+      freshUrl = canvas.toDataURL('image/png');
+      return freshUrl;
+    }
+
+    // The fresh screens show the time, like the clock they stand for.
+    setInterval(() => {
+      const chip = chips.querySelector<HTMLElement>(`[data-user="${active}"]`);
+      if (chip && !chip.dataset.shot) {
+        const url = fresh();
+        if (slot.dataset.screen !== url) showPicture(url);
+      }
+    }, 15_000);
+  }
+</script>
+
+<style>
+  .usr-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: var(--s5) clamp(var(--s4), 5vw, var(--s7));
+    align-items: center;
+  }
+  .usr-title { font-size: clamp(var(--t4), 4.8vw, var(--t6)); margin: var(--s3) 0 var(--s4); max-width: 15ch; }
+  .usr-facts { list-style: none; margin: var(--s5) 0 0; padding: 0; display: grid; gap: var(--s3); max-width: 46ch; }
+  .usr-facts li {
+    display: grid; gap: 2px; padding: var(--s3) var(--s4);
+    border-radius: var(--r-m); background: var(--card);
+    transition: background-color var(--slow) var(--ease);
+  }
+  .usr-facts b { font-weight: 650; }
+  .usr-facts span { color: var(--ink-2); }
+
+  .usr-demo { display: grid; justify-items: center; gap: var(--s5); min-width: 0; }
+
+  /* the panel's quick switch, as a strip above the phone */
+  .usr-switch {
+    width: min(100%, 340px); min-width: 0;
+    display: grid; gap: var(--s1); padding: var(--s2) 0;
+    border-radius: var(--r-l); background: var(--card);
+    transition: background-color var(--slow) var(--ease);
+  }
+  /* once there are more users than fit, the row scrolls and its ends fade
+     out inside the padding, so a chip is never cut off with a hard edge */
+  .usr-chips {
+    display: flex; gap: var(--s1); padding-inline: var(--s2);
+    overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
+    mask-image: linear-gradient(to right, transparent, #000 var(--s2), #000 calc(100% - var(--s2)), transparent);
+  }
+  .usr-chips::-webkit-scrollbar { display: none; }
+  .usr-chip, .usr-add {
+    flex: none; display: inline-flex; align-items: center; gap: var(--s2);
+    min-height: 44px; padding: 0 var(--s3);
+    border: 0; border-radius: 999px; background: transparent; cursor: pointer;
+    font-weight: 600; white-space: nowrap;
+    transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease), transform var(--fast) var(--ease);
+  }
+  .usr-chip:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+  .usr-chip[aria-pressed='true'] { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  .usr-dot { width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--ink-2); transition: box-shadow var(--fast) var(--ease); }
+  .usr-chip[aria-pressed='true'] .usr-dot {
+    box-shadow: inset 0 0 0 2px var(--accent);
+    background: radial-gradient(circle, var(--accent) 0 4px, transparent 4.5px);
+  }
+  .usr-add { justify-self: start; margin-left: var(--s2); color: var(--accent); }
+  .usr-add:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .usr-chip:active, .usr-add:active { transform: scale(0.97); }
+
+  .usr-phone { display: flex; justify-content: center; }
+  .usr-phone .phone-slot { --phone-w: min(40vh, 250px); }
+
+  @media (max-width: 860px) {
+    .usr-grid { grid-template-columns: 1fr; }
+  }
+</style>

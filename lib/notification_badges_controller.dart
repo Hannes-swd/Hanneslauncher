@@ -89,6 +89,13 @@ class PinnedBadgeController extends ValueNotifier<PinnedBadgeSettings> {
     );
   }
 
+  /// Reads again - a user switch replaced what is stored (see
+  /// users_controller.dart).
+  Future<void> reload() async {
+    _loaded = false;
+    await load();
+  }
+
   Future<void> update(PinnedBadgeSettings settings) async {
     value = settings;
     final prefs = await SharedPreferences.getInstance();

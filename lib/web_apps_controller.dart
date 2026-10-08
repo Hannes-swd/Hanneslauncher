@@ -94,6 +94,14 @@ class WebAppsController extends ValueNotifier<List<WebApp>> {
     value = loaded;
   }
 
+  /// Forgets what is in memory and reads again - a user switch replaced
+  /// what is stored (see users_controller.dart).
+  Future<void> reload() async {
+    _loaded = false;
+    value = const [];
+    await load();
+  }
+
   WebApp? byId(String id) {
     for (final app in value) {
       if (app.id == id) return app;

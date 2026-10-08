@@ -22,6 +22,13 @@ class DeviceDataController extends ValueNotifier<bool> {
     value = prefs.getBool(_key) ?? false;
   }
 
+  /// Reads again - a user switch replaced what is stored (see
+  /// users_controller.dart).
+  Future<void> reload() async {
+    _loaded = false;
+    await load();
+  }
+
   Future<void> setEnabled(bool enabled) async {
     value = enabled;
     final prefs = await SharedPreferences.getInstance();

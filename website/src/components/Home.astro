@@ -10,6 +10,7 @@ import Panel from './Panel.astro';
 import Widgets from './Widgets.astro';
 import Design from './Design.astro';
 import Clocks from './Clocks.astro';
+import Users from './Users.astro';
 import More from './More.astro';
 import Trailer from './Trailer.astro';
 import Updates from './Updates.astro';
@@ -24,7 +25,7 @@ const s = t(lang);
 const data = await releasesAtBuild();
 
 // in page order; the letter bar sorts them alphabetically itself
-const chapters = (['start', 'note', 'why', 'alphabet', 'panel', 'widgets', 'design', 'clocks', 'more', 'trailer', 'updates', 'download'] as const)
+const chapters = (['start', 'note', 'why', 'alphabet', 'panel', 'widgets', 'design', 'clocks', 'users', 'more', 'trailer', 'updates', 'download'] as const)
   .map((id) => ({ id, label: s.nav[id] }));
 ---
 <Base lang={lang}>
@@ -41,6 +42,7 @@ const chapters = (['start', 'note', 'why', 'alphabet', 'panel', 'widgets', 'desi
     <Widgets lang={lang} />
     <Design lang={lang} />
     <Clocks lang={lang} />
+    <Users lang={lang} />
     <More lang={lang} />
     <Trailer lang={lang} />
     <Updates lang={lang} data={data} />

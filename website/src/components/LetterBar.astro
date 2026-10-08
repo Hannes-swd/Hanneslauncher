@@ -17,6 +17,7 @@ const searchItems = [
   ...s.more.items.map(([name]) => ({ label: name, id: 'more' })),
   ...s.panel.blocks.map((b) => ({ label: b.name, id: 'panel' })),
   ...Object.values(s.clocks.names).map((n) => ({ label: n, id: 'clocks' })),
+  ...s.users.aliases.map((label) => ({ label, id: 'users' })),
 ];
 ---
 <nav class="lbar" aria-label={s.nav.letterBar} data-letterbar>

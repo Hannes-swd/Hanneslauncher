@@ -96,6 +96,14 @@ class AppPairsController extends ValueNotifier<List<AppPair>> {
     }
   }
 
+  /// Forgets what is in memory and reads again - a user switch replaced
+  /// what is stored (see users_controller.dart).
+  Future<void> reload() async {
+    _loaded = false;
+    value = const [];
+    await load();
+  }
+
   AppPair? byId(String id) {
     for (final pair in value) {
       if (pair.id == id) return pair;
