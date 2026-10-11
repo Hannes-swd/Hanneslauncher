@@ -48,8 +48,8 @@ const en = {
     body: 'I’m Hannes, and I’ll say it plainly: everything in this project was made with AI. The app’s code, the trailer, this website. Yes, it’s vibe-coded. But not blindly. I can program, I read what the AI writes, I decide what goes in and what gets cut, I try every build on my own phone and I fix what breaks. And it won’t be left to rot, because I use it myself every single day.',
     todo: [
       { text: 'made entirely with AI', done: true },
-      { text: 'understood and checked by me', done: true },
-      { text: 'give up', done: false },
+      { text: 'checked by me', done: true },
+      { text: 'give up the project', done: false },
     ],
   },
   why: {
@@ -271,8 +271,8 @@ const de: typeof en = {
     body: 'Ich bin Hannes, und ich sage es gerade heraus: Alles an diesem Projekt ist mit KI entstanden. Der Code der App, der Trailer, diese Webseite. Ja, das ist gevibecodet. Aber nicht blind. Ich kann programmieren, ich lese, was die KI schreibt, ich entscheide, was reinkommt und was rausfliegt, ich teste jeden Build auf meinem eigenen Handy und repariere, was kaputtgeht. Und liegen gelassen wird hier nichts, denn ich benutze den Launcher selbst, jeden einzelnen Tag.',
     todo: [
       { text: 'komplett mit KI gemacht', done: true },
-      { text: 'von mir verstanden und geprüft', done: true },
-      { text: 'aufgeben', done: false },
+      { text: 'von mir geprüft', done: true },
+      { text: 'Projekt aufgeben', done: false },
     ],
   },
   why: {
