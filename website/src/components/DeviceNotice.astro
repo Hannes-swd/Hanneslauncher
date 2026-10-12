@@ -1,0 +1,36 @@
+---
+import { t, type Lang } from '../i18n/strings';
+interface Props { lang: Lang }
+const s = t(Astro.props.lang).deviceNotice;
+---
+<section class="device-notice" aria-labelledby="device-notice-title">
+  <div class="wrap">
+    <aside class="device-notice-card surface-l" role="note">
+      <svg class="device-notice-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M12 11v5m0-8h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h2 id="device-notice-title">{s.title}</h2>
+        <p>{s.body}</p>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<style>
+  .device-notice { padding-block: 0 var(--s6); }
+  .device-notice-card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: var(--s3);
+    max-width: 980px;
+    padding: var(--s4);
+    background: var(--card);
+    border-radius: var(--r-l);
+  }
+  .device-notice-icon { color: var(--accent); margin-top: 2px; }
+  h2 { margin: 0; font-size: var(--t1); font-weight: 650; }
+  p { margin: var(--s2) 0 0; color: var(--ink-2); text-wrap: pretty; }
+</style>

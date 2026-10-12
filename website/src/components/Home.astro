@@ -4,6 +4,7 @@ import TopBar from './TopBar.astro';
 import LetterBar from './LetterBar.astro';
 import Hero from './Hero.astro';
 import Note from './Note.astro';
+import DeviceNotice from './DeviceNotice.astro';
 import Why from './Why.astro';
 import Alphabet from './Alphabet.astro';
 import Panel from './Panel.astro';
@@ -36,6 +37,7 @@ const chapters = (['start', 'note', 'why', 'alphabet', 'panel', 'widgets', 'desi
   <main id="main">
     <Hero lang={lang} data={data} />
     <Note lang={lang} />
+    <DeviceNotice lang={lang} />
     <Why lang={lang} />
     <Alphabet lang={lang} />
     <Panel lang={lang} />

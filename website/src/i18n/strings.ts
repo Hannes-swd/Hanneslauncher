@@ -52,6 +52,10 @@ const en = {
       { text: 'give up the project', done: false },
     ],
   },
+  deviceNotice: {
+    title: 'Device-specific differences',
+    body: 'Some features can behave differently or may not be available on certain devices. On Google Pixel phones, the launcher cannot change the system navigation mode. If gesture navigation does not work as expected, switch to 3-button navigation in Android’s system settings.',
+  },
   why: {
     lead: 'The launchers I tried …',
     problems: ['… wanted money.', '… showed ads.', '… kept their code closed.'],
@@ -274,6 +278,10 @@ const de: typeof en = {
       { text: 'von mir geprüft', done: true },
       { text: 'Projekt aufgeben', done: false },
     ],
+  },
+  deviceNotice: {
+    title: 'Hinweis zu Geräteunterschieden',
+    body: 'Auf manchen Geräten können einzelne Funktionen anders funktionieren oder nicht verfügbar sein. Auf Google-Pixel-Geräten kann der Launcher den System-Navigationsmodus nicht umstellen. Wenn die Wischgesten nicht wie erwartet funktionieren, aktiviere bitte die 3-Tasten-Navigation in den Android-Systemeinstellungen.',
   },
   why: {
     lead: 'Die Launcher, die ich ausprobiert habe, …',
