@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_icon.dart';
 import 'app_launcher.dart';
+import 'app_widget_block_view.dart';
 import 'app_strings.dart';
 import 'builtin_entries.dart';
 import 'calendar_block_view.dart';
@@ -28,6 +29,7 @@ SurfaceLevel levelFor(PanelBlockType type) => switch (type) {
   PanelBlockType.notes ||
   PanelBlockType.code ||
   PanelBlockType.notifications ||
+  PanelBlockType.appWidget ||
   PanelBlockType.calendar => SurfaceLevel.hero,
   PanelBlockType.appRow => SurfaceLevel.normal,
 };
@@ -49,8 +51,10 @@ class PanelBlockCard extends StatelessWidget {
 
     // A code widget paints its own page edge to edge, so it gets the card
     // without the usual padding - and none of the card at all when it was
-    // set to draw its own background.
-    if (block.type == PanelBlockType.code) {
+    // set to draw its own background. An app widget is the same: it draws
+    // itself, across the whole width.
+    if (block.type == PanelBlockType.code ||
+        block.type == PanelBlockType.appWidget) {
       return Padding(
         padding: margin,
         child: DecoratedBox(
@@ -66,7 +70,9 @@ class PanelBlockCard extends StatelessWidget {
               color: block.transparentBackground
                   ? Colors.transparent
                   : design.cardSurface,
-              child: CodeBlockView(block: block, s: s),
+              child: block.type == PanelBlockType.code
+                  ? CodeBlockView(block: block, s: s)
+                  : AppWidgetBlockView(block: block, s: s),
             ),
           ),
         ),
@@ -97,7 +103,8 @@ class PanelBlockCard extends StatelessWidget {
             s: s,
           ),
           // Handled above, before the card is built.
-          PanelBlockType.code => const SizedBox.shrink(),
+          PanelBlockType.code ||
+          PanelBlockType.appWidget => const SizedBox.shrink(),
         },
       ),
     );

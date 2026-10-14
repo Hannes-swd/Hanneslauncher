@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'app_widgets.dart';
 import 'code_widget_store.dart';
 import 'note_document.dart';
 import 'widget_element.dart';
@@ -36,6 +37,11 @@ enum PanelBlockType {
   /// Nothing about them is held in the block or anywhere else; see
   /// `notifications_controller.dart`.
   notifications,
+
+  /// A real Android app widget, hosted by the launcher under
+  /// [PanelBlock.appWidgetId] - see `app_widgets.dart`. Always as wide as the
+  /// panel; [PanelBlock.cardHeight] is the only size it has.
+  appWidget,
 }
 
 /// One entry on the panel. The blocks are shown in list order.
@@ -55,6 +61,8 @@ class PanelBlock {
     this.linkedKey = '',
     this.notes = const [],
     this.transparentBackground = false,
+    this.appWidgetId = -1,
+    this.appWidgetProvider = '',
   });
 
   final String id;
@@ -111,6 +119,16 @@ class PanelBlock {
   /// wants this; a page of text does not.
   final bool transparentBackground;
 
+  /// App widget: the id Android handed out for it, -1 while there is none.
+  /// Only valid on the phone and install it was made on - a restored backup
+  /// carries ids that point at nothing, which is what
+  /// [appWidgetProvider] is kept for.
+  final int appWidgetId;
+
+  /// App widget: which widget it is, as Android's flattened component
+  /// name. Enough to set the same one up again when the id has died.
+  final String appWidgetProvider;
+
   PanelBlock copyWith({
     List<String>? itemKeys,
     int? columns,
@@ -124,6 +142,8 @@ class PanelBlock {
     String? linkedKey,
     List<NoteParagraph>? notes,
     bool? transparentBackground,
+    int? appWidgetId,
+    String? appWidgetProvider,
   }) {
     return PanelBlock(
       id: id,
@@ -141,6 +161,8 @@ class PanelBlock {
       notes: notes ?? this.notes,
       transparentBackground:
           transparentBackground ?? this.transparentBackground,
+      appWidgetId: appWidgetId ?? this.appWidgetId,
+      appWidgetProvider: appWidgetProvider ?? this.appWidgetProvider,
     );
   }
 
@@ -161,6 +183,8 @@ class PanelBlock {
     'linkedKey': linkedKey,
     'notes': [for (final paragraph in notes) paragraph.toJson()],
     'transparentBackground': transparentBackground,
+    'appWidgetId': appWidgetId,
+    'appWidgetProvider': appWidgetProvider,
   };
 
   static PanelBlock fromJson(Map<String, dynamic> json) => PanelBlock(
@@ -181,6 +205,8 @@ class PanelBlock {
     linkedKey: json['linkedKey'] as String? ?? '',
     notes: _notesFrom(json['notes']),
     transparentBackground: json['transparentBackground'] as bool? ?? false,
+    appWidgetId: json['appWidgetId'] as int? ?? -1,
+    appWidgetProvider: json['appWidgetProvider'] as String? ?? '',
   );
 
   /// Same reasoning as the elements below: one unreadable line is dropped
@@ -358,6 +384,28 @@ class PanelBlocksController extends ValueNotifier<List<PanelBlock>> {
     return block;
   }
 
+  /// An app widget Android has already bound and set up as [appWidgetId].
+  Future<PanelBlock> addAppWidget({
+    required int appWidgetId,
+    required String provider,
+    required String title,
+    required double height,
+  }) async {
+    final block = PanelBlock(
+      id: _newId(),
+      type: PanelBlockType.appWidget,
+      title: title.trim(),
+      appWidgetId: appWidgetId,
+      appWidgetProvider: provider,
+      cardHeight: height,
+      // Nearly every widget brings its own background, and a card behind
+      // it would only draw a second, slightly different edge around it.
+      transparentBackground: true,
+    );
+    await _save([...value, block]);
+    return block;
+  }
+
   /// Replaces the block carrying the same id, keeping its position.
   Future<void> update(PanelBlock block) async {
     await _save([
@@ -371,6 +419,12 @@ class PanelBlocksController extends ValueNotifier<List<PanelBlock>> {
     // leave its pictures on the phone with nothing left pointing at them.
     if (byId(id)?.type == PanelBlockType.code) {
       await CodeWidgetStore.instance.deleteFolder(id);
+    }
+    // Same for an app widget: Android keeps its id registered to this
+    // launcher - and the widget updating - until it is handed back.
+    final removed = byId(id);
+    if (removed != null && removed.type == PanelBlockType.appWidget) {
+      await AppWidgets.delete(removed.appWidgetId);
     }
     await _save([
       for (final block in value)

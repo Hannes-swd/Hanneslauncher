@@ -191,6 +191,14 @@
             <action android:name="android.intent.action.MAIN"/>
             <category android:name="android.intent.category.HOME"/>
         </intent>
+        <!-- Every app that ships a home screen widget declares a receiver
+             for this, so it is what makes them visible to
+             AppWidgetManager.getInstalledProviders() on Android 11+ - the
+             widget picker on the panel would otherwise miss any app that
+             has no launcher icon of its own. -->
+        <intent>
+            <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+        </intent>
         <!-- Icon packs. There is no single declaration for one - every
              launcher invented its own and pack authors name the ones they
              care about - so every spelling IconPacks.kt looks for is listed

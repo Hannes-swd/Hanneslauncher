@@ -476,6 +476,39 @@ class AppStrings {
       ? 'Your own widget in HTML, CSS and JavaScript'
       : 'Eigenes Widget aus HTML, CSS und JavaScript';
   String get codeWidgets => _en ? 'Code widgets' : 'Code-Widgets';
+
+  // App widgets: the real Android widgets other apps ship, hosted on the
+  // panel.
+  String get blockAppWidget => _en ? 'App widget' : 'App-Widget';
+  String get blockAppWidgetTitle => _en
+      ? 'A widget from an installed app'
+      : 'Ein Widget einer installierten App';
+  String get appWidgetPickerTitle =>
+      _en ? 'Choose a widget' : 'Widget auswählen';
+  String get appWidgetSearch => _en ? 'Search widgets' : 'Widget suchen';
+  String get noAppWidgets =>
+      _en ? 'No widgets found' : 'Keine Widgets gefunden';
+  String get appWidgetGone => _en
+      ? 'This widget is no longer set up - after a backup or once its app '
+            'was removed.'
+      : 'Dieses Widget ist nicht mehr eingerichtet - nach einem Backup oder '
+            'weil seine App entfernt wurde.';
+  String get appWidgetSetUpAgain => _en ? 'Set up again' : 'Neu einrichten';
+  String get appWidgetHint => _en
+      ? 'Always as wide as the panel - only the height is up to you. Taps '
+            'go to the widget; lists inside it cannot be scrolled, since '
+            'dragging scrolls the panel.'
+      : 'Immer so breit wie das Panel - nur die Höhe stellst du ein. '
+            'Antippen geht ans Widget; Listen darin lassen sich nicht '
+            'scrollen, weil Ziehen das Panel scrollt.';
+  String get appWidgetHeight => _en ? 'Height' : 'Höhe';
+  String get appWidgetResetHeight =>
+      _en ? 'Back to its own height' : 'Zurück auf eigene Höhe';
+  String get appWidgetOnCard =>
+      _en ? 'Draw on a card' : 'Auf einer Karte zeichnen';
+  String get appWidgetOnCardHint => _en
+      ? 'For widgets without a background of their own.'
+      : 'Für Widgets ohne eigenen Hintergrund.';
   String codeWidgetsSubtitle(int count) => count == 0
       ? (_en ? 'None yet' : 'Noch keine')
       : (_en

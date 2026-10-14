@@ -126,6 +126,10 @@ void main() {
       // The kept shortcuts themselves are covered by LauncherEntry.hidingKeys:
       // a shortcut goes when the app that published it goes.
       'hanneslauncher/app_shortcuts',
+      // Lists every widget installed apps offer, and with it their package
+      // and name. AppWidgets.providers() drops the secret ones before
+      // anything sees the list - the picker is the only reader.
+      'hanneslauncher/app_widgets',
       'hanneslauncher/backup',
       'hanneslauncher/browsers',
       'hanneslauncher/calendar',
@@ -203,12 +207,19 @@ void main() {
     //   queryUsageStats -> mostUsedAppToday()
     //   getApplicationLabel/getApplicationInfo -> mostUsedAppToday(), and an
     //     installed icon pack's own name
+    //     and the app names in the app widget picker (AppWidgets.kt), which
+    //     AppWidgets.providers() filters
+    //   installedProviders -> the app widget picker and its previews; the
+    //     list is filtered on the Dart side, a preview is only ever asked
+    //     for a provider from that filtered list
     //   resolveActivity -> the default-launcher and clock/calendar intents
     //   getPackageInfo -> this app's own version, and a pack's, which keys
     //     the pack's rendered icons so an update isn't served from the old
     //     cache
     //   getApplicationIcon/getResourcesForApplication -> IconPacks, both
     //     only ever asked about a package Dart named first
+    //     - and the app widget picker's last-resort preview, asked only
+    //     for a provider from the already filtered list
     //   getLaunchIntentForPackage -> IconPacks, plus launchIntentFor() for
     //     the animated start and the split-screen pair. Both of those are
     //     handed a package by Dart and answer with an intent or nothing;
@@ -220,15 +231,16 @@ void main() {
     const expected = {
       'queryIntentActivities': 2,
       'queryUsageStats': 1,
-      'getApplicationLabel': 2,
-      'getApplicationInfo': 2,
-      'getApplicationIcon': 1,
+      'getApplicationLabel': 3,
+      'getApplicationInfo': 3,
+      'getApplicationIcon': 2,
       'getLaunchIntentForPackage': 2,
       'getResourcesForApplication': 1,
       'getPackageInfo': 2,
       'resolveActivity': 2,
       'getInstalledPackages': 0,
       'getInstalledApplications': 0,
+      'installedProviders': 2,
       'getShortcuts': 1,
       'getShortcutIconDrawable': 1,
       'startShortcut': 1,

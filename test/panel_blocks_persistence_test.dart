@@ -124,4 +124,39 @@ void main() {
     expect(controller.value.single.columns, 6);
     expect(controller.value.single.showLabels, true);
   });
+
+  test('an app widget keeps its id, provider and height', () async {
+    startFresh();
+
+    final block = await controller.addAppWidget(
+      appWidgetId: 12,
+      provider: 'com.example.clock/.ClockWidget',
+      title: 'Uhr',
+      height: 180,
+    );
+
+    controller.value = const [];
+    controller.debugResetLoadedForTest();
+    await controller.load();
+
+    final loaded = controller.value.single;
+    expect(loaded.id, block.id);
+    expect(loaded.type, PanelBlockType.appWidget);
+    expect(loaded.appWidgetId, 12);
+    expect(loaded.appWidgetProvider, 'com.example.clock/.ClockWidget');
+    expect(loaded.title, 'Uhr');
+    expect(loaded.cardHeight, 180);
+    expect(loaded.transparentBackground, true);
+
+    // Removing hands the id back to Android, which isn't there in a test -
+    // that must not stop the block from going.
+    await controller.remove(block.id);
+    expect(controller.value, isEmpty);
+  });
+
+  test('blocks stored before app widgets existed read as having none', () {
+    final block = PanelBlock.fromJson({'id': '1', 'type': 'appRow'});
+    expect(block.appWidgetId, -1);
+    expect(block.appWidgetProvider, '');
+  });
 }

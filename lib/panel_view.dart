@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'app_row_settings_screen.dart';
+import 'app_widget_block_settings_screen.dart';
+import 'app_widget_picker_screen.dart';
 import 'app_strings.dart';
 import 'calendar_block_settings_screen.dart';
 import 'code_widget_editor_screen.dart';
@@ -217,6 +219,16 @@ class _PanelViewState extends State<PanelView> {
                 subtitle: Text(s.blockCodeTitle),
               ),
             ),
+            SimpleDialogOption(
+              onPressed: () =>
+                  Navigator.of(context).pop(PanelBlockType.appWidget),
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.dashboard_customize_outlined),
+                title: Text(s.blockAppWidget),
+                subtitle: Text(s.blockAppWidgetTitle),
+              ),
+            ),
           ],
         );
       },
@@ -275,6 +287,11 @@ class _PanelViewState extends State<PanelView> {
         final block = await createCodeWidget(context, s);
         if (block == null || !mounted) return;
         await _edit(block);
+      case PanelBlockType.appWidget:
+        // Picked, bound and set up first; nothing lands on the panel if
+        // any of that was cancelled. No settings screen afterwards - the
+        // widget starts at the height it asks for, which is usually right.
+        await addAppWidgetBlock(context, s);
     }
   }
 
@@ -297,6 +314,8 @@ class _PanelViewState extends State<PanelView> {
       PanelBlockType.code => (context) => CodeWidgetEditorScreen(
         blockId: block.id,
       ),
+      PanelBlockType.appWidget => (context) =>
+          AppWidgetBlockSettingsScreen(blockId: block.id),
     };
     await Navigator.of(context).push(MaterialPageRoute(builder: builder));
   }
@@ -310,6 +329,7 @@ class _PanelViewState extends State<PanelView> {
       PanelBlockType.notes => s.blockNotes,
       PanelBlockType.notifications => s.notifications,
       PanelBlockType.code => s.blockCode,
+      PanelBlockType.appWidget => s.blockAppWidget,
     };
   }
 

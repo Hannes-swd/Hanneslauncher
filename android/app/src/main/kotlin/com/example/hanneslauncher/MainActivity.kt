@@ -70,6 +70,7 @@ class MainActivity : FlutterActivity() {
     private val packagesChannelName = "hanneslauncher/packages"
     private val wallpaperChannelName = "hanneslauncher/wallpaper"
     private val terminalChannelName = "hanneslauncher/terminal"
+    private val appWidgetsChannelName = "hanneslauncher/app_widgets"
     private val calendarPermissionRequestCode = 4201
     private val importFileRequestCode = 4202
     private val stepsPermissionRequestCode = 4203
@@ -674,6 +675,57 @@ class MainActivity : FlutterActivity() {
                                 AppShortcuts.label(this, pkg, id)
                             },
                         )
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        // Real Android widgets on the panel; see AppWidgets.kt.
+        flutterEngine.platformViewsController.registry.registerViewFactory(
+            AppWidgets.VIEW_TYPE,
+            AppWidgets.Factory(this),
+        )
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, appWidgetsChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "providers" -> {
+                        val context = applicationContext
+                        Thread {
+                            val providers = try {
+                                AppWidgets.providers(context)
+                            } catch (_: Exception) {
+                                emptyList()
+                            }
+                            runOnUiThread { result.success(providers) }
+                        }.start()
+                    }
+                    "preview" -> {
+                        val provider = call.argument<String>("provider")
+                        val context = applicationContext
+                        AppWidgets.previewExecutor.execute {
+                            val bytes = try {
+                                provider?.let { AppWidgets.preview(context, it) }
+                            } catch (_: Exception) {
+                                null
+                            }
+                            runOnUiThread { result.success(bytes) }
+                        }
+                    }
+                    "create" -> {
+                        val provider = call.argument<String>("provider")
+                        if (provider == null) {
+                            result.success(null)
+                        } else {
+                            AppWidgets.create(this, provider, result)
+                        }
+                    }
+                    "delete" -> {
+                        call.argument<Int>("id")?.let { AppWidgets.delete(this, it) }
+                        result.success(null)
+                    }
+                    "providerOf" -> {
+                        val id = call.argument<Int>("id")
+                        result.success(id?.let { AppWidgets.providerOf(this, it) })
                     }
                     else -> result.notImplemented()
                 }
@@ -1691,6 +1743,18 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    // A widget only redraws while its host listens, and listening while
+    // nothing is on screen would only wake the launcher for nothing.
+    override fun onStart() {
+        super.onStart()
+        AppWidgets.startListening(this)
+    }
+
+    override fun onStop() {
+        AppWidgets.stopListening(this)
+        super.onStop()
+    }
+
     override fun onDestroy() {
         try {
             unregisterReceiver(packageReceiver)
@@ -1707,6 +1771,7 @@ class MainActivity : FlutterActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (AppWidgets.onActivityResult(this, requestCode, resultCode)) return
         if (requestCode == importFileRequestCode) {
             val result = pendingImportResult
             pendingImportResult = null
