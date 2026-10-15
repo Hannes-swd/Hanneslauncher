@@ -504,6 +504,13 @@ class AppStrings {
   String get appWidgetHeight => _en ? 'Height' : 'Höhe';
   String get appWidgetResetHeight =>
       _en ? 'Back to its own height' : 'Zurück auf eigene Höhe';
+  String get appWidgetScroll =>
+      _en ? 'Scroll inside the widget' : 'Im Widget scrollen';
+  String get appWidgetScrollHint => _en
+      ? 'Dragging moves the widget\'s lists instead of the panel. To scroll '
+            'the panel, start next to the widget.'
+      : 'Ziehen bewegt die Listen im Widget statt des Panels. Zum Scrollen '
+            'des Panels neben dem Widget ansetzen.';
   String get appWidgetOnCard =>
       _en ? 'Draw on a card' : 'Auf einer Karte zeichnen';
   String get appWidgetOnCardHint => _en

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -96,6 +98,19 @@ class _AppWidgetBlockViewState extends State<AppWidgetBlockView> {
           viewType: AppWidgets.viewType,
           creationParams: {'id': widget.block.appWidgetId},
           creationParamsCodec: const StandardMessageCodec(),
+          // Switched on per widget: then drags belong to the widget, so its
+          // lists scroll and its stacks flip - at the price of the panel not
+          // scrolling while the finger starts on it.
+          gestureRecognizers: widget.block.appWidgetScroll
+              ? {
+                  Factory<VerticalDragGestureRecognizer>(
+                    VerticalDragGestureRecognizer.new,
+                  ),
+                  Factory<HorizontalDragGestureRecognizer>(
+                    HorizontalDragGestureRecognizer.new,
+                  ),
+                }
+              : const {},
         ),
       ),
       _Status.gone => _gone(context),

@@ -63,6 +63,7 @@ class PanelBlock {
     this.transparentBackground = false,
     this.appWidgetId = -1,
     this.appWidgetProvider = '',
+    this.appWidgetScroll = false,
   });
 
   final String id;
@@ -129,6 +130,11 @@ class PanelBlock {
   /// name. Enough to set the same one up again when the id has died.
   final String appWidgetProvider;
 
+  /// App widget: whether a drag on it goes to the widget (its lists
+  /// scroll) instead of to the panel. Off by default, so the panel can be
+  /// scrolled anywhere.
+  final bool appWidgetScroll;
+
   PanelBlock copyWith({
     List<String>? itemKeys,
     int? columns,
@@ -144,6 +150,7 @@ class PanelBlock {
     bool? transparentBackground,
     int? appWidgetId,
     String? appWidgetProvider,
+    bool? appWidgetScroll,
   }) {
     return PanelBlock(
       id: id,
@@ -163,6 +170,7 @@ class PanelBlock {
           transparentBackground ?? this.transparentBackground,
       appWidgetId: appWidgetId ?? this.appWidgetId,
       appWidgetProvider: appWidgetProvider ?? this.appWidgetProvider,
+      appWidgetScroll: appWidgetScroll ?? this.appWidgetScroll,
     );
   }
 
@@ -185,6 +193,7 @@ class PanelBlock {
     'transparentBackground': transparentBackground,
     'appWidgetId': appWidgetId,
     'appWidgetProvider': appWidgetProvider,
+    'appWidgetScroll': appWidgetScroll,
   };
 
   static PanelBlock fromJson(Map<String, dynamic> json) => PanelBlock(
@@ -207,6 +216,7 @@ class PanelBlock {
     transparentBackground: json['transparentBackground'] as bool? ?? false,
     appWidgetId: json['appWidgetId'] as int? ?? -1,
     appWidgetProvider: json['appWidgetProvider'] as String? ?? '',
+    appWidgetScroll: json['appWidgetScroll'] as bool? ?? false,
   );
 
   /// Same reasoning as the elements below: one unreadable line is dropped

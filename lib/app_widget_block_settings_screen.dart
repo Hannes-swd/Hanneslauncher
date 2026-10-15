@@ -93,6 +93,14 @@ class AppWidgetBlockSettingsScreen extends StatelessWidget {
                   ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
+                    title: Text(s.appWidgetScroll),
+                    subtitle: Text(s.appWidgetScrollHint),
+                    value: block.appWidgetScroll,
+                    onChanged: (value) => PanelBlocksController.instance
+                        .update(block.copyWith(appWidgetScroll: value)),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
                     title: Text(s.appWidgetOnCard),
                     subtitle: Text(s.appWidgetOnCardHint),
                     value: !block.transparentBackground,
