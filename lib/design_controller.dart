@@ -17,6 +17,7 @@ class DesignController extends ValueNotifier<DesignSettings> {
 
   static const _presetKey = 'design_preset';
   static const _fieldStyleKey = 'design_field_style';
+  static const _appOpenKey = 'design_app_open';
   static const _radiusKey = 'design_radius';
   static const _shadowKey = 'design_shadow';
   static const _spacingKey = 'design_spacing';
@@ -40,6 +41,7 @@ class DesignController extends ValueNotifier<DesignSettings> {
     value = DesignSettings(
       preset: _presetFor(prefs.getString(_presetKey)),
       fieldStyle: _fieldStyleFor(prefs.getString(_fieldStyleKey)),
+      appOpen: _appOpenFor(prefs.getString(_appOpenKey)),
       overrides: overrides,
       radius: prefs.getDouble(_radiusKey),
       shadow: prefs.getDouble(_shadowKey),
@@ -57,6 +59,7 @@ class DesignController extends ValueNotifier<DesignSettings> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_presetKey, newValue.preset.name);
     await prefs.setString(_fieldStyleKey, newValue.fieldStyle.name);
+    await prefs.setString(_appOpenKey, newValue.appOpen.name);
     await prefs.setDouble(_radiusKey, newValue.radius);
     await prefs.setDouble(_shadowKey, newValue.shadow);
     await prefs.setDouble(_spacingKey, newValue.spacing);
@@ -93,5 +96,12 @@ class DesignController extends ValueNotifier<DesignSettings> {
       if (style.name == name) return style;
     }
     return InputFieldStyle.line;
+  }
+
+  static AppOpenAnimation _appOpenFor(String? name) {
+    for (final animation in AppOpenAnimation.values) {
+      if (animation.name == name) return animation;
+    }
+    return AppOpenAnimation.icon;
   }
 }

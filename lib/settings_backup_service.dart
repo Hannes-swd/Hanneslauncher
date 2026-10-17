@@ -142,6 +142,7 @@ class SettingsBackupService {
       'design': {
         'preset': design.preset.name,
         'fieldStyle': design.fieldStyle.name,
+        'appOpen': design.appOpen.name,
         'colors': {
           for (final entry in design.overrides.entries)
             entry.key.name: entry.value.toARGB32(),
@@ -579,6 +580,11 @@ class SettingsBackupService {
             InputFieldStyle.values,
             designJson['fieldStyle'],
             InputFieldStyle.line,
+          ),
+          appOpen: _enumOr(
+            AppOpenAnimation.values,
+            designJson['appOpen'],
+            AppOpenAnimation.icon,
           ),
           overrides: {
             for (final role in DesignColorRole.values)

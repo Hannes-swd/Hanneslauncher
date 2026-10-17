@@ -194,6 +194,7 @@ const Map<String, KeyFate> settingsKeyRegistry = {
   'data_sources': KeyFate.backedUp,
   'data_sources_cache': KeyFate.deviceLocal,
   'default_launcher_prompt_shown': KeyFate.deviceLocal,
+  'design_app_open': KeyFate.backedUp,
   'design_card_size': KeyFate.backedUp,
   'design_field_style': KeyFate.backedUp,
   'design_font': KeyFate.backedUp,

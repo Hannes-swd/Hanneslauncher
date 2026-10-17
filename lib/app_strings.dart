@@ -1061,6 +1061,22 @@ class AppStrings {
   String get designDepth => _en ? 'Shape & depth' : 'Form & Tiefe';
   String get designSpaceGroup => _en ? 'Spacing & size' : 'Abstand & Größe';
   String get designMotionLabel => _en ? 'Motion' : 'Bewegung';
+
+  String get designAppOpenLabel => _en ? 'Opening apps' : 'Apps öffnen';
+  String get designAppOpenIcon => _en ? 'From the icon' : 'Aus dem Icon';
+  String get designAppOpenCenter => _en ? 'From the middle' : 'Aus der Mitte';
+  String get designAppOpenBottom => _en ? 'Bottom to top' : 'Von unten';
+  String get designAppOpenTop => _en ? 'Top to bottom' : 'Von oben';
+  String get designAppOpenLeft => _en ? 'From the left' : 'Von links';
+  String get designAppOpenRight => _en ? 'From the right' : 'Von rechts';
+  String get designAppOpenSystem => _en ? 'Android default' : 'Android-Standard';
+  String get designAppOpenHint => _en
+      ? 'Shows the next time an app is opened. Android only lets a launcher '
+            'pick where an app grows from, so a few phones may still play '
+            'their own animation instead.'
+      : 'Zeigt sich beim nächsten App-Start. Android lässt einen Launcher nur '
+            'bestimmen, wo eine App herauswächst - manche Handys spielen '
+            'trotzdem ihre eigene Animation.';
   String get designMotionDemo => _en ? 'Tap me' : 'Antippen';
 
   String get designPreview => _en ? 'Preview' : 'Vorschau';

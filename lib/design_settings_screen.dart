@@ -75,6 +75,9 @@ class DesignSettingsScreen extends StatelessWidget {
                   SettingsHeading(s.designMotionLabel),
                   _MotionSection(settings: settings, s: s),
 
+                  SettingsHeading(s.designAppOpenLabel),
+                  _AppOpenChoice(settings: settings, s: s),
+
                   SettingsHeading(s.designHapticsLabel),
                   _HapticsSection(settings: settings, s: s),
 
@@ -553,6 +556,54 @@ class _MotionSection extends StatelessWidget {
         ),
         Text(s.designMotionHint, style: design.textStyle(TypeRole.caption)),
       ],
+    );
+  }
+}
+
+/// How apps open. No preview here, unlike the motion slider: the animation
+/// belongs to Android, not to Flutter, so the only honest demo is opening an
+/// app - which the next tap on the home screen does anyway.
+class _AppOpenChoice extends StatelessWidget {
+  const _AppOpenChoice({required this.settings, required this.s});
+
+  final DesignSettings settings;
+  final AppStrings s;
+
+  String _label(AppOpenAnimation animation) => switch (animation) {
+    AppOpenAnimation.icon => s.designAppOpenIcon,
+    AppOpenAnimation.center => s.designAppOpenCenter,
+    AppOpenAnimation.bottom => s.designAppOpenBottom,
+    AppOpenAnimation.top => s.designAppOpenTop,
+    AppOpenAnimation.left => s.designAppOpenLeft,
+    AppOpenAnimation.right => s.designAppOpenRight,
+    AppOpenAnimation.system => s.designAppOpenSystem,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final design = context.design;
+    return Padding(
+      padding: design.pagePadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: design.spaceSm * 0.6,
+            children: [
+              for (final animation in AppOpenAnimation.values)
+                ChoiceChip(
+                  label: Text(_label(animation)),
+                  selected: settings.appOpen == animation,
+                  onSelected: (_) => DesignController.instance.update(
+                    settings.copyWith(appOpen: animation),
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(height: design.spaceXs),
+          Text(s.designAppOpenHint, style: design.textStyle(TypeRole.caption)),
+        ],
+      ),
     );
   }
 }

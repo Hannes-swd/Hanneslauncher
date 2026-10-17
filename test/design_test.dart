@@ -607,6 +607,7 @@ void main() {
     const jsonKeys = {
       'preset': 'preset',
       'fieldStyle': 'fieldStyle',
+      'appOpen': 'appOpen',
       'overrides': 'colors',
       'radius': 'radius',
       'shadow': 'shadow',

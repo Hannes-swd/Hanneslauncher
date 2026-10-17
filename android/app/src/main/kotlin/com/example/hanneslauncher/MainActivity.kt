@@ -41,6 +41,7 @@ import android.provider.ContactsContract
 import android.provider.MediaStore
 import android.provider.Settings
 import android.service.notification.NotificationListenerService
+import android.view.View
 import android.view.WindowManager
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -351,6 +352,7 @@ class MainActivity : FlutterActivity() {
                                 packageName,
                                 sourceBoundsOf(call),
                                 adjacent = false,
+                                animation = call.argument<String>("animation"),
                             )
                         )
                     }
@@ -359,7 +361,12 @@ class MainActivity : FlutterActivity() {
                         val second = call.argument<String>("second")
                         result.success(
                             first != null && second != null &&
-                                launchPair(first, second, sourceBoundsOf(call))
+                                launchPair(
+                                    first,
+                                    second,
+                                    sourceBoundsOf(call),
+                                    call.argument<String>("animation"),
+                                )
                         )
                     }
                     "supportsSplitScreen" ->
@@ -1661,26 +1668,69 @@ class MainActivity : FlutterActivity() {
         )
     }
 
-    // makeScaleUpAnimation, not makeClipRevealAnimation: an icon is small and
-    // square and the app is the whole screen, so growing the window out of it
-    // reads as the same object getting bigger. A clip reveal wipes the app in
-    // from that corner instead, which at icon size looks like a glitch.
-    private fun animationFor(bounds: Rect?): Bundle? {
-        val rect = bounds ?: return null
+    // The opening animation picked in the design settings (AppOpenAnimation
+    // on the Dart side), turned into the one thing Android lets a launcher
+    // hand over: a rectangle to grow or reveal the app from. A launcher's own
+    // XML animations are ignored for anything opening in a new task since
+    // Android 12, so the variety has to come from the rectangle alone.
+    //
+    // From an icon it is makeScaleUpAnimation, not makeClipRevealAnimation:
+    // an icon is small and square and the app is the whole screen, so growing
+    // the window out of it reads as the same object getting bigger. A clip
+    // reveal wipes the app in from that corner instead, which at icon size
+    // looks like a glitch. From a strip as wide as a whole screen edge the
+    // same reveal is a clean wipe from that edge, which is what the edge
+    // choices use it for.
+    private fun animationFor(bounds: Rect?, style: String?): Bundle? {
         val root = window?.decorView ?: return null
+        val width = root.width
+        val height = root.height
+        if (width <= 0 || height <= 0) return null
+        val edgeY = height / 12
+        val edgeX = width / 8
+        val dot = minOf(width, height) / 5
         return try {
-            ActivityOptions.makeScaleUpAnimation(
-                root,
-                rect.left,
-                rect.top,
-                rect.width(),
-                rect.height(),
-            ).toBundle()
+            when (style) {
+                "system" -> null
+                "center" -> scaleUpFrom(
+                    root,
+                    Rect(
+                        (width - dot) / 2,
+                        (height - dot) / 2,
+                        (width + dot) / 2,
+                        (height + dot) / 2,
+                    ),
+                )
+                "bottom" -> revealFrom(root, Rect(0, height - edgeY, width, height))
+                "top" -> revealFrom(root, Rect(0, 0, width, edgeY))
+                "left" -> revealFrom(root, Rect(0, 0, edgeX, height))
+                "right" -> revealFrom(root, Rect(width - edgeX, 0, width, height))
+                // "icon", and anything this build does not know yet.
+                else -> bounds?.let { scaleUpFrom(root, it) }
+            }
         } catch (e: Exception) {
             // A phone that will not make one still has to start the app.
             null
         }
     }
+
+    private fun scaleUpFrom(root: View, rect: Rect): Bundle =
+        ActivityOptions.makeScaleUpAnimation(
+            root,
+            rect.left,
+            rect.top,
+            rect.width(),
+            rect.height(),
+        ).toBundle()
+
+    private fun revealFrom(root: View, rect: Rect): Bundle =
+        ActivityOptions.makeClipRevealAnimation(
+            root,
+            rect.left,
+            rect.top,
+            rect.width(),
+            rect.height(),
+        ).toBundle()
 
     private fun launchIntentFor(packageName: String): Intent? =
         packageManager.getLaunchIntentForPackage(packageName)?.apply {
@@ -1688,7 +1738,12 @@ class MainActivity : FlutterActivity() {
             addFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
         }
 
-    private fun launchPackage(packageName: String, bounds: Rect?, adjacent: Boolean): Boolean {
+    private fun launchPackage(
+        packageName: String,
+        bounds: Rect?,
+        adjacent: Boolean,
+        animation: String? = null,
+    ): Boolean {
         val intent = launchIntentFor(packageName) ?: return false
         if (adjacent && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             intent.addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT)
@@ -1698,7 +1753,7 @@ class MainActivity : FlutterActivity() {
         // few apps read it to know where they were opened from.
         intent.sourceBounds = bounds
         return try {
-            startActivity(intent, animationFor(bounds))
+            startActivity(intent, animationFor(bounds, animation))
             true
         } catch (e: Exception) {
             false
@@ -1714,14 +1769,19 @@ class MainActivity : FlutterActivity() {
     // second, and there is no callback for "it is up" available to a launcher
     // - so this waits a beat, which is long enough on every phone tried and
     // costs nothing but a moment if it was already enough.
-    private fun launchPair(first: String, second: String, bounds: Rect?): Boolean {
+    private fun launchPair(
+        first: String,
+        second: String,
+        bounds: Rect?,
+        animation: String?,
+    ): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             // No split screen: opening the first one alone is a better answer
             // than doing nothing, and it is what the entry says it does.
-            return launchPackage(first, bounds, adjacent = false)
+            return launchPackage(first, bounds, adjacent = false, animation)
         }
         if (launchIntentFor(second) == null) return false
-        if (!launchPackage(first, bounds, adjacent = false)) return false
+        if (!launchPackage(first, bounds, adjacent = false, animation)) return false
         Handler(Looper.getMainLooper()).postDelayed({
             launchPackage(second, null, adjacent = true)
         }, 700)

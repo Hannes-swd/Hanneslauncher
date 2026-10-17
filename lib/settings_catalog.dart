@@ -241,6 +241,8 @@ List<SettingsEntry> buildSettingsCatalog({
         'kartenhöhe', 'kartenhoehe', 'karten', 'card height', 'cards',
         'schriftgröße', 'schriftgroesse', 'textgröße', 'textgroesse',
         'font size', 'text size', 'größer', 'groesser', 'bigger',
+        'animation', 'app öffnen', 'app oeffnen', 'öffnen', 'oeffnen',
+        'opening apps', 'app animation', 'popup', 'von unten', 'slide',
         'deckkraft', 'transparenz', 'durchsichtig', 'opacity',
         'transparency', 'panel', 'aussehen', 'appearance', 'look',
         'zurücksetzen', 'zuruecksetzen', 'reset', 'standard', 'default',

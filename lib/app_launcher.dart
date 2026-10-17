@@ -1,6 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'design_controller.dart';
+
 /// Starts apps, and is the one place that knows *where on screen* a start
 /// came from.
 ///
@@ -66,6 +68,7 @@ class AppLauncher {
       final ok = await _channel.invokeMethod<bool>('launch', {
         'package': package,
         ..._rect(from),
+        ..._animation(),
       });
       return ok ?? false;
     } catch (_) {
@@ -87,6 +90,7 @@ class AppLauncher {
         'first': first,
         'second': second,
         ..._rect(from),
+        ..._animation(),
       });
       return ok ?? false;
     } catch (_) {
@@ -103,6 +107,13 @@ class AppLauncher {
       return false;
     }
   }
+
+  /// Which of the design's opening animations to play - see
+  /// `AppOpenAnimation`. Sent by name; `MainActivity.animationFor` turns it
+  /// into the rectangle Android grows or reveals the app from.
+  static Map<String, Object?> _animation() => {
+    'animation': DesignController.instance.value.appOpen.name,
+  };
 
   static Map<String, Object?> _rect(Rect? from) => from == null
       ? const {}

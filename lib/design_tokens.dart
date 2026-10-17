@@ -57,6 +57,22 @@ enum DesignThemePreset { grey, rose, green, blue, dark }
 /// reads as one soft shape rather than as a frame.
 enum InputFieldStyle { line, box, plain }
 
+/// How an app arrives on screen when it is opened from the launcher.
+///
+/// Every one of these is built out of the only two animations Android still
+/// lets a launcher ask for when it starts another app: "grow the window out
+/// of this rectangle" and "reveal the window starting from this rectangle".
+/// Since Android 12, an animation drawn by the launcher itself is ignored
+/// for anything that opens in its own task - which every app start does -
+/// so a free-form "spin in" or "bounce" cannot be offered without a phone
+/// quietly playing its default instead. What changes between the entries
+/// below is only the rectangle: the tapped icon, a point in the middle, or
+/// a strip along one edge of the screen.
+///
+/// [icon] is the default and what the launcher always did. [system] hands
+/// the choice back to Android (and to whatever the phone maker put there).
+enum AppOpenAnimation { icon, center, bottom, top, left, right, system }
+
 /// The colors each preset stands for. Kept complete rather than "just the
 /// ones that differ": a half-filled preset would have to inherit the rest
 /// from somewhere, and that somewhere is exactly where a rose theme ends up
@@ -232,6 +248,7 @@ class DesignSettings {
   DesignSettings({
     this.preset = DesignThemePreset.grey,
     this.fieldStyle = InputFieldStyle.line,
+    this.appOpen = AppOpenAnimation.icon,
     Map<DesignColorRole, Color> overrides = const {},
     double? radius,
     double? shadow,
@@ -255,6 +272,11 @@ class DesignSettings {
 
   /// How every text field in the app is framed.
   final InputFieldStyle fieldStyle;
+
+  /// How an app opened from the launcher comes onto the screen. Read by
+  /// `app_launcher.dart` on every start, so a change applies to the next
+  /// app tapped.
+  final AppOpenAnimation appOpen;
 
   /// Colors changed by hand, on top of [preset]. Only the ones actually
   /// touched are in here - the rest follow the preset, so switching presets
@@ -281,6 +303,7 @@ class DesignSettings {
   DesignSettings copyWith({
     DesignThemePreset? preset,
     InputFieldStyle? fieldStyle,
+    AppOpenAnimation? appOpen,
     Map<DesignColorRole, Color>? overrides,
     double? radius,
     double? shadow,
@@ -294,6 +317,7 @@ class DesignSettings {
     return DesignSettings(
       preset: preset ?? this.preset,
       fieldStyle: fieldStyle ?? this.fieldStyle,
+      appOpen: appOpen ?? this.appOpen,
       overrides: overrides ?? this.overrides,
       motion: motion ?? this.motion,
       haptics: haptics ?? this.haptics,
@@ -313,6 +337,7 @@ class DesignSettings {
   DesignSettings withPreset(DesignThemePreset value) => DesignSettings(
     preset: value,
     fieldStyle: fieldStyle,
+    appOpen: appOpen,
     radius: radius,
     shadow: shadow,
     spacing: spacing,
@@ -338,6 +363,7 @@ class DesignSettings {
       other is DesignSettings &&
       other.preset == preset &&
       other.fieldStyle == fieldStyle &&
+      other.appOpen == appOpen &&
       other.radius == radius &&
       other.shadow == shadow &&
       other.spacing == spacing &&
@@ -360,6 +386,7 @@ class DesignSettings {
   int get hashCode => Object.hash(
     preset,
     fieldStyle,
+    appOpen,
     radius,
     shadow,
     spacing,
@@ -936,6 +963,7 @@ class DesignTokens extends ThemeExtension<DesignTokens> {
       DesignSettings(
         preset: t < 0.5 ? a.preset : b.preset,
         fieldStyle: t < 0.5 ? a.fieldStyle : b.fieldStyle,
+        appOpen: t < 0.5 ? a.appOpen : b.appOpen,
         overrides: {
           for (final role in DesignColorRole.values)
             role: Color.lerp(a.color(role), b.color(role), t)!,
