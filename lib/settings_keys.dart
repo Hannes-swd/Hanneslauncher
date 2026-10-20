@@ -124,6 +124,10 @@ const Map<String, String> settingsKeyNotes = {
   'icon_theme_enabled':
       'Legacy. Migrated into icon_theme_style on load and never written '
       'again; the backup carries the style it became.',
+  'intro_tutorial_done':
+      'Whether this install already showed the walk-through on its first '
+      'start. About this install, not about the user - a fresh phone restored '
+      'from a backup still gets it once.',
   'location_city': 'Cache of where the phone last was.',
   'location_city_locale': 'Which language that cached town name is in.',
   'location_lat': 'Cache of where the phone last was.',
@@ -215,6 +219,7 @@ const Map<String, KeyFate> settingsKeyRegistry = {
   'icon_theme_enabled': KeyFate.deviceLocal,
   'icon_theme_pack': KeyFate.backedUp,
   'icon_theme_style': KeyFate.backedUp,
+  'intro_tutorial_done': KeyFate.deviceLocal,
   'location_city': KeyFate.deviceLocal,
   'location_city_locale': KeyFate.deviceLocal,
   'location_lat': KeyFate.deviceLocal,

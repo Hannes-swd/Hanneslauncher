@@ -20,6 +20,7 @@ import 'folders_settings_screen.dart';
 import 'gesture_shortcuts_settings_screen.dart';
 import 'icon_theme_controller.dart';
 import 'icon_theme_settings_screen.dart';
+import 'intro_tutorial_controller.dart';
 import 'locale_controller.dart';
 import 'offline_mode_settings_screen.dart';
 import 'pinned_apps_settings_screen.dart';
@@ -525,6 +526,23 @@ List<SettingsEntry> buildSettingsCatalog({
         'kopie', 'json',
       ],
       onTap: (context) => _push(context, const SettingsBackupScreen()),
+    ),
+    SettingsEntry(
+      icon: Icons.school_outlined,
+      title: s.introTitle,
+      section: SettingsSection.app,
+      subtitle: s.introSubtitle,
+      keywords: const [
+        'einführung', 'einfuehrung', 'anleitung', 'tutorial', 'einweisung',
+        'grundlagen', 'erklärung', 'erklaerung', 'intro', 'hilfe', 'help',
+        'anfang', 'start', 'lernen', 'how to',
+      ],
+      // Back to the home screen first: the walk-through points at things that
+      // are only there, and it runs on the home screen itself.
+      onTap: (context) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        IntroTutorialController.instance.start();
+      },
     ),
     SettingsEntry(
       icon: Icons.feedback_outlined,

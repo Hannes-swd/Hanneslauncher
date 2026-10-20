@@ -7,6 +7,7 @@ import 'design_tokens.dart';
 import 'design_widgets.dart';
 import 'entry_search_field.dart';
 import 'haptics.dart';
+import 'intro_tutorial_controller.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
@@ -25,12 +26,13 @@ import 'web_apps_settings_screen.dart';
 /// order, making or changing a web app, the clock, the wallpaper. The settings
 /// pages are all still there - this is the short way to the parts that are
 /// asked for most.
-Future<void> showHomeEditSheet(BuildContext context) {
+Future<void> showHomeEditSheet(BuildContext context) async {
   // The one confirmation the press gets: the sheet has not drawn yet, so
   // without this the only sign that the press was long enough comes a
   // frame later.
   Haptics.fire(HapticEvent.grab);
-  return showModalBottomSheet<void>(
+  IntroTutorialController.instance.noteHomeEditOpened();
+  await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
@@ -43,6 +45,7 @@ Future<void> showHomeEditSheet(BuildContext context) {
           _HomeEditSheet(scrollController: scrollController),
     ),
   );
+  IntroTutorialController.instance.noteHomeEditClosed();
 }
 
 class _HomeEditSheet extends StatelessWidget {

@@ -7,6 +7,7 @@ import 'default_launcher_controller.dart';
 import 'default_launcher_screen.dart';
 import 'design_tokens.dart';
 import 'folders_controller.dart';
+import 'intro_tutorial_controller.dart';
 import 'gesture_shortcuts_controller.dart';
 import 'icon_theme_controller.dart';
 import 'locale_controller.dart';
@@ -92,6 +93,11 @@ class _SettingsScreenState extends State<SettingsScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     DefaultLauncherController.instance.refresh();
+    // After the frame: the walk-through redraws its card when this is heard,
+    // and that must not happen while this page is still being built.
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => IntroTutorialController.instance.noteSettingsOpened(),
+    );
   }
 
   @override

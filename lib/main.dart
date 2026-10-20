@@ -18,6 +18,8 @@ import 'haptics.dart';
 import 'home_reset.dart';
 import 'icon_pack_controller.dart';
 import 'icon_theme_controller.dart';
+import 'intro_tutorial_controller.dart';
+import 'intro_tutorial_overlay.dart';
 import 'locale_controller.dart';
 import 'lock_wallpaper_controller.dart';
 import 'notifications_controller.dart';
@@ -61,7 +63,11 @@ class MyApp extends StatelessWidget {
           // Above the navigator, so the charging animation plays over
           // whichever page is up - and its preview over its own settings.
           builder: (context, child) => Stack(
-            children: [child!, const ChargingAnimationOverlay()],
+            children: [
+              child!,
+              const ChargingAnimationOverlay(),
+              const IntroTutorialOverlay(),
+            ],
           ),
           home: child,
         );
@@ -162,6 +168,17 @@ class _LauncherRootState extends State<LauncherRoot>
     // a new intent to the running activity, so this is the only place it can
     // be heard at all - see home_reset.dart.
     AppLauncher.onHomePressed = _onHomePressed;
+    IntroTutorialController.instance.step.addListener(_onTutorialStep);
+    _startUp();
+  }
+
+  /// The walk-through comes first on a first start, on the home screen, and the
+  /// question about the home app waits until it is closed - two dialogs over
+  /// each other would be one too many.
+  Future<void> _startUp() async {
+    if (await IntroTutorialController.instance.takeFirstRun()) {
+      await IntroTutorialController.instance.start();
+    }
     _maybeAskAboutDefaultLauncher();
   }
 
@@ -193,6 +210,7 @@ class _LauncherRootState extends State<LauncherRoot>
     AppListSettingsController.instance.removeListener(
       _onAppListSettingsChanged,
     );
+    IntroTutorialController.instance.step.removeListener(_onTutorialStep);
     _controller.dispose();
     _panelScroll.dispose();
     _homeVisible.dispose();
@@ -309,6 +327,22 @@ class _LauncherRootState extends State<LauncherRoot>
     if (_controller.value == 1) return;
     _controller.animateTo(1, curve: Curves.easeOut);
     _refreshPanelData();
+  }
+
+  /// Puts the screen where the walk-through's next step is. The first steps
+  /// are on the home screen itself, so anything on top of it - a menu, a
+  /// settings page, the panel - is closed. The last two are about the panel,
+  /// so it is opened for them. Nothing else is opened for the person: holding
+  /// the screen to get the menu is what they are there to learn.
+  void _onTutorialStep() {
+    final step = IntroTutorialController.instance.step.value;
+    if (step == null) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    if (step >= 4) {
+      _openPanel();
+    } else {
+      _closePanel();
+    }
   }
 
   /// Opening the panel is the moment its widgets become visible, so that's

@@ -22,6 +22,7 @@ import 'haptics.dart';
 import 'home_edit_sheet.dart';
 import 'home_reset.dart';
 import 'installed_packages_watch.dart';
+import 'intro_tutorial_controller.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
@@ -425,6 +426,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
         _activeLetter = letter;
         _targetAppIndex = target;
       });
+      IntroTutorialController.instance.noteLetter();
     }
   }
 

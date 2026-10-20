@@ -1534,6 +1534,38 @@ class AppStrings {
   // Reporting a bug or sending an idea (feedback_screen.dart). One mail
   // address, and the mail itself is written for the reader rather than left
   // blank - see feedback_mail.dart for why it is English either way.
+  // The walk-through of the basics - see intro_tutorial_controller.dart. It runs
+  // on the real home screen: each line names a real gesture in the words the
+  // real screen uses, and the outline shows where it is. Keep them short.
+  String get introTitle => _en ? 'Introduction' : 'Einführung';
+  String get introSubtitle => _en
+      ? 'The basics, on the home screen itself'
+      : 'Die Grundlagen, direkt auf dem Homescreen';
+  String get introSkip => _en ? 'Skip' : 'Überspringen';
+  String get introNext => _en ? 'Next' : 'Weiter';
+  String get introDone => _en ? 'Done' : 'Fertig';
+  String get introDoneMark => _en ? 'Done' : 'Geschafft';
+
+  String get introLanguageTitle =>
+      _en ? 'Choose your language' : 'Wähle deine Sprache';
+  String get introHoldHome => _en
+      ? 'Hold a free spot on the home screen'
+      : 'Halte eine freie Stelle des Homescreens gedrückt';
+  String introTapAddApp(String label) =>
+      _en ? 'Tap "$label" and pick an app' : 'Tippe auf „$label“ und wähle eine App';
+  String get introSwipeLetters => _en
+      ? 'Swipe over the letters on the right'
+      : 'Wische über die Buchstaben am rechten Rand';
+  String get introPullPanel => _en
+      ? 'Swipe down from the top edge'
+      : 'Wische vom oberen Rand nach unten';
+  String introTapPlus(String label) => _en
+      ? 'In the panel, tap the + and pick "$label"'
+      : 'Tippe im Panel auf das + und wähle „$label“';
+  String get introTapCog => _en
+      ? 'In the panel, tap the cog at the top'
+      : 'Tippe im Panel oben auf das Zahnrad';
+
   String get feedback => _en ? 'Feedback' : 'Rückmeldung';
   String get feedbackSubtitle =>
       _en ? 'Report a bug, send an idea' : 'Fehler melden, Idee schicken';
