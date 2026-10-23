@@ -36,7 +36,7 @@ const first = '/media/shots/user_main.webp';
 
       <div class="usr-phone">
         <div class="phone-slot" data-slot="users" data-screen={first} data-yaw="16" data-pitch="2" data-roll="3" data-users-slot>
-          <div class="phone-css"><img src={first} alt="" width="450" height="985" loading="lazy" data-users-fallback /></div>
+          <div class="phone-css"><img src={first} alt={t(Astro.props.lang).meta.alt.users} width="450" height="985" loading="lazy" data-users-fallback /></div>
         </div>
       </div>
     </div>

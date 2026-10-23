@@ -9,9 +9,22 @@ const en = {
   otherLangLabel: 'Deutsch',
   otherLangShort: 'DE',
   meta: {
-    title: 'hanneslauncher · a free Android launcher without the noise',
+    title: 'hanneslauncher · minimalist Android launcher without the noise',
     description:
-      'No app grid, no pages to swipe through. A clock, a few apps and the alphabet; everything else is one gesture away. Free, no ads, open source.',
+      'A minimalist Android launcher. No app grid, no pages to swipe through: a clock, a few apps and the alphabet. Free, no ads, open source.',
+    // read by screen readers and search engines only; the heading itself is the dot logo
+    h1: 'minimalist Android launcher',
+    privacy: 'Privacy policy for hanneslauncher and its website: which data the app and the site process, and why.',
+    // the phone pictures show the app itself, so they get real descriptions
+    alt: {
+      hero: 'hanneslauncher home screen with a word clock and a few pinned apps',
+      scrub: 'Sliding a finger along the alphabet bar to find an app',
+      panel: 'Pulling down the panel with calendar, notes and notifications',
+      widget: 'Dragging a self-built widget onto the home screen',
+      themes: 'Switching between colour themes of the launcher',
+      users: 'Home screen of one of several users',
+      download: 'hanneslauncher home screen with the dot matrix clock',
+    },
   },
   skip: 'Skip to content',
   nav: {
@@ -238,9 +251,20 @@ const de: typeof en = {
   otherLangLabel: 'English',
   otherLangShort: 'EN',
   meta: {
-    title: 'hanneslauncher · ein kostenloser Android-Launcher ohne Lärm',
+    title: 'hanneslauncher · minimalistischer Android-Launcher ohne Lärm',
     description:
-      'Kein App-Raster, keine Seiten zum Wischen. Eine Uhr, ein paar Apps und das Alphabet; alles andere ist eine Geste entfernt. Kostenlos, ohne Werbung, Open Source.',
+      'Ein minimalistischer Android-Launcher. Kein App-Raster, keine Seiten zum Wischen: eine Uhr, ein paar Apps und das Alphabet. Kostenlos, ohne Werbung, Open Source.',
+    h1: 'minimalistischer Android-Launcher',
+    privacy: 'Datenschutzerklärung für hanneslauncher und die Website: welche Daten App und Seite verarbeiten, und warum.',
+    alt: {
+      hero: 'Startbildschirm von hanneslauncher mit Wortuhr und ein paar angehefteten Apps',
+      scrub: 'Mit dem Finger über die Alphabet-Leiste eine App finden',
+      panel: 'Panel mit Kalender, Notizen und Benachrichtigungen herunterziehen',
+      widget: 'Ein selbst gebautes Widget auf den Startbildschirm ziehen',
+      themes: 'Zwischen den Farbthemen des Launchers wechseln',
+      users: 'Startbildschirm eines von mehreren Nutzern',
+      download: 'Startbildschirm von hanneslauncher mit der Punktraster-Uhr',
+    },
   },
   skip: 'Zum Inhalt springen',
   nav: {

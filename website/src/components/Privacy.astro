@@ -9,7 +9,7 @@ const s = t(lang);
 const de = lang === 'de';
 const rev = (v: string) => v.split('').reverse().join('');
 ---
-<Base lang={lang} page="privacy" title={de ? 'Datenschutz · hanneslauncher' : 'Privacy · hanneslauncher'}>
+<Base lang={lang} page="privacy" title={de ? 'Datenschutz · hanneslauncher' : 'Privacy · hanneslauncher'} description={s.meta.privacy}>
   <header class="p-top wrap">
     <a href={paths[lang].home} class="p-brand"><Logo size={24} /> hanneslauncher</a>
     <a href={paths[s.otherLang as Lang].privacy} hreflang={s.otherLang} class="p-lang">{s.otherLangLabel}</a>

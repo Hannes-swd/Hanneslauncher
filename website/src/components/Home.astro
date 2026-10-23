@@ -29,7 +29,7 @@ const data = await releasesAtBuild();
 const chapters = (['start', 'note', 'why', 'alphabet', 'panel', 'widgets', 'design', 'clocks', 'users', 'more', 'trailer', 'updates', 'download'] as const)
   .map((id) => ({ id, label: s.nav[id] }));
 ---
-<Base lang={lang}>
+<Base lang={lang} version={data.releases[0]?.version}>
   <link slot="head" rel="preload" href="/models/phone.glb" as="fetch" type="model/gltf-binary" crossorigin />
   <TopBar lang={lang} chapters={chapters} data={data} />
   <LetterBar lang={lang} chapters={chapters} />

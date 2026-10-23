@@ -13,8 +13,9 @@ interface Props {
   title?: string;
   description?: string;
   page?: 'home' | 'privacy';
+  version?: string;
 }
-const { lang, title, description, page = 'home' } = Astro.props;
+const { lang, title, description, page = 'home', version } = Astro.props;
 const s = t(lang);
 const site = Astro.site ?? new URL('https://hanneslauncher.vercel.app');
 const here = new URL(paths[lang][page], site).href;
@@ -31,6 +32,9 @@ const jsonLd = page === 'home' ? {
   description: pageDescription,
   url: here,
   image: og,
+  screenshot: ['/img/hero-phone.webp', '/media/shots/clock_dotmatrix.webp', '/media/shots/user_main.webp']
+    .map((p) => new URL(p, site).href),
+  ...(version && { softwareVersion: version }),
   inLanguage: lang,
   applicationCategory: 'UtilitiesApplication',
   operatingSystem: 'Android',

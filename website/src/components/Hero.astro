@@ -14,6 +14,7 @@ const mb = latest?.apk ? Math.round(latest.apk.size / 1e6) : null;
     <h1 class="hero-word">
       <DotWord class="hero-word-wide" label="hanneslauncher" />
       <DotWord class="hero-word-narrow" split={6} label="hanneslauncher" />
+      <span class="visually-hidden"> · {s.meta.h1}</span>
     </h1>
     <div class="hero-copy">
       <p class="display hero-title" data-hero-in>{s.hero.title}</p>
@@ -34,7 +35,7 @@ const mb = latest?.apk ? Math.round(latest.apk.size / 1e6) : null;
     </div>
     <div class="hero-stage">
       <div class="phone-slot" data-slot="hero" data-screen="/media/shots/clock_custom.webp" data-yaw="-20" data-pitch="3" data-roll="-5">
-        <div class="phone-css phone-render"><img src="/img/hero-phone.webp" alt="" width="600" height="1276" fetchpriority="high" /></div>
+        <div class="phone-css phone-render"><img src="/img/hero-phone.webp" alt={s.meta.alt.hero} width="600" height="1276" fetchpriority="high" /></div>
       </div>
     </div>
   </div>
