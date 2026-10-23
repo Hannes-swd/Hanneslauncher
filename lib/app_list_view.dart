@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import 'app_icon.dart';
 import 'app_launcher.dart';
@@ -13,8 +14,10 @@ import 'app_strings.dart';
 import 'clock_settings_controller.dart';
 import 'clock_widget.dart';
 import 'custom_colors_controller.dart';
+import 'design_controller.dart';
 import 'design_tokens.dart';
 import 'entry_match.dart';
+import 'fluid_motion.dart';
 import 'folder_sheet.dart';
 import 'gesture_home_layer.dart';
 import 'gesture_shortcuts_controller.dart';
@@ -27,6 +30,7 @@ import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
 import 'locale_controller.dart';
 import 'notification_badges_controller.dart';
+import 'panel_visibility.dart';
 import 'pinned_apps_controller.dart';
 import 'pinned_quick_actions.dart';
 import 'secret_apps_controller.dart';
@@ -110,6 +114,10 @@ class AppListView extends StatefulWidget {
   /// Dragging anywhere on the home screen (except the alphabet bar, which
   /// has its own vertical drag) opens/closes the settings panel, instead of
   /// just a thin strip at the very top of the screen.
+  ///
+  /// The same drag going up rather than down opens the search - see
+  /// [_AppListViewState._onHomeDragEnd]. The panel still gets every drag
+  /// either way; an upward one simply has nothing to move there.
   final GestureDragStartCallback? onPanelDragStart;
   final GestureDragUpdateCallback? onPanelDragUpdate;
   final GestureDragEndCallback? onPanelDragEnd;
@@ -124,7 +132,8 @@ class AppListView extends StatefulWidget {
   State<AppListView> createState() => _AppListViewState();
 }
 
-class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
+class _AppListViewState extends State<AppListView>
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   static const double _headerHeight = 36;
 
   // How far left of the alphabet bar the finger needs to be dragged before
@@ -141,12 +150,46 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
   static const double _autoScrollZone = 110;
   static const double _autoScrollMaxStep = 14;
 
+  // Swiping up on the bare home screen opens the search, the way a swipe up
+  // opens the app drawer on nearly every other launcher. How far the finger
+  // has to travel for a slow swipe, and how fast a flick has to be to count
+  // after travelling only a little of that.
+  static const double _swipeUpDistance = 72;
+  static const double _swipeUpFlickVelocity = 600;
+  static const double _swipeUpFlickTravel = 20;
+
+  // Pulled down this far past the top of the search results, the search
+  // closes - the same gesture, reversed, that a swipe up opened it with.
+  static const double _searchPullToClose = 80;
+
   final SplayTreeMap<String, List<LauncherEntry>> _grouped = SplayTreeMap();
   List<String> _letters = [];
 
   bool get _loaded => LauncherEntriesController.instance.isLoaded;
   bool _isDragging = false;
   String? _activeLetter;
+
+  /// Whether [_activeLetter]'s apps were left on screen after the finger
+  /// let go of the bar - see [AppListSettings.keepListOpen]. While this
+  /// holds the rows are tapped like any list rather than released onto.
+  bool _held = false;
+
+  /// How far a swipe up on the home screen has got, 1 being far enough to
+  /// open the search. The clock and the pinned apps rise and fade with it,
+  /// so the swipe is seen to be doing something before it has done it; let
+  /// go short, and they spring back. Unbounded so that spring may settle
+  /// with a little give rather than stopping dead.
+  late final AnimationController _swipeUp = AnimationController.unbounded(
+    vsync: this,
+  );
+
+  // The drag in progress on the home screen: how far it has gone (upwards
+  // negative, like every vertical drag here), whether it started with the
+  // panel shut - only then can it be a swipe up at all - and whether it is
+  // past the point where letting go opens the search.
+  double _homeDragTotal = 0;
+  bool _homeDragFromShut = false;
+  bool _swipeUpArmed = false;
   // Index of the app row currently under the finger while dragged past the
   // alphabet bar, or null when only a letter (not a specific app) is picked.
   int? _targetAppIndex;
@@ -190,7 +233,11 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
   final ScrollController _listScrollController = ScrollController(
     keepScrollOffset: false,
   );
-  Timer? _autoScrollTimer;
+  // Ticks on the display's own frames - see [_onAutoScrollTick]. Made the
+  // first time the edge is reached, so a home screen that never scrolls a
+  // letter never holds one.
+  Ticker? _autoScrollTicker;
+  Duration _autoScrollLastTick = Duration.zero;
   double _autoScrollStep = 0;
   // Last reported drag position, so the highlighted row can be recomputed
   // while the list scrolls under a finger that isn't moving.
@@ -241,6 +288,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     GestureShortcutsController.instance.load();
     GestureDrawingController.instance.load();
     homeResetSignal.addListener(_onHomeReset);
+    PanelVisibility.instance.addListener(_onPanelVisibility);
     _watchInstalledPackages();
     // The home screen is the only place a badge is drawn, so this is where
     // the counting starts - and stops again the moment it isn't visible.
@@ -273,12 +321,14 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     NotificationCounts.instance.setVisible(false);
     AppListSettingsController.instance.removeListener(_onSettingsChanged);
     LauncherEntriesController.instance.removeListener(_onEntriesChanged);
-    _autoScrollTimer?.cancel();
+    _autoScrollTicker?.dispose();
+    _swipeUp.dispose();
     _unlockAttempt?.cancel();
     _listScrollController.dispose();
     _bubblePosition.dispose();
     _strokeTrail.dispose();
     homeResetSignal.removeListener(_onHomeReset);
+    PanelVisibility.instance.removeListener(_onPanelVisibility);
     _packagesSubscription?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
@@ -309,7 +359,27 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     if (state == AppLifecycleState.paused) {
       _lockSecretApps();
       NotificationCounts.instance.setVisible(false);
+      // Coming back from an app lands on the home screen, not on the letter
+      // that happened to be open when it was started.
+      _releaseHeld();
     }
+  }
+
+  /// A panel pulled down over a held list takes the list with it: when the
+  /// panel goes back up, the home screen is what should be under it.
+  void _onPanelVisibility() {
+    if (PanelVisibility.instance.value) _releaseHeld();
+  }
+
+  /// Puts a held letter's apps away again.
+  void _releaseHeld() {
+    if (!_held || !mounted) return;
+    _stopAutoScroll();
+    setState(() {
+      _held = false;
+      _activeLetter = null;
+      _targetAppIndex = null;
+    });
   }
 
   /// Buckets the entries (apps, web apps and folders) by the displayed -
@@ -538,22 +608,39 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     }
     // Kept ticking on its own rather than scrolling per drag update, so
     // holding the finger still at the edge keeps the list moving.
-    _autoScrollTimer ??= Timer.periodic(
-      const Duration(milliseconds: 16),
-      (_) => _tickAutoScroll(),
-    );
+    final ticker = _autoScrollTicker ??= createTicker(_onAutoScrollTick);
+    if (!ticker.isActive) {
+      _autoScrollLastTick = Duration.zero;
+      ticker.start();
+    }
   }
 
   void _stopAutoScroll() {
-    _autoScrollTimer?.cancel();
-    _autoScrollTimer = null;
+    final ticker = _autoScrollTicker;
+    if (ticker != null && ticker.isActive) ticker.stop();
     _autoScrollStep = 0;
   }
 
-  void _tickAutoScroll() {
+  /// One frame of edge scrolling.
+  ///
+  /// It used to be a 16 ms timer, which runs on its own clock rather than
+  /// the screen's: every so often two steps landed in one frame and none in
+  /// the next, and the list juddered exactly while it was being read. On the
+  /// frame clock every frame moves - and by the time that actually passed,
+  /// so a 120 Hz screen scrolls just as fast, in finer steps.
+  void _onAutoScrollTick(Duration elapsed) {
+    final frames =
+        (elapsed - _autoScrollLastTick).inMicroseconds /
+        Duration.microsecondsPerSecond *
+        60;
+    _autoScrollLastTick = elapsed;
+    _tickAutoScroll(_autoScrollStep * frames);
+  }
+
+  void _tickAutoScroll(double step) {
     if (!mounted || !_listScrollController.hasClients) return;
     final position = _listScrollController.position;
-    final target = (position.pixels + _autoScrollStep).clamp(
+    final target = (position.pixels + step).clamp(
       0.0,
       position.maxScrollExtent,
     );
@@ -567,14 +654,99 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     if (index != _targetAppIndex) setState(() => _targetAppIndex = index);
   }
 
-  void _launchTargetedApp() {
+  /// True when the release landed on a row and that row was started.
+  bool _launchTargetedApp() {
     final letter = _activeLetter;
     final index = _targetAppIndex;
-    if (letter == null || index == null) return;
+    if (letter == null || index == null) return false;
     final group = _grouped[letter];
-    if (group == null || index >= group.length) return;
+    if (group == null || index >= group.length) return false;
     _open(group[index]);
+    return true;
   }
+
+  /// Opens the search and puts the keyboard up - from the magnifier at the
+  /// bottom of the bar, or from a swipe up on the home screen.
+  void _openSearch() {
+    setState(() {
+      _searchMode = true;
+      // A held letter is put away: the search spans all of them.
+      _held = false;
+      _activeLetter = null;
+      _targetAppIndex = null;
+    });
+    // The field needs to exist first before it can take focus.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _searchFocusNode.requestFocus();
+    });
+  }
+
+  // The home screen's own drag, on its way to the panel. Everything is handed
+  // on untouched - the panel follows a downward drag exactly as before - and
+  // only an upward one, which the panel has no use for while it is shut, is
+  // read here as well.
+
+  void _onHomeDragStart(DragStartDetails details) {
+    _homeDragTotal = 0;
+    // With the panel part way down, an upward drag is the panel being
+    // pushed back up, not a swipe at the home screen.
+    _homeDragFromShut = !PanelVisibility.instance.value;
+    _swipeUpArmed = false;
+    _swipeUp.stop();
+    widget.onPanelDragStart?.call(details);
+  }
+
+  void _onHomeDragUpdate(DragUpdateDetails details) {
+    widget.onPanelDragUpdate?.call(details);
+    if (!_homeDragFromShut) return;
+    _homeDragTotal += details.delta.dy;
+    final progress = math.max(0.0, -_homeDragTotal) / _swipeUpDistance;
+    _swipeUp.value = progress;
+    // Felt at the point where letting go starts to mean something, and
+    // again if the finger goes back below it - so the swipe can be judged
+    // without looking.
+    final armed = progress >= 1;
+    if (armed != _swipeUpArmed) {
+      _swipeUpArmed = armed;
+      Haptics.fire(armed ? HapticEvent.snap : HapticEvent.selection);
+    }
+  }
+
+  void _onHomeDragEnd(DragEndDetails details) {
+    widget.onPanelDragEnd?.call(details);
+    if (!_homeDragFromShut) return;
+    _homeDragFromShut = false;
+    // Downwards positive, so a flick up is negative.
+    final velocity = details.primaryVelocity ?? 0;
+    final travelled = -_homeDragTotal;
+    // Far enough, or flicked: a quick flick is how this is done on every
+    // other home screen, and it rarely covers the whole distance.
+    // Unless it was flicked back down at the end: that is changing one's
+    // mind, however far up it had been.
+    final open =
+        (travelled >= _swipeUpDistance && velocity < _swipeUpFlickVelocity) ||
+        (velocity < -_swipeUpFlickVelocity && travelled > _swipeUpFlickTravel);
+    if (open) {
+      if (!_swipeUpArmed) Haptics.fire(HapticEvent.snap);
+      // The clock carries on up and out while the search comes in, rather
+      // than dropping back to where it was on its way out. It is put back
+      // once the search closes, out of sight - see [_closeSearch].
+      settle(_swipeUp, 1.6, velocity: -velocity / _swipeUpDistance);
+      _openSearch();
+      return;
+    }
+    // Not far enough: back down, with the speed it was let go at and a
+    // little give, so it lands rather than stops.
+    settle(
+      _swipeUp,
+      0,
+      velocity: -velocity / _swipeUpDistance,
+      damping: 0.7,
+    );
+  }
+
+  // No cancel handler: a drag that has started ends through onEnd even when
+  // Android takes the touch away, and one that never started moved nothing.
 
   /// A shape has been drawn on the home screen and the finger lifted. What
   /// it was - and whether it was a shape at all - is decided in
@@ -596,7 +768,8 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
   /// out of a row it was never on is worse than no animation at all.
   void _open(LauncherEntry entry, {Rect? from}) {
     if (entry.isFolder) {
-      showFolderSheet(context, entry.folder!);
+      // Grown out of the icon too, the same as an app.
+      showFolderSheet(context, entry.folder!, from: from);
     } else if (entry.isBuiltIn) {
       openBuiltIn(context, entry.builtIn!);
     } else {
@@ -625,6 +798,26 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
       return const Center(child: CircularProgressIndicator());
     }
 
+    // Back puts away whatever the app list has open - the search, a held
+    // letter - before it does anything else, the way back closes the top
+    // thing on any other screen. With the panel down over it, the panel is
+    // the top thing, and the launcher root closes that one instead.
+    return PopScope(
+      canPop: !_searchMode && !_held,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop || PanelVisibility.instance.value) return;
+        if (_searchMode) {
+          _closeSearch();
+        } else {
+          _releaseHeld();
+        }
+      },
+      child: _buildHome(context),
+    );
+  }
+
+  Widget _buildHome(BuildContext context) {
+    final homeHidden = _activeLetter != null || _searchMode;
     return Stack(
       children: [
         // Lets dragging down open/close the settings panel from anywhere on
@@ -654,9 +847,9 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
               onLongPress: _activeLetter == null && !_searchMode
                   ? () => showHomeEditSheet(context)
                   : null,
-              onPanelDragStart: widget.onPanelDragStart,
-              onPanelDragUpdate: widget.onPanelDragUpdate,
-              onPanelDragEnd: widget.onPanelDragEnd,
+              onPanelDragStart: _onHomeDragStart,
+              onPanelDragUpdate: _onHomeDragUpdate,
+              onPanelDragEnd: _onHomeDragEnd,
             ),
           ),
         ),
@@ -675,8 +868,14 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
         // Clock on top with the pinned apps centred in the space left below
         // it. Both hidden while browsing the alphabet, and kept as one
         // permanent Stack child so the children never shift position.
-        Offstage(
-          offstage: _activeLetter != null || _searchMode,
+        //
+        // Faded rather than cut: out quickly as a letter comes up, so the
+        // two are never both legible at once, and back in a little slower,
+        // so the home screen settles back rather than blinking on. Ignored
+        // by touch the whole time it is going, so a tap meant for the list
+        // never lands on an icon that is on its way out.
+        _homeLayer(
+          hidden: homeHidden,
           child: LayoutBuilder(
             builder: (context, constraints) {
               // The clock is centered on its own, independently of the
@@ -756,7 +955,9 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
               // Fades in and out over the same 180ms the letters use, so a
               // strong blur never snaps on mid-scrub.
               tween: Tween<double>(
-                end: _isDragging || _searchMode ? _settings.backgroundBlur : 0,
+                end: _isDragging || _searchMode || _held
+                    ? _settings.backgroundBlur
+                    : 0,
               ),
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
@@ -822,6 +1023,42 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     );
   }
 
+  /// The clock and the pinned apps: faded out while the app list is in use,
+  /// and lifted and dimmed along with a swipe up - see [_swipeUp].
+  ///
+  /// The duration is read off the design's motion scalar directly rather
+  /// than through the theme: looked up here, the theme would make this whole
+  /// screen rebuild on every frame of a theme crossfade.
+  Widget _homeLayer({required bool hidden, required Widget child}) {
+    final motion = DesignController.instance.value.motion;
+    return IgnorePointer(
+      ignoring: hidden,
+      child: AnimatedOpacity(
+        opacity: hidden ? 0 : 1,
+        duration: Duration(
+          milliseconds: ((hidden ? 90 : 220) * motion).round(),
+        ),
+        curve: Curves.easeOut,
+        child: AnimatedBuilder(
+          animation: _swipeUp,
+          child: child,
+          builder: (context, child) {
+            final t = _swipeUp.value;
+            return Opacity(
+              // Never all the way out: it is still the home screen until
+              // the search actually opens.
+              opacity: 1 - 0.6 * t.clamp(0.0, 1.0),
+              child: Transform.translate(
+                offset: Offset(0, -56 * t),
+                child: child,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildAlphabetBar() {
     return SizedBox(
       width: _alphabetBarWidth,
@@ -850,25 +1087,28 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
             }
           });
         },
-        onSearchActivate: () {
-          setState(() => _searchMode = true);
-          // The field needs to exist first before it can take focus.
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _searchFocusNode.requestFocus();
-          });
-        },
+        onSearchActivate: _openSearch,
         onDragStateChanged: (dragging) {
+          var hold = false;
           if (dragging) {
             _resetScroll();
           } else {
             _stopAutoScroll();
-            _launchTargetedApp();
+            // Let go on a row: that app, as always. Let go on the bar - or
+            // just tapped a letter - and its apps stay up to be tapped,
+            // unless the settings say otherwise.
+            hold =
+                !_launchTargetedApp() &&
+                _activeLetter != null &&
+                _settings.keepListOpen;
           }
           setState(() {
             _isDragging = dragging;
+            // A new touch on the bar takes over from a held list.
+            _held = hold;
             if (!dragging) {
-              _activeLetter = null;
               _targetAppIndex = null;
+              if (!hold) _activeLetter = null;
             }
           });
         },
@@ -896,17 +1136,19 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
         if (_singleColumn) {
           // One app per full-width row. Longer groups than fit on screen
           // aren't squeezed into extra columns any more - they're scrolled
-          // instead, by dragging towards the top or bottom edge. The list
-          // never sees the drag itself (that happens on the alphabet bar),
-          // hence the fixed physics and the programmatic controller.
+          // instead, by dragging towards the top or bottom edge. While the
+          // finger is on the bar the list never sees the drag itself, hence
+          // the fixed physics and the programmatic controller; once it is
+          // held open it scrolls like any list, from wherever the edge
+          // scrolling left it.
           body = ListView.builder(
             controller: _listScrollController,
-            physics: const NeverScrollableScrollPhysics(),
+            physics: _held ? null : const NeverScrollableScrollPhysics(),
             padding: EdgeInsets.zero,
             itemExtent: _rowHeight,
             itemCount: appsInGroup.length,
             itemBuilder: (context, index) =>
-                _buildAppRow(appsInGroup[index], index),
+                _groupRow(appsInGroup[index], index),
           );
         } else {
           final grid = _gridFor(appsInGroup.length);
@@ -925,7 +1167,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
                             col * grid.rowsPerColumn + row < appsInGroup.length;
                         row++
                       )
-                        _buildAppRow(
+                        _groupRow(
                           appsInGroup[col * grid.rowsPerColumn + row],
                           col * grid.rowsPerColumn + row,
                         ),
@@ -936,7 +1178,7 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
           );
         }
 
-        return Column(
+        final group = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
@@ -954,10 +1196,13 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
                       : Alignment.centerLeft,
                   child: Text(
                     letter,
-                    style: const TextStyle(
+                    // The rows' own color rather than a fixed black, which
+                    // vanished on a dark wallpaper the moment the list was
+                    // set to white for it.
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: _settings.color,
                     ),
                   ),
                 ),
@@ -966,7 +1211,73 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
             Expanded(child: body),
           ],
         );
+
+        return Stack(
+          children: [
+            // A tap beside a held list puts it away. Translucent, and only
+            // a tap: a drag from here still reaches the home screen beneath,
+            // so the panel can be pulled down - and the search swiped up -
+            // straight out of a held list. Always in the tree, so the list
+            // after it keeps its place in the Stack either way.
+            Positioned.fill(
+              child: IgnorePointer(
+                ignoring: !_held,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _releaseHeld,
+                ),
+              ),
+            ),
+            // Each new letter's apps arrive from the bar's side, the way the
+            // finger came, instead of replacing the last letter's in a cut.
+            EntranceMotion(
+              trigger: letter,
+              from: Offset(_leftHanded ? -18 : 18, 0),
+              child: group,
+            ),
+          ],
+        );
       },
+    );
+  }
+
+  /// A row in a letter's group. Released onto while the finger is on the
+  /// bar; tapped like any list once the group is held open.
+  ///
+  /// The detector is there either way, only without callbacks during a
+  /// scrub, so letting go does not hand every row a new parent - which would
+  /// rebuild every icon in the group on the very frame the list is held.
+  Widget _groupRow(LauncherEntry entry, int index) {
+    final held = _held;
+    return Builder(
+      builder: (context) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        // The same highlight a finger sliding out onto the row gets.
+        onTapDown: held
+            ? (_) => setState(() => _targetAppIndex = index)
+            : null,
+        onTapCancel: held
+            ? () => setState(() => _targetAppIndex = null)
+            : null,
+        onTap: held
+            ? () {
+                // Read before the list goes: after that the row has no
+                // rectangle left to grow the app out of.
+                final from = AppLauncher.boundsOf(context);
+                _releaseHeld();
+                _open(entry, from: from);
+              }
+            : null,
+        // Same as a long press anywhere else an app is listed: its own
+        // shortcuts, and its icon.
+        onLongPress: held
+            ? () {
+                setState(() => _targetAppIndex = null);
+                showPinnedQuickActions(context, entry);
+              }
+            : null,
+        child: _buildAppRow(entry, index),
+      ),
     );
   }
 
@@ -1034,6 +1345,19 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     final results = _searchResultsFor(query);
     final extras = _extraHitsFor(query);
 
+    // Rises into place, the way it was swiped up - and the way it closes
+    // again, pulled back down.
+    return EntranceMotion(
+      from: const Offset(0, 28),
+      child: _searchColumn(s, results, extras),
+    );
+  }
+
+  Widget _searchColumn(
+    AppStrings s,
+    List<LauncherEntry> results,
+    List<SearchHit> extras,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1102,61 +1426,112 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
           ),
         ),
         Expanded(
-          child: results.isEmpty && extras.isEmpty
-              ? Center(
-                  child: Text(
-                    s.noSearchResults,
-                    style: const TextStyle(color: Colors.black54),
-                  ),
-                )
-              : ListView.builder(
-                  // The apps first, then whatever else was found. The order
-                  // is by how sure a hit is, which is the same rule the
-                  // search element on the panel goes by: an app matched by
-                  // name is unambiguous, a sum has one right answer but was
-                  // probably not what a launcher search was opened for, and
-                  // the web row is the fallback that always applies.
-                  itemCount: results.length + extras.length,
-                  itemBuilder: (context, index) {
-                    if (index >= results.length) {
-                      final hit = extras[index - results.length];
-                      return _ExtraHitRow(
-                        hit: hit,
-                        color: _settings.color,
-                        fontSize: _settings.fontSize,
-                        height: _settings.rowHeight,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: _onSearchScroll,
+            child: results.isEmpty && extras.isEmpty
+                // A list of one rather than a bare line of text, so pulling
+                // down closes an empty search the same as a full one - and
+                // the drag is not handed to the panel underneath instead.
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 48),
+                        child: Text(
+                          s.noSearchResults,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.black54),
+                        ),
+                      ),
+                    ],
+                  )
+                : ListView.builder(
+                    // Even a list too short to scroll answers a drag, so a
+                    // pull down always closes the search, never pulls the
+                    // panel down over it.
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    // Scrolling through the results is reading them, not
+                    // typing: the keyboard makes room.
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    // The apps first, then whatever else was found. The order
+                    // is by how sure a hit is, which is the same rule the
+                    // search element on the panel goes by: an app matched by
+                    // name is unambiguous, a sum has one right answer but was
+                    // probably not what a launcher search was opened for, and
+                    // the web row is the fallback that always applies.
+                    itemCount: results.length + extras.length,
+                    itemBuilder: (context, index) {
+                      if (index >= results.length) {
+                        final hit = extras[index - results.length];
+                        return _ExtraHitRow(
+                          hit: hit,
+                          color: _settings.color,
+                          fontSize: _settings.fontSize,
+                          height: _settings.rowHeight,
+                          onTap: () {
+                            // The calculation row opens nothing - its answer
+                            // is the whole point - so the search stays put
+                            // for it and closes for everything else.
+                            if (hit.kind == SearchHitKind.calculation) return;
+                            final target = context;
+                            _closeSearch();
+                            hit.onTap(target);
+                          },
+                        );
+                      }
+                      final entry = results[index];
+                      return GestureDetector(
                         onTap: () {
-                          // The calculation row opens nothing - its answer
-                          // is the whole point - so the search stays put
-                          // for it and closes for everything else.
-                          if (hit.kind == SearchHitKind.calculation) return;
-                          final target = context;
+                          // Read before the search closes: once it is gone the
+                          // row is out of the tree and has no rectangle left.
+                          final from = AppLauncher.boundsOf(context);
                           _closeSearch();
-                          hit.onTap(target);
+                          _open(entry, from: from);
                         },
+                        // The way to reach an app's own shortcuts without
+                        // pinning it first: the search is one gesture from the
+                        // home screen, and the rows in the alphabet list only
+                        // take a long press once the list is held open.
+                        onLongPress: () =>
+                            showPinnedQuickActions(context, entry),
+                        child: _buildAppRow(entry, -1),
                       );
-                    }
-                    final entry = results[index];
-                    return GestureDetector(
-                      onTap: () {
-                        // Read before the search closes: once it is gone the
-                        // row is out of the tree and has no rectangle left.
-                        final from = AppLauncher.boundsOf(context);
-                        _closeSearch();
-                        _open(entry, from: from);
-                      },
-                      // The way to reach an app's own shortcuts without
-                      // pinning it first: the search is one gesture from the
-                      // home screen, and the rows in the alphabet list are
-                      // not tap targets at all - they are released onto.
-                      onLongPress: () => showPinnedQuickActions(context, entry),
-                      child: _buildAppRow(entry, -1),
-                    );
-                  },
-                ),
+                    },
+                  ),
+          ),
         ),
       ],
     );
+  }
+
+  // How far the search results have been pulled down past their top in the
+  // drag going on right now.
+  double _searchPull = 0;
+
+  /// Pulling the results down past their top closes the search: the swipe
+  /// that opened it, the other way round.
+  bool _onSearchScroll(ScrollNotification notification) {
+    if (notification is ScrollStartNotification) {
+      _searchPull = 0;
+    } else if (notification is OverscrollNotification &&
+        notification.dragDetails != null &&
+        notification.overscroll < 0 &&
+        notification.metrics.pixels <= notification.metrics.minScrollExtent) {
+      _searchPull -= notification.overscroll;
+      if (_searchPull >= _searchPullToClose && _searchMode) {
+        _searchPull = 0;
+        Haptics.fire(HapticEvent.snap);
+        _closeSearch();
+      }
+    } else if (notification is ScrollUpdateNotification &&
+        (notification.scrollDelta ?? 0) > 0) {
+      // Turned round and scrolling into the results again.
+      _searchPull = 0;
+    }
+    return false;
   }
 
   /// What's typed is tried as the secret folder's password on every keystroke.
@@ -1202,6 +1577,10 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
     // Closing the search closes the folder with it - the next search starts
     // locked again.
     _lockSecretApps();
+    // The clock went up and out with the swipe that opened the search. It is
+    // still out of sight at this moment, so it is put back now, and fades in
+    // where it belongs.
+    _swipeUp.value = 0;
     setState(() {
       _searchMode = false;
       _searchController.clear();
@@ -1218,11 +1597,12 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
   /// already-clean home screen should feel like nothing happened, because
   /// nothing did.
   void _onHomeReset() {
-    final hadSomething = _searchMode || _scrollOffset > 0;
+    final hadSomething = _searchMode || _held || _scrollOffset > 0;
     if (_searchMode) _closeSearch();
     _resetScroll();
     if (!mounted || !hadSomething) return;
     setState(() {
+      _held = false;
       _activeLetter = null;
       _targetAppIndex = null;
     });
@@ -1281,7 +1661,9 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
                         // folder's color) instead of opening it.
                         onLongPress: () =>
                             showPinnedQuickActions(context, entry),
-                        child: _PinnedIcon(entry: entry, badge: badge),
+                        child: PressScale(
+                          child: _PinnedIcon(entry: entry, badge: badge),
+                        ),
                       ),
                     ),
                   ),
@@ -1295,11 +1677,18 @@ class _AppListViewState extends State<AppListView> with WidgetsBindingObserver {
 
   Widget _buildAppRow(LauncherEntry entry, int index) {
     final isTargeted = index == _targetAppIndex;
+    // The row under the finger leans a few pixels towards it, so picking
+    // one is seen in the corner of the eye as well as by the highlight.
+    final lean = isTargeted ? 8.0 : 0.0;
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 100),
+      duration: const Duration(milliseconds: 140),
+      curve: Curves.easeOutCubic,
       height: _rowHeight,
       color: isTargeted ? Colors.black12 : Colors.transparent,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: EdgeInsets.only(
+        left: 12 + (_leftHanded ? 0 : lean),
+        right: 12 + (_leftHanded ? lean : 0),
+      ),
       child: Row(
         // Mirrored for the left-handed layout: icon on the outer edge, name
         // reading towards the bar the finger is on.

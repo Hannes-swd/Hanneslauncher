@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'app_dialogs.dart';
 import 'app_row_settings_screen.dart';
 import 'app_widget_block_settings_screen.dart';
 import 'app_widget_picker_screen.dart';
@@ -12,6 +14,7 @@ import 'data_packages_controller.dart';
 import 'data_sources_controller.dart';
 import 'design_tokens.dart';
 import 'device_stats_controller.dart';
+import 'haptics.dart';
 import 'locale_controller.dart';
 import 'location_controller.dart';
 import 'note_block_settings_screen.dart';
@@ -37,23 +40,29 @@ class PanelView extends StatefulWidget {
     required this.onHandleDragEnd,
     required this.onCloseRequested,
     required this.scrollController,
+    required this.reveal,
   });
 
-  /// Dragging the header closes/opens the panel. Only the header does this,
-  /// so dragging inside the block list scrolls it instead of fighting the
+  /// Dragging the header closes/opens the panel. The block list moves it too,
+  /// but only once it is pushed up past its end - see [scrollController] -
+  /// so an ordinary drag inside it still scrolls instead of fighting the
   /// panel for the same gesture.
   final GestureDragStartCallback onHandleDragStart;
   final GestureDragUpdateCallback onHandleDragUpdate;
   final GestureDragEndCallback onHandleDragEnd;
 
-  /// Pulling the list up while it's already at its end closes the panel,
-  /// which is what the gesture would do anywhere else on the header.
+  /// A tap on the header closes the panel.
   final VoidCallback onCloseRequested;
 
   /// Owned by the launcher root rather than by this state: the panel stays
   /// alive off-screen, so something outside it has to know when it was
   /// closed in order to send the list back to the top for the next open.
+  /// It is also what hands a push past the end of the list on to the panel.
   final ScrollController scrollController;
+
+  /// How far the panel is down, 0 shut to 1 open - the panel's own position,
+  /// finger and spring alike. The cards fan out along it, see [_CardReveal].
+  final Animation<double> reveal;
 
   @override
   State<PanelView> createState() => _PanelViewState();
@@ -154,7 +163,7 @@ class _PanelViewState extends State<PanelView> {
   }
 
   Future<void> _add(AppStrings s) async {
-    final choice = await showDialog<PanelBlockType>(
+    final choice = await showAppDialog<PanelBlockType>(
       context: context,
       builder: (context) {
         return SimpleDialog(
@@ -254,7 +263,7 @@ class _PanelViewState extends State<PanelView> {
       case PanelBlockType.notes:
         // Asked for straight away: the card carries the name, so an unnamed
         // note would be an unlabelled box on the panel.
-        final name = await showDialog<String>(
+        final name = await showAppDialog<String>(
           context: context,
           builder: (context) => TextPromptDialog(
             title: s.blockNotes,
@@ -339,7 +348,7 @@ class _PanelViewState extends State<PanelView> {
     final blocks = PanelBlocksController.instance.value;
     final index = blocks.indexWhere((b) => b.id == block.id);
     if (index < 0) return;
-    final choice = await showModalBottomSheet<String>(
+    final choice = await showAppBottomSheet<String>(
       context: context,
       showDragHandle: true,
       builder: (context) => SafeArea(
@@ -392,7 +401,7 @@ class _PanelViewState extends State<PanelView> {
       case 'delete':
         // Asked first: a code widget takes its files with it, and a note
         // its text - a mis-tap in a menu may not cost that.
-        final confirmed = await showDialog<bool>(
+        final confirmed = await showAppDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: Text(s.deleteBlockQuestion),
@@ -532,59 +541,106 @@ class _PanelViewState extends State<PanelView> {
           );
         }
 
-        return NotificationListener<OverscrollNotification>(
-          onNotification: (notification) {
-            // Pushed further up while the list has nothing left to scroll:
-            // treat it as the close gesture rather than a dead end.
-            if (notification.overscroll > 12) widget.onCloseRequested();
-            return false;
+        // Pushed further up while the list has nothing left to scroll, the
+        // panel itself follows the finger out - the controller passes that
+        // part of the drag on. See panel_scroll.dart.
+        return ReorderableListView.builder(
+          scrollController: widget.scrollController,
+          // A panel with only a card or two has nothing to scroll, and a
+          // list with nothing to scroll ignores drags altogether - so the
+          // panel could not be pushed up from its cards at all. Always
+          // scrollable, the drag arrives and is handed on.
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(
+            context.design.spaceSm,
+            0,
+            context.design.spaceSm,
+            context.design.spaceXl * 0.75,
+          ),
+          // Own handles: the whole card is the handle, but only after a
+          // long press, so ordinary dragging still scrolls the list.
+          buildDefaultDragHandles: false,
+          itemCount: blocks.length,
+          onReorderStart: (_) {
+            _reordered = false;
+            // The card has come off the panel and is in the hand now -
+            // the one moment the long press is felt rather than seen.
+            Haptics.fire(HapticEvent.grab);
+            // A card being carried around must not leave the keyboard up
+            // behind it, and anything the field had focused is one more
+            // thing living in the overlay the drag copy goes into.
+            FocusManager.instance.primaryFocus?.unfocus();
           },
-          child: ReorderableListView.builder(
-            scrollController: widget.scrollController,
-            padding: EdgeInsets.fromLTRB(
-              context.design.spaceSm,
-              0,
-              context.design.spaceSm,
-              context.design.spaceXl * 0.75,
-            ),
-            // Own handles: the whole card is the handle, but only after a
-            // long press, so ordinary dragging still scrolls the list.
-            buildDefaultDragHandles: false,
-            itemCount: blocks.length,
-            onReorderStart: (_) {
-              _reordered = false;
-              // A card being carried around must not leave the keyboard up
-              // behind it, and anything the field had focused is one more
-              // thing living in the overlay the drag copy goes into.
-              FocusManager.instance.primaryFocus?.unfocus();
-            },
-            onReorderItem: (oldIndex, newIndex) {
-              _reordered = true;
-              // onReorderItem already accounts for the item being lifted out
-              // of the list; the controller expects the raw target slot, so
-              // the shift is added back here.
-              PanelBlocksController.instance.reorder(
-                oldIndex,
-                newIndex >= oldIndex ? newIndex + 1 : newIndex,
-              );
-            },
-            onReorderEnd: (index) {
-              // Held and released without moving: the menu for that card.
-              if (_reordered) return;
-              final blocks = PanelBlocksController.instance.value;
-              if (index < blocks.length) _showBlockMenu(blocks[index], s);
-            },
-            itemBuilder: (context, index) {
-              final block = blocks[index];
-              return ReorderableDelayedDragStartListener(
-                key: ValueKey(block.id),
+          onReorderItem: (oldIndex, newIndex) {
+            _reordered = true;
+            // onReorderItem already accounts for the item being lifted out
+            // of the list; the controller expects the raw target slot, so
+            // the shift is added back here.
+            PanelBlocksController.instance.reorder(
+              oldIndex,
+              newIndex >= oldIndex ? newIndex + 1 : newIndex,
+            );
+          },
+          onReorderEnd: (index) {
+            // Held and released without moving: the menu for that card.
+            if (_reordered) return;
+            final blocks = PanelBlocksController.instance.value;
+            if (index < blocks.length) _showBlockMenu(blocks[index], s);
+          },
+          itemBuilder: (context, index) {
+            final block = blocks[index];
+            return ReorderableDelayedDragStartListener(
+              key: ValueKey(block.id),
+              index: index,
+              child: _CardReveal(
+                reveal: widget.reveal,
                 index: index,
                 child: PanelBlockCard(block: block, s: s),
-              );
-            },
-          ),
+              ),
+            );
+          },
         );
       },
+    );
+  }
+}
+
+/// The cards come down with the panel one after another rather than as one
+/// slab: each hangs back a little further than the one above it while the
+/// panel is on its way, and they close up into place as it arrives. On the
+/// way up they gather the same way.
+///
+/// Read straight off the panel's position, so it follows the finger exactly
+/// and costs nothing once the panel is open - at 1 every offset is zero.
+///
+/// Always the same wrapper, motion or none, with the offset set to nothing
+/// when motion is off: putting the card in and out of a wrapper would give
+/// it a new state, and a code widget's page would load again.
+class _CardReveal extends StatelessWidget {
+  const _CardReveal({
+    required this.reveal,
+    required this.index,
+    required this.child,
+  });
+
+  final Animation<double> reveal;
+  final int index;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    // The sixth card and below hang back no further: by then they are under
+    // the fold, and the spread would only be a gap nobody sees.
+    final lag = context.design.motionless
+        ? 0.0
+        : 14.0 * math.min(index + 1, 6);
+    return AnimatedBuilder(
+      animation: reveal,
+      child: child,
+      builder: (context, child) => Transform.translate(
+        offset: Offset(0, -lag * (1 - reveal.value)),
+        child: child,
+      ),
     );
   }
 }

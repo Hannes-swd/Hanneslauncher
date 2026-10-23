@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'app_dialogs.dart';
 import 'app_strings.dart';
 import 'auto_backup_service.dart';
 import 'backup_file_bridge.dart';
@@ -82,7 +83,7 @@ class _SettingsBackupScreenState extends State<SettingsBackupScreen> {
   }
 
   Future<void> _restore(AppStrings s, BackupSnapshot snapshot) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(s.backupRestore),
@@ -133,7 +134,7 @@ class _SettingsBackupScreenState extends State<SettingsBackupScreen> {
   }
 
   Future<void> _import(AppStrings s) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(s.backupImport),

@@ -24,6 +24,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'app_dialogs.dart';
 import 'app_icon.dart';
 import 'app_strings.dart';
 import 'color_swatch_picker.dart';
@@ -354,7 +355,7 @@ class WidgetEditorScreen extends StatelessWidget {
     PanelBlock block,
     AppStrings s,
   ) async {
-    final title = await showDialog<String>(
+    final title = await showAppDialog<String>(
       context: context,
       builder: (context) => TextPromptDialog(
         title: s.widgetTitle,
@@ -374,7 +375,7 @@ class WidgetEditorScreen extends StatelessWidget {
     PanelBlock block,
     AppStrings s,
   ) async {
-    final type = await showDialog<WidgetElementType>(
+    final type = await showAppDialog<WidgetElementType>(
       context: context,
       builder: (context) {
         return SimpleDialog(
@@ -402,7 +403,7 @@ class WidgetEditorScreen extends StatelessWidget {
     var rules = const <IconRule>[];
     var template = '';
     if (type == WidgetElementType.icon) {
-      final useWeatherTemplate = await showDialog<bool>(
+      final useWeatherTemplate = await showAppDialog<bool>(
         context: context,
         builder: (context) {
           return SimpleDialog(

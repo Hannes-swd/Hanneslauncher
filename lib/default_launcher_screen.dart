@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'app_dialogs.dart';
 import 'app_strings.dart';
 import 'default_launcher_controller.dart';
 import 'design_tokens.dart';
@@ -132,7 +133,7 @@ class _DefaultLauncherScreenState extends State<DefaultLauncherScreen>
   /// Asked here first, because Android's own confirmation only says
   /// "uninstall?" - not that every setting goes with it.
   Future<void> _uninstall(BuildContext context, AppStrings s) async {
-    final choice = await showDialog<String>(
+    final choice = await showAppDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(s.uninstallLauncher),
@@ -206,7 +207,7 @@ Future<void> chooseDefaultLauncher(BuildContext context, AppStrings s) async {
 /// exists never happens and nothing points at why. Where to do it later is
 /// part of the text, since this is the only time it asks.
 Future<void> showDefaultLauncherPrompt(BuildContext host) {
-  return showDialog<void>(
+  return showAppDialog<void>(
     context: host,
     builder: (dialogContext) {
       return ValueListenableBuilder<AppLanguage>(

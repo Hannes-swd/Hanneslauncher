@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'app_dialogs.dart';
 import 'app_icon.dart';
 import 'app_strings.dart';
 import 'browser_apps.dart';
@@ -85,7 +86,7 @@ class WebAppsSettingsScreen extends StatelessWidget {
     AppStrings s,
     WebApp webApp,
   ) async {
-    final choice = await showDialog<String>(
+    final choice = await showAppDialog<String>(
       context: context,
       builder: (context) {
         return SimpleDialog(
@@ -159,7 +160,7 @@ class WebAppsSettingsScreen extends StatelessWidget {
 
     // A record rather than the package name on its own: the system default
     // is a package name of null, which a dismissed dialog also returns.
-    final choice = await showDialog<({String? package})>(
+    final choice = await showAppDialog<({String? package})>(
       context: context,
       builder: (context) {
         return SimpleDialog(
@@ -245,7 +246,7 @@ class WebAppsSettingsScreen extends StatelessWidget {
     BuildContext context,
     AppStrings s,
   ) async {
-    final result = await showDialog<({String name, String url})>(
+    final result = await showAppDialog<({String name, String url})>(
       context: context,
       builder: (context) => _NameAndUrlDialog(s: s),
     );
@@ -268,7 +269,7 @@ class WebAppsSettingsScreen extends StatelessWidget {
     required String initialValue,
     required AppStrings s,
   }) {
-    return showDialog<String>(
+    return showAppDialog<String>(
       context: context,
       builder: (context) => TextPromptDialog(
         title: title,

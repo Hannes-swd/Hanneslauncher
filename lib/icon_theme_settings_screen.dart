@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_customize_screen.dart';
+import 'app_dialogs.dart';
 import 'app_icon.dart';
 import 'app_overrides_controller.dart';
 import 'app_strings.dart';
@@ -46,7 +47,7 @@ class _IconThemeSettingsScreenState extends State<IconThemeSettingsScreen> {
   }
 
   Future<void> _clearPickedIcons(AppStrings s) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(s.iconPickedClear),

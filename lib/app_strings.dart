@@ -102,6 +102,16 @@ class AppStrings {
             'swiping over the bar at the edge of the screen.'
       : 'Die Buchstaben bleiben unsichtbar und erscheinen erst, wenn am '
             'Bildschirmrand über die Leiste gewischt wird.';
+  String get keepListOpen =>
+      _en ? 'Keep the list open' : 'Liste offen lassen';
+  String get keepListOpenHint => _en
+      ? 'Letting go on a letter, or tapping one, keeps its apps on screen to '
+            'tap or scroll. A tap beside them, back or home puts them away. '
+            'Sliding out onto an app still starts it straight away.'
+      : 'Loslassen oder Tippen auf einem Buchstaben lässt seine Apps stehen '
+            'zum Antippen oder Scrollen. Tippen daneben, Zurück oder Home '
+            'schließt sie. Rüberziehen auf eine App startet sie weiterhin '
+            'sofort.';
   String backgroundBlur(String value) => _en
       ? 'Blur the wallpaper ($value)'
       : 'Hintergrund weichzeichnen ($value)';

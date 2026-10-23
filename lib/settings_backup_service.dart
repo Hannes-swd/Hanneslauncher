@@ -123,6 +123,7 @@ class SettingsBackupService {
         'layoutMode': appList.layoutMode.name,
         'hand': appList.hand.name,
         'hideAlphabet': appList.hideAlphabet,
+        'keepListOpen': appList.keepListOpen,
         'backgroundBlur': appList.backgroundBlur,
         'searchExtras': appList.searchExtras,
         'searchContacts': appList.searchContacts,
@@ -554,6 +555,7 @@ class SettingsBackupService {
             AppListHand.right,
           ),
           hideAlphabet: appListJson['hideAlphabet'] as bool? ?? false,
+          keepListOpen: appListJson['keepListOpen'] as bool? ?? true,
           backgroundBlur:
               (appListJson['backgroundBlur'] as num?)?.toDouble() ?? 14,
           searchExtras: appListJson['searchExtras'] as bool? ?? true,

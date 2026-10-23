@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
+import 'app_dialogs.dart';
 import 'terminal_commands.dart';
 import 'terminal_output.dart';
 import 'terminal_shell.dart';
@@ -694,7 +695,7 @@ class _TerminalEditorScreenState extends State<TerminalEditorScreen> {
       Navigator.of(context).pop();
       return;
     }
-    final answer = await showDialog<String>(
+    final answer = await showAppDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Save modified buffer?'),

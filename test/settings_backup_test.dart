@@ -63,6 +63,9 @@ void main() {
         layoutMode: AppListLayoutMode.columns,
         hand: AppListHand.left,
         hideAlphabet: true,
+        // Off rather than the default, so a value that silently fell back
+        // on the way through would be caught.
+        keepListOpen: false,
         backgroundBlur: 6,
       ),
     );
@@ -199,6 +202,7 @@ void main() {
     expect(appList.layoutMode, AppListLayoutMode.columns);
     expect(appList.hand, AppListHand.left);
     expect(appList.hideAlphabet, isTrue);
+    expect(appList.keepListOpen, isFalse);
     expect(appList.backgroundBlur, 6);
 
     final iconTheme = IconThemeController.instance.value;

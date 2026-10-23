@@ -178,7 +178,7 @@ class _Rules extends StatelessWidget {
     // Straight into editing it, with the test value already in hand -
     // adding a rule and then finding out separately whether it matches is
     // two steps for something that should be one.
-    final created = await showDialog<IconRule>(
+    final created = await showAppDialog<IconRule>(
       context: context,
       builder: (context) => _RuleDialog(
         rule: const IconRule(iconName: 'sunny'),
@@ -285,7 +285,7 @@ class _RuleRow extends StatelessWidget {
       value == value.roundToDouble() ? '${value.round()}' : '$value';
 
   Future<void> _edit(BuildContext context) async {
-    final updated = await showDialog<IconRule>(
+    final updated = await showAppDialog<IconRule>(
       context: context,
       builder: (context) =>
           _RuleDialog(rule: rule, s: s, testValue: testValue),

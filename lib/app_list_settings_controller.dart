@@ -56,6 +56,7 @@ class AppListSettings {
     this.layoutMode = AppListLayoutMode.singleColumn,
     this.hand = AppListHand.right,
     this.hideAlphabet = false,
+    this.keepListOpen = true,
     this.backgroundBlur = 14,
     this.searchExtras = true,
     this.searchContacts = false,
@@ -74,6 +75,16 @@ class AppListSettings {
   /// letters fade in for the duration of the scrub and back out on release,
   /// so the home screen stays free of them without losing the gesture.
   final bool hideAlphabet;
+
+  /// Whether a letter's apps stay on screen once the finger leaves the bar
+  /// without having picked one of them. They can then be tapped, scrolled
+  /// and held like any list; a tap beside them, back or home puts them away.
+  ///
+  /// Off, letting go on the bar puts the list away at once - the older way,
+  /// where an app is reached only by sliding out onto its row in the same
+  /// motion. That still works with this on: releasing on a row starts it
+  /// either way.
+  final bool keepListOpen;
 
   /// How strongly the wallpaper is blurred while the app list is in use - a
   /// scrub on the alphabet bar, or the search - in pixels of blur radius.
@@ -112,6 +123,7 @@ class AppListSettings {
     AppListLayoutMode? layoutMode,
     AppListHand? hand,
     bool? hideAlphabet,
+    bool? keepListOpen,
     double? backgroundBlur,
     bool? searchExtras,
     bool? searchContacts,
@@ -126,6 +138,7 @@ class AppListSettings {
       layoutMode: layoutMode ?? this.layoutMode,
       hand: hand ?? this.hand,
       hideAlphabet: hideAlphabet ?? this.hideAlphabet,
+      keepListOpen: keepListOpen ?? this.keepListOpen,
       backgroundBlur: backgroundBlur ?? this.backgroundBlur,
       searchExtras: searchExtras ?? this.searchExtras,
       searchContacts: searchContacts ?? this.searchContacts,
@@ -149,6 +162,7 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
   static const _layoutModeKey = 'applist_layout_mode';
   static const _handKey = 'applist_hand';
   static const _hideAlphabetKey = 'applist_hide_alphabet';
+  static const _keepListOpenKey = 'applist_keep_open';
   // Named for the search because that was all it applied to at first; kept
   // under the old key so a value already set survives the rename.
   static const _backgroundBlurKey = 'applist_search_blur';
@@ -169,6 +183,7 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
           AppListLayoutMode.values[prefs.getInt(_layoutModeKey) ?? 0],
       hand: AppListHand.values[prefs.getInt(_handKey) ?? 0],
       hideAlphabet: prefs.getBool(_hideAlphabetKey) ?? false,
+      keepListOpen: prefs.getBool(_keepListOpenKey) ?? true,
       backgroundBlur: prefs.getDouble(_backgroundBlurKey) ?? 14,
       searchExtras: prefs.getBool(_searchExtrasKey) ?? true,
       searchContacts: prefs.getBool(_searchContactsKey) ?? false,
@@ -187,6 +202,7 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
     await prefs.setInt(_layoutModeKey, newValue.layoutMode.index);
     await prefs.setInt(_handKey, newValue.hand.index);
     await prefs.setBool(_hideAlphabetKey, newValue.hideAlphabet);
+    await prefs.setBool(_keepListOpenKey, newValue.keepListOpen);
     await prefs.setDouble(_backgroundBlurKey, newValue.backgroundBlur);
     await prefs.setBool(_searchExtrasKey, newValue.searchExtras);
     await prefs.setBool(_searchContactsKey, newValue.searchContacts);

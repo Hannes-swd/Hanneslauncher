@@ -103,15 +103,40 @@ class AppIcon extends StatelessWidget {
         width: size,
         height: size,
         fit: BoxFit.cover,
+        frameBuilder: _fadeIn,
         errorBuilder: (context, error, stackTrace) => onError ?? _rawIcon(),
       ),
+    );
+  }
+
+  /// An icon decoded for the first time fades in over a moment instead of
+  /// popping into an empty square a frame or two late - which, running down
+  /// the alphabet, was a row of icons blinking on one by one. Anything
+  /// already decoded is drawn at once, with no fade at all.
+  static Widget _fadeIn(
+    BuildContext context,
+    Widget child,
+    int? frame,
+    bool wasSynchronouslyLoaded,
+  ) {
+    if (wasSynchronouslyLoaded) return child;
+    return AnimatedOpacity(
+      opacity: frame == null ? 0 : 1,
+      duration: const Duration(milliseconds: 140),
+      curve: Curves.easeOut,
+      child: child,
     );
   }
 
   Widget _rawIcon() {
     final systemIcon = entry.systemIcon;
     if (systemIcon != null) {
-      return Image.memory(systemIcon, width: size, height: size);
+      return Image.memory(
+        systemIcon,
+        width: size,
+        height: size,
+        frameBuilder: _fadeIn,
+      );
     }
     // A saved shortcut's own picture, the one Android drew for it. Below the
     // picked picture above and above the fallback glyph below, which is the

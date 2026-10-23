@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'app_dialogs.dart';
 import 'app_icon.dart';
 import 'app_strings.dart';
 import 'color_swatch_picker.dart';
@@ -74,7 +75,7 @@ class FoldersSettingsScreen extends StatelessWidget {
   }
 
   Future<void> _addFolder(BuildContext context, AppStrings s) async {
-    final name = await showDialog<String>(
+    final name = await showAppDialog<String>(
       context: context,
       builder: (context) => TextPromptDialog(
         title: s.addFolder,
@@ -223,7 +224,7 @@ class FolderEditScreen extends StatelessWidget {
     LauncherFolder folder,
     AppStrings s,
   ) async {
-    final name = await showDialog<String>(
+    final name = await showAppDialog<String>(
       context: context,
       builder: (context) => TextPromptDialog(
         title: s.changeName,

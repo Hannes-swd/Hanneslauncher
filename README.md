@@ -63,8 +63,16 @@ apps, with no app drawer in between. Keep dragging to the left to pick a row
 directly, launching an app in a single motion without ever lifting the
 finger.
 
+Letting go on a letter instead - or simply tapping one - leaves its apps on
+screen, to be tapped, scrolled or long-pressed like any list. A tap beside
+them, back or home puts them away again. That can be switched off under
+*Settings → Appearance → App list*, which brings back the older way, where
+the list is gone the moment the finger leaves the bar.
+
 At the very bottom of the bar sits the **magnifier**: releasing there opens
-a full text search across all apps, web apps and folders.
+a full text search across all apps, web apps and folders. **Swiping up**
+anywhere on the home screen opens the same search, keyboard and all; pulling
+the results back down past their top, or back, closes it again.
 
 **Long-pressing an entry** - a pinned icon, a row in the search results, an
 icon inside a folder - opens its quick actions: swap the icon, or change the
@@ -255,7 +263,10 @@ it failed to match.
 ## The panel
 
 Pull down from the top edge of the screen. It follows the finger one to one
-and is dismissed by the reverse of the gesture that opened it.
+and is dismissed by the reverse of the gesture that opened it - on its
+header, or anywhere on its cards once they are scrolled to the end. Let go,
+and it carries on at the speed the finger had, settling on a spring rather
+than restarting on a fixed curve.
 
 <p align="center">
   <img src="Images/panel.png" width="30%" alt="Panel with an app row and a weather widget">

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'app_dialogs.dart';
 import 'app_icon.dart';
 import 'app_launcher.dart';
 import 'app_pairs_controller.dart';
@@ -58,7 +59,7 @@ class _AppPairsSettingsScreenState extends State<AppPairsSettingsScreen> {
     final second = await _pickApp(s, s.appPairPickSecond, exclude: first);
     if (second == null || !mounted) return;
 
-    final name = await showDialog<String>(
+    final name = await showAppDialog<String>(
       context: context,
       builder: (context) => TextPromptDialog(
         title: s.appPairName,
@@ -89,7 +90,7 @@ class _AppPairsSettingsScreenState extends State<AppPairsSettingsScreen> {
     ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     final search = TextEditingController();
-    return showDialog<LauncherEntry>(
+    return showAppDialog<LauncherEntry>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
@@ -212,7 +213,7 @@ class _AppPairsSettingsScreenState extends State<AppPairsSettingsScreen> {
                             AppPairsController.instance.remove(pair.id),
                       ),
                       onTap: () async {
-                        final name = await showDialog<String>(
+                        final name = await showAppDialog<String>(
                           context: context,
                           builder: (context) => TextPromptDialog(
                             title: s.appPairName,

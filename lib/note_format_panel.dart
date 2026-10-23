@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'app_dialogs.dart';
 import 'app_strings.dart';
 import 'color_swatch_picker.dart';
 import 'design_tokens.dart';
@@ -398,7 +399,7 @@ class _ColorButton extends StatelessWidget {
       message: tooltip,
       child: InkResponse(
         onTap: () async {
-          final picked = await showDialog<int>(
+          final picked = await showAppDialog<int>(
             context: context,
             builder: (context) => AlertDialog(
               title: Text(tooltip),

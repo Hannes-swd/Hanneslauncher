@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_customize_screen.dart';
+import 'app_dialogs.dart';
 import 'app_list_settings_screen.dart';
 import 'app_pairs_settings_screen.dart';
 import 'app_strings.dart';
@@ -305,6 +306,8 @@ List<SettingsEntry> buildSettingsCatalog({
         'wischen', 'swipe', 'unschärfe', 'unschaerfe', 'blur', 'weichzeichnen',
         'suche', 'suchen', 'search', 'hintergrund', 'background',
         'wallpaper', 'hintergrundbild', 'abheben', 'lesbar', 'readable',
+        'offen', 'offen lassen', 'keep open', 'loslassen', 'release',
+        'tippen', 'tap', 'stehen lassen',
       ],
       onTap: (context) => _push(context, const AppListSettingsScreen()),
     ),
@@ -598,7 +601,7 @@ Future<void> _pickLanguage(BuildContext context, AppStrings s) async {
   };
   // Wrapped so "cancelled" can be told apart from "picked the system
   // entry", which pops a null of its own.
-  final choice = await showDialog<List<AppLanguage?>>(
+  final choice = await showAppDialog<List<AppLanguage?>>(
     context: context,
     builder: (context) => SimpleDialog(
       title: Text(s.languageLabel),

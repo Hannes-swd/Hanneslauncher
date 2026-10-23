@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:installed_apps/app_info.dart';
 import 'package:installed_apps/installed_apps.dart';
 
+import 'app_dialogs.dart';
 import 'app_icon.dart';
 import 'app_overrides_controller.dart';
 import 'app_strings.dart';
@@ -70,7 +71,7 @@ class _AppCustomizeScreenState extends State<AppCustomizeScreen>
         AppOverridesController.instance.forPackage(entry.app!.packageName) !=
             null;
 
-    final choice = await showDialog<String>(
+    final choice = await showAppDialog<String>(
       context: context,
       builder: (context) {
         return SimpleDialog(
@@ -198,7 +199,7 @@ class _AppCustomizeScreenState extends State<AppCustomizeScreen>
     required String initialValue,
     required AppStrings s,
   }) {
-    return showDialog<String>(
+    return showAppDialog<String>(
       context: context,
       builder: (context) => TextPromptDialog(
         title: title,

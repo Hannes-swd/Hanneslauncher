@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'app_dialogs.dart';
 import 'app_icon.dart';
 import 'app_strings.dart';
 import 'color_swatch_picker.dart';
@@ -277,7 +278,7 @@ Future<void> _addShortcut(BuildContext context, AppStrings s) async {
   final action = await pickGestureAction(context, s);
   if (action == null || !context.mounted) return;
 
-  final name = await showDialog<String>(
+  final name = await showAppDialog<String>(
     context: context,
     builder: (context) => TextPromptDialog(
       title: s.gestureNameTitle,
@@ -300,7 +301,7 @@ Future<void> _editShortcut(
   GestureShortcut shortcut,
   AppStrings s,
 ) async {
-  final choice = await showModalBottomSheet<_ShortcutEdit>(
+  final choice = await showAppBottomSheet<_ShortcutEdit>(
     context: context,
     builder: (context) => SafeArea(
       child: Column(
@@ -336,7 +337,7 @@ Future<void> _editShortcut(
   final controller = GestureShortcutsController.instance;
   switch (choice) {
     case _ShortcutEdit.rename:
-      final name = await showDialog<String>(
+      final name = await showAppDialog<String>(
         context: context,
         builder: (context) => TextPromptDialog(
           title: s.gestureNameTitle,
@@ -407,7 +408,7 @@ Future<bool> _confirmShapeIsDistinct(
     skipId: skipId,
   );
   if (closest == null || closest.score < similarShapeScore) return true;
-  final confirmed = await showDialog<bool>(
+  final confirmed = await showAppDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
       title: Text(s.gestureTooSimilarTitle),
@@ -496,7 +497,7 @@ class _ActionKindScreen extends StatelessWidget {
 
       case GestureActionKind.address:
         if (!context.mounted) return;
-        final url = await showDialog<String>(
+        final url = await showAppDialog<String>(
           context: context,
           builder: (context) => TextPromptDialog(
             title: s.gestureActionKindAddress,
@@ -511,7 +512,7 @@ class _ActionKindScreen extends StatelessWidget {
 
       case GestureActionKind.timer:
         if (!context.mounted) return;
-        final seconds = await showDialog<int>(
+        final seconds = await showAppDialog<int>(
           context: context,
           builder: (context) =>
               _TimerLengthDialog(initialSeconds: previous?.seconds ?? 300),

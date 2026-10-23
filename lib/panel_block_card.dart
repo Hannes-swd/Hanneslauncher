@@ -8,6 +8,7 @@ import 'builtin_entries.dart';
 import 'calendar_block_view.dart';
 import 'code_block_view.dart';
 import 'design_tokens.dart';
+import 'fluid_motion.dart';
 import 'folder_sheet.dart';
 import 'launcher_entries_controller.dart';
 import 'launcher_entry.dart';
@@ -93,22 +94,38 @@ class PanelBlockCard extends StatelessWidget {
       ),
       child: Padding(
         padding: style.insets,
-        child: switch (block.type) {
-          PanelBlockType.appRow => _AppRow(block: block, s: s),
-          PanelBlockType.widget => WidgetCardView(block: block, s: s),
-          PanelBlockType.calendar => CalendarBlockView(block: block, s: s),
-          PanelBlockType.notes => NotesBlockView(block: block, s: s),
-          PanelBlockType.notifications => NotificationsBlockView(
-            block: block,
-            s: s,
-          ),
-          // Handled above, before the card is built.
-          PanelBlockType.code ||
-          PanelBlockType.appWidget => const SizedBox.shrink(),
-        },
+        child: _fillsInLate(block.type)
+            ? AnimatedSize(
+                duration: design.motionNormal,
+                curve: design.motionCurve,
+                alignment: Alignment.topCenter,
+                child: _content(),
+              )
+            : _content(),
       ),
     );
   }
+
+  /// The two blocks whose contents arrive after the panel is already down:
+  /// both are only fetched when it opens. Without this a calendar finding
+  /// three events shoved every card below it down in one frame, right while
+  /// the panel was being looked at; now it grows into its new height.
+  ///
+  /// Not the others - a widget card is the height it was built at, and an
+  /// animated size there would only be a clip around it for nothing.
+  static bool _fillsInLate(PanelBlockType type) =>
+      type == PanelBlockType.calendar || type == PanelBlockType.notifications;
+
+  Widget _content() => switch (block.type) {
+    PanelBlockType.appRow => _AppRow(block: block, s: s),
+    PanelBlockType.widget => WidgetCardView(block: block, s: s),
+    PanelBlockType.calendar => CalendarBlockView(block: block, s: s),
+    PanelBlockType.notes => NotesBlockView(block: block, s: s),
+    PanelBlockType.notifications => NotificationsBlockView(block: block, s: s),
+    // Handled above, before the card is built.
+    PanelBlockType.code ||
+    PanelBlockType.appWidget => const SizedBox.shrink(),
+  };
 }
 
 class _AppRow extends StatelessWidget {
@@ -174,7 +191,11 @@ class _AppRowItem extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: () {
         if (entry.isFolder) {
-          showFolderSheet(context, entry.folder!);
+          showFolderSheet(
+            context,
+            entry.folder!,
+            from: AppLauncher.boundsOf(context),
+          );
         } else if (entry.isBuiltIn) {
           openBuiltIn(context, entry.builtIn!);
         } else {
@@ -186,7 +207,7 @@ class _AppRowItem extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AppIcon(entry: entry, size: 44),
+          PressScale(child: AppIcon(entry: entry, size: 44)),
           if (showLabel) ...[
             const SizedBox(height: 6),
             Text(

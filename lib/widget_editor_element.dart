@@ -442,7 +442,7 @@ class ElementEditorScreen extends StatelessWidget {
     WidgetElement element,
     AppStrings s,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(

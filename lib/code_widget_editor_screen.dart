@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import 'app_dialogs.dart';
 import 'app_strings.dart';
 import 'code_widget_bridge.dart';
 import 'code_widget_store.dart';
@@ -18,7 +19,7 @@ import 'text_prompt_dialog.dart';
 /// block and writes the template into its folder. Shared by the panel's "+"
 /// and the settings list, so both land in exactly the same place.
 Future<PanelBlock?> createCodeWidget(BuildContext context, AppStrings s) async {
-  final template = await showDialog<CodeWidgetTemplate>(
+  final template = await showAppDialog<CodeWidgetTemplate>(
     context: context,
     builder: (context) => SimpleDialog(
       title: Text(s.codeTemplate),
@@ -271,7 +272,7 @@ class _CodeWidgetEditorScreenState extends State<CodeWidgetEditorScreen>
   }
 
   void _showHelp(AppStrings s) {
-    showDialog<void>(
+    showAppDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(s.codeHelp),
@@ -366,7 +367,7 @@ class _CodeField extends StatelessWidget {
 /// rather than the `{{...}}` spelling - the caller wraps it in whatever the
 /// pane it belongs to needs.
 Future<String?> showValuePicker(BuildContext context, AppStrings s) {
-  return showModalBottomSheet<String>(
+  return showAppBottomSheet<String>(
     context: context,
     isScrollControlled: true,
     builder: (context) => _ValuePickerSheet(s: s),
@@ -607,7 +608,7 @@ class _FilesTabState extends State<_FilesTab> {
       case 'edit':
         await _editTextFile(asset.name, s);
       case 'rename':
-        final name = await showDialog<String>(
+        final name = await showAppDialog<String>(
           context: context,
           builder: (context) => TextPromptDialog(
             title: s.codeRenameFile,
@@ -634,7 +635,7 @@ class _FilesTabState extends State<_FilesTab> {
   }
 
   Future<void> _newTextFile(AppStrings s) async {
-    final name = await showDialog<String>(
+    final name = await showAppDialog<String>(
       context: context,
       builder: (context) => TextPromptDialog(
         title: s.codeNewTextFile,
@@ -761,7 +762,7 @@ class _CardTab extends StatelessWidget {
           title: Text(s.codeWidgetName),
           subtitle: Text(block.title.isEmpty ? s.blockCode : block.title),
           onTap: () async {
-            final name = await showDialog<String>(
+            final name = await showAppDialog<String>(
               context: context,
               builder: (context) => TextPromptDialog(
                 title: s.codeWidgetName,

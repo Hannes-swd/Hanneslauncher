@@ -14,6 +14,7 @@ import 'default_launcher_screen.dart';
 import 'design_controller.dart';
 import 'design_tokens.dart';
 import 'device_stats_controller.dart';
+import 'fluid_motion.dart';
 import 'haptics.dart';
 import 'home_reset.dart';
 import 'icon_pack_controller.dart';
@@ -24,6 +25,7 @@ import 'locale_controller.dart';
 import 'lock_wallpaper_controller.dart';
 import 'notifications_controller.dart';
 import 'offline_mode_controller.dart';
+import 'panel_scroll.dart';
 import 'panel_view.dart';
 import 'panel_visibility.dart';
 import 'system_gesture_exclusion.dart';
@@ -112,11 +114,23 @@ class LauncherRoot extends StatefulWidget {
 
 class _LauncherRootState extends State<LauncherRoot>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
-  // 0 = panel fully hidden (above the screen), 1 = panel fully open.
+  // 0 = panel fully hidden (above the screen), 1 = panel fully open. No
+  // duration: everything that moves it on its own does so on a spring, see
+  // fluid_motion.dart.
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 220),
     value: 0,
+  );
+
+  // The home screen gives way while the panel comes down over it: it fades
+  // and sinks back a little, so the panel reads as arriving in front of it
+  // rather than as a picture being slid over another one. Both straight off
+  // the panel's own position, so they follow the finger exactly.
+  late final Animation<double> _homeOpacity = _controller.drive(
+    Tween<double>(begin: 1, end: 0),
+  );
+  late final Animation<double> _homeScale = _controller.drive(
+    Tween<double>(begin: 1, end: 0.94),
   );
 
   // Whether the home screen is the thing on screen right now: the launcher
@@ -134,8 +148,20 @@ class _LauncherRootState extends State<LauncherRoot>
 
   // The panel's block list. Lives up here because the panel is never torn
   // down - it is only moved off-screen - so its scroll offset survives every
-  // close and has to be reset from outside.
-  final ScrollController _panelScroll = ScrollController();
+  // close and has to be reset from outside. It also moves the panel itself
+  // once it is pushed up past its end - see panel_scroll.dart.
+  late final PanelScrollController _panelScroll = PanelScrollController(
+    onPanelDrag: (delta) {
+      _dismissKeyboard();
+      _controller.value += delta / _screenHeight;
+    },
+    onPanelRelease: (velocity) => _release(velocity: velocity),
+    isPanelPulled: () => _controller.value < 1,
+  );
+
+  // The height the panel travels, from the last layout. Kept for the drags
+  // that do not come with one of their own - the block list's.
+  double _screenHeight = 1;
 
   @override
   void initState() {
@@ -318,14 +344,14 @@ class _LauncherRootState extends State<LauncherRoot>
 
   void _closePanel() {
     if (_controller.value == 0) return;
-    _controller.animateTo(0, curve: Curves.easeOut);
+    settle(_controller, 0);
   }
 
   /// Opens the panel without a drag - what a shape drawn on the home screen
   /// and wired to the settings does.
   void _openPanel() {
     if (_controller.value == 1) return;
-    _controller.animateTo(1, curve: Curves.easeOut);
+    settle(_controller, 1);
     _refreshPanelData();
   }
 
@@ -392,14 +418,76 @@ class _LauncherRootState extends State<LauncherRoot>
       // closer.
       open = _controller.value > 0.5;
     }
+    _settleTo(open, velocity: velocity);
+  }
+
+  /// The block list let go of the panel it had been pushing up - see
+  /// panel_scroll.dart. The finger had the whole screen to travel there, so
+  /// the plain rules apply: a flick goes its way, anything else to the
+  /// nearer side.
+  void _release({required double velocity}) {
+    final open = velocity.abs() > 300 ? velocity > 0 : _controller.value > 0.5;
+    _settleTo(open, velocity: velocity);
+  }
+
+  /// Lets the panel go to open or shut, carrying on at [velocity] - pixels
+  /// per second, downwards positive, straight from the finger.
+  void _settleTo(bool open, {double velocity = 0}) {
     // The panel leaves the finger here and finishes on its own, which is
     // exactly the moment the decision was made - waiting for the animation
     // to land would put the sensation a quarter of a second after the cause.
     // Only when it actually changes sides: releasing a panel back where it
     // started decided nothing.
     if (open != (_controller.value >= 0.5)) Haptics.fire(HapticEvent.snap);
-    _controller.animateTo(open ? 1 : 0, curve: Curves.easeOut);
+    // The spring is handed the speed the finger let go with, so a flick
+    // keeps going at the speed it was flicked with rather than starting over
+    // from standstill. Divided by the height because the controller counts
+    // one whole screen as 1.
+    //
+    // Already there - every swipe up on a shut panel ends like this - there
+    // is nothing to settle, and a spring started anyway would spend its
+    // quarter second pressing against the end it is already resting on.
+    final target = open ? 1.0 : 0.0;
+    if (_controller.value == target) {
+      _controller.stop();
+    } else {
+      settle(_controller, target, velocity: velocity / _screenHeight);
+    }
     if (open) _refreshPanelData();
+  }
+
+  /// The home screen under the panel, giving way as the panel comes down -
+  /// see [_homeOpacity]. With motion switched off it stays as it is: the
+  /// panel still has to move, but nothing else needs to.
+  ///
+  /// The boundary keeps the clock and the icons from being painted again for
+  /// every frame of the drag; the fade and the scale are applied to the
+  /// finished picture instead. Fully covered, the fade at zero also stops it
+  /// being painted at all.
+  ///
+  /// The same wrappers either way, held still by a constant animation rather
+  /// than left out: taking them out would hand the home screen a new parent
+  /// and with it a new state, so moving the motion slider to zero would
+  /// throw away an open search.
+  ///
+  /// Its own Builder, so only this wrapper listens to the theme: a theme
+  /// change crossfades over a few hundred milliseconds, and read up in the
+  /// root's build it would rebuild the whole home screen on every frame of
+  /// it. The home screen handed in is the same widget each time and is
+  /// skipped.
+  Widget _recedingHome(Widget home) {
+    return Builder(
+      builder: (context) {
+        final still = context.design.motionless;
+        return FadeTransition(
+          opacity: still ? kAlwaysCompleteAnimation : _homeOpacity,
+          child: ScaleTransition(
+            scale: still ? kAlwaysCompleteAnimation : _homeScale,
+            child: RepaintBoundary(child: home),
+          ),
+        );
+      },
+    );
   }
 
   /// The panel's two bottom corners, from the design's largest radius - it is
@@ -458,6 +546,7 @@ class _LauncherRootState extends State<LauncherRoot>
     return LayoutBuilder(
       builder: (context, constraints) {
         final height = constraints.maxHeight;
+        _screenHeight = height;
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => _updateGestureExclusion(height),
         );
@@ -487,31 +576,33 @@ class _LauncherRootState extends State<LauncherRoot>
                 builder: (context, visible, child) =>
                     WallpaperView(animate: visible),
               ),
-              Scaffold(
-                backgroundColor: Colors.transparent,
-                body: Column(
-                  children: [
-                    GestureDetector(
-                      behavior: HitTestBehavior.translucent,
-                      onVerticalDragStart: _onDragStart,
-                      onVerticalDragUpdate: (details) =>
-                          _onDragUpdate(details, height),
-                      onVerticalDragEnd: _onDragEnd,
-                      child: const SizedBox(
-                        height: _dragStripHeight,
-                        width: double.infinity,
-                      ),
-                    ),
-                    Expanded(
-                      child: AppListView(
-                        onPanelDragStart: _onDragStart,
-                        onPanelDragUpdate: (details) =>
+              _recedingHome(
+                Scaffold(
+                  backgroundColor: Colors.transparent,
+                  body: Column(
+                    children: [
+                      GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onVerticalDragStart: _onDragStart,
+                        onVerticalDragUpdate: (details) =>
                             _onDragUpdate(details, height),
-                        onPanelDragEnd: _onDragEnd,
-                        onOpenPanel: _openPanel,
+                        onVerticalDragEnd: _onDragEnd,
+                        child: const SizedBox(
+                          height: _dragStripHeight,
+                          width: double.infinity,
+                        ),
                       ),
-                    ),
-                  ],
+                      Expanded(
+                        child: AppListView(
+                          onPanelDragStart: _onDragStart,
+                          onPanelDragUpdate: (details) =>
+                              _onDragUpdate(details, height),
+                          onPanelDragEnd: _onDragEnd,
+                          onOpenPanel: _openPanel,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               AnimatedBuilder(
@@ -554,6 +645,7 @@ class _LauncherRootState extends State<LauncherRoot>
                                 onHandleDragEnd: _onDragEnd,
                                 onCloseRequested: _closePanel,
                                 scrollController: _panelScroll,
+                                reveal: _controller,
                               ),
                             ),
                           ),
@@ -571,7 +663,15 @@ class _LauncherRootState extends State<LauncherRoot>
                     // settings page was still up threw. A message from the
                     // panel's own cards now shows in the panel, which is
                     // where it was read anyway.
-                    return ScaffoldMessenger(child: panel);
+                    //
+                    // Its own layer as well: the panel is moved every frame
+                    // of a drag, and without a boundary every card on it -
+                    // the clock text, the calendar, the notes - was painted
+                    // again for each of those frames just to land a few
+                    // pixels further down.
+                    return RepaintBoundary(
+                      child: ScaffoldMessenger(child: panel),
+                    );
                   },
                 ),
               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'app_dialogs.dart';
 import 'app_icon.dart';
 import 'app_strings.dart';
 import 'clock_settings_screen.dart';
@@ -32,7 +33,7 @@ Future<void> showHomeEditSheet(BuildContext context) async {
   // frame later.
   Haptics.fire(HapticEvent.grab);
   IntroTutorialController.instance.noteHomeEditOpened();
-  await showModalBottomSheet<void>(
+  await showAppBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
@@ -176,7 +177,7 @@ class _HomeEditSheet extends StatelessWidget {
   }
 
   Future<void> _pickApps(BuildContext context, AppStrings s) {
-    return showModalBottomSheet<void>(
+    return showAppBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,

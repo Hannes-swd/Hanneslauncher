@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import 'app_dialogs.dart';
 import 'app_icon.dart';
 import 'app_launcher.dart';
 import 'app_strings.dart';
 import 'builtin_entries.dart';
 import 'design_tokens.dart';
+import 'fluid_motion.dart';
 import 'folders_controller.dart';
 import 'folders_settings_screen.dart' show FolderContentsPicker;
 import 'launcher_entries_controller.dart';
@@ -16,10 +18,21 @@ import 'text_prompt_dialog.dart';
 /// Opens a folder's window: its apps, web apps and subfolders. Tapping an
 /// app launches it and closes the window; tapping a subfolder opens that one
 /// on top, so nested folders can be browsed and backed out of one by one.
-Future<void> showFolderSheet(BuildContext context, LauncherFolder folder) {
-  return showDialog<void>(
+///
+/// [from] is the icon that was tapped, in the same physical pixels an app
+/// launch takes (see `AppLauncher.boundsOf`). The window grows out of it and
+/// shrinks back into it, the way an app opened from the same spot grows out
+/// of its icon - so a folder reads as being opened rather than as a dialog
+/// that happened to come up. Without one it rises from the middle.
+Future<void> showFolderSheet(
+  BuildContext context,
+  LauncherFolder folder, {
+  Rect? from,
+}) {
+  return showAppDialog<void>(
     context: context,
     barrierColor: context.design.scrim,
+    from: from,
     builder: (context) => _FolderSheet(folderId: folder.id),
   );
 }
@@ -114,9 +127,14 @@ class _FolderSheet extends StatelessWidget {
                               ),
                           itemCount: items.length,
                           itemBuilder: (context, index) {
-                            return _FolderItem(
-                              entry: items[index],
-                              labelColor: onColor,
+                            // The contents fill in one after another as the
+                            // window grows out of the icon.
+                            return RouteStagger(
+                              index: index,
+                              child: _FolderItem(
+                                entry: items[index],
+                                labelColor: onColor,
+                              ),
                             );
                           },
                         ),
@@ -139,7 +157,7 @@ Future<void> _addToFolder(
   LauncherFolder folder,
   AppStrings s,
 ) async {
-  final choice = await showDialog<String>(
+  final choice = await showAppDialog<String>(
     context: context,
     builder: (context) {
       return SimpleDialog(
@@ -178,7 +196,7 @@ Future<void> _addToFolder(
     return;
   }
 
-  final name = await showDialog<String>(
+  final name = await showAppDialog<String>(
     context: context,
     builder: (context) => TextPromptDialog(
       title: s.newSubfolder,
@@ -213,7 +231,11 @@ class _FolderItem extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: () {
         if (entry.isFolder) {
-          showFolderSheet(context, entry.folder!);
+          showFolderSheet(
+            context,
+            entry.folder!,
+            from: AppLauncher.boundsOf(context),
+          );
         } else {
           final messenger = ScaffoldMessenger.of(context);
           // Both read before the pop, for the same reason: this widget is
@@ -235,7 +257,7 @@ class _FolderItem extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AppIcon(entry: entry, size: 48),
+          PressScale(child: AppIcon(entry: entry, size: 48)),
           const SizedBox(height: 6),
           Text(
             entry.name,

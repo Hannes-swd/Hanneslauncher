@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_list_settings_controller.dart' show appListColorPalette;
+import 'app_dialogs.dart';
 import 'app_strings.dart';
 import 'custom_colors_controller.dart';
 import 'design_tokens.dart';
@@ -180,7 +181,7 @@ Future<Color?> showColorPickerDialog(
   String? title,
   bool allowAlpha = true,
 }) {
-  return showDialog<Color>(
+  return showAppDialog<Color>(
     context: context,
     builder: (context) => _ColorPickerDialog(
       s: s,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'app_dialogs.dart';
 import 'app_icon.dart';
 import 'app_strings.dart';
 import 'design_tokens.dart';
@@ -25,7 +26,7 @@ Future<void> openSecretFolder(BuildContext context) async {
     return;
   }
 
-  final result = await showDialog<_PasswordResult>(
+  final result = await showAppDialog<_PasswordResult>(
     context: context,
     builder: (context) => _PasswordDialog(
       s: s,
@@ -56,7 +57,7 @@ Future<void> openSecretFolder(BuildContext context) async {
 /// made right here rather than being offered later, because "later" is after
 /// the password has been forgotten.
 Future<void> _firstRun(BuildContext context, AppStrings s) async {
-  final chosen = await showDialog<_PasswordResult>(
+  final chosen = await showAppDialog<_PasswordResult>(
     context: context,
     builder: (context) => _PasswordDialog(
       s: s,
@@ -86,7 +87,7 @@ Future<void> _firstRun(BuildContext context, AppStrings s) async {
 /// Cancelling along the way is safe - the old password and the old code both
 /// keep working, so a half-finished recovery cannot lock the folder.
 Future<void> _recover(BuildContext context, AppStrings s) async {
-  final code = await showDialog<String>(
+  final code = await showAppDialog<String>(
     context: context,
     builder: (context) => _RecoveryCodeEntryDialog(s: s),
   );
@@ -101,7 +102,7 @@ Future<void> _recover(BuildContext context, AppStrings s) async {
     return;
   }
 
-  final chosen = await showDialog<_PasswordResult>(
+  final chosen = await showAppDialog<_PasswordResult>(
     context: context,
     builder: (context) => _PasswordDialog(
       s: s,
@@ -134,7 +135,7 @@ Future<void> _showNewRecoveryCode(
 ) async {
   final code = await SecretAppsController.instance.newRecoveryCode(unlock);
   if (code == null || !context.mounted) return;
-  await showDialog<void>(
+  await showAppDialog<void>(
     context: context,
     // Not dismissible by tapping beside it: this is the one moment the code
     // can be read.
@@ -201,7 +202,7 @@ class _SecretFolderScreenState extends State<_SecretFolderScreen>
   }
 
   Future<void> _openOptions(LauncherEntry entry, AppStrings s) async {
-    final choice = await showDialog<String>(
+    final choice = await showAppDialog<String>(
       context: context,
       builder: (context) => SimpleDialog(
         title: Text(entry.name),
@@ -235,7 +236,7 @@ class _SecretFolderScreenState extends State<_SecretFolderScreen>
     ];
 
     final search = TextEditingController();
-    final key = await showDialog<String>(
+    final key = await showAppDialog<String>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
@@ -289,7 +290,7 @@ class _SecretFolderScreenState extends State<_SecretFolderScreen>
   }
 
   Future<void> _changePassword(AppStrings s) async {
-    final chosen = await showDialog<_PasswordResult>(
+    final chosen = await showAppDialog<_PasswordResult>(
       context: context,
       builder: (context) => _PasswordDialog(
         s: s,
@@ -307,7 +308,7 @@ class _SecretFolderScreenState extends State<_SecretFolderScreen>
   }
 
   Future<void> _replaceRecoveryCode(AppStrings s) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(s.newRecoveryCode),

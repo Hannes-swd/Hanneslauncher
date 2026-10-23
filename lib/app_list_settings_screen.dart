@@ -64,6 +64,23 @@ class AppListSettingsScreen extends StatelessWidget {
                       );
                     },
                   ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(s.keepListOpen),
+                    subtitle: Text(
+                      s.keepListOpenHint,
+                      style: TextStyle(
+                        fontSize: context.design.typeCaption,
+                        color: context.design.textSecondary,
+                      ),
+                    ),
+                    value: settings.keepListOpen,
+                    onChanged: (value) {
+                      AppListSettingsController.instance.update(
+                        settings.copyWith(keepListOpen: value),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 24),
                   _SectionLabel(s.searchSection),
                   Text(

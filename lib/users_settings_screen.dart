@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'app_dialogs.dart';
 import 'app_strings.dart';
 import 'design_tokens.dart';
 import 'haptics.dart';
@@ -212,7 +213,7 @@ class _UsersSettingsScreenState extends State<UsersSettingsScreen> {
   }
 
   Future<void> _add(BuildContext context, AppStrings s) async {
-    final result = await showDialog<_UserEdit>(
+    final result = await showAppDialog<_UserEdit>(
       context: context,
       builder: (context) => _UserEditDialog(title: s.addUser, s: s),
     );
@@ -244,7 +245,7 @@ class _UsersSettingsScreenState extends State<UsersSettingsScreen> {
     AppStrings s,
     LauncherUser user,
   ) async {
-    final result = await showDialog<_UserEdit>(
+    final result = await showAppDialog<_UserEdit>(
       context: context,
       builder: (context) => _UserEditDialog(
         title: s.editUser,
@@ -275,7 +276,7 @@ class _UsersSettingsScreenState extends State<UsersSettingsScreen> {
     LauncherUser user,
   ) async {
     // Asked first: a user takes its wallpaper, widgets and notes with it.
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(s.deleteUserQuestion(userDisplayName(user, s))),

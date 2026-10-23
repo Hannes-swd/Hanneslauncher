@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_dialogs.dart';
+import 'app_launcher.dart';
 import 'app_overrides_controller.dart';
 import 'app_shortcuts.dart';
 import 'app_strings.dart';
@@ -29,8 +31,11 @@ Future<void> showPinnedQuickActions(
   // press was long enough arrives a frame later.
   Haptics.fire(HapticEvent.grab);
 
-  final action = await showDialog<_QuickAction>(
+  final action = await showAppDialog<_QuickAction>(
     context: context,
+    // Out of whatever was held - every caller hands in the context of the
+    // icon or the row itself - so the menu is seen to belong to it.
+    from: AppLauncher.boundsOf(context),
     builder: (context) => _QuickActionsDialog(entry: entry, s: s),
   );
   if (action == null || !context.mounted) return;
@@ -289,7 +294,7 @@ Future<void> _pickFolderColor(
   LauncherFolder folder,
   AppStrings s,
 ) {
-  return showDialog<void>(
+  return showAppDialog<void>(
     context: context,
     builder: (context) {
       return AlertDialog(
