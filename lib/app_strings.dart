@@ -723,6 +723,11 @@ class AppStrings {
       ? 'No apps pinned yet. Add up to six.'
       : 'Noch keine Apps angeheftet. Bis zu sechs möglich.';
   String get removeFromHome => _en ? 'Unpin' : 'Lösen';
+  String get homeEditAdd => _en ? 'Add' : 'Neu';
+  String get homeEditWebApp => _en ? 'Web app' : 'Web-App';
+  String get homeEditReorderHint => _en
+      ? 'Tap an app to change it, hold it to move it.'
+      : 'Tippen zum Ändern, gedrückt halten zum Verschieben.';
   String get homeEditClock => _en ? 'Clock' : 'Uhr';
   String get homeEditWallpaper => _en ? 'Wallpaper' : 'Hintergrund';
   String get homeEditMore => _en
