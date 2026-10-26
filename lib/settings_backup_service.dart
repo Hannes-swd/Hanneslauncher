@@ -555,7 +555,7 @@ class SettingsBackupService {
             AppListHand.right,
           ),
           hideAlphabet: appListJson['hideAlphabet'] as bool? ?? false,
-          keepListOpen: appListJson['keepListOpen'] as bool? ?? true,
+          keepListOpen: appListJson['keepListOpen'] as bool? ?? false,
           backgroundBlur:
               (appListJson['backgroundBlur'] as num?)?.toDouble() ?? 14,
           searchExtras: appListJson['searchExtras'] as bool? ?? true,
