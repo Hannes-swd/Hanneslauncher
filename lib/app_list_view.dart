@@ -456,6 +456,9 @@ class _AppListViewState extends State<AppListView>
   /// letter, the targeted app row within it, and - in single-column mode -
   /// keeps the edge auto-scroll in sync.
   void _handleScrub(String barLetter, double localDy, double draggedOut) {
+    // A letter on the bar is the alphabet list again, so an open search gives
+    // way to it - the bar stays on screen under the search for this.
+    if (_searchMode) _closeSearch();
     // Below the threshold: scrubbing up/down on the bar picks the letter.
     // Past it, the letter locks to whatever it was when the finger crossed
     // over, and dy instead picks an app row within that group (using the
@@ -1507,29 +1510,44 @@ class _AppListViewState extends State<AppListView>
     );
   }
 
-  // How far the search results have been pulled down past their top in the
-  // drag going on right now.
+  // How far the search results have been pulled down past their top, and
+  // pushed up past their bottom, in the drag going on right now.
   double _searchPull = 0;
+  double _searchPush = 0;
 
   /// Pulling the results down past their top closes the search: the swipe
-  /// that opened it, the other way round.
+  /// that opened it, the other way round. Pushing them up past their bottom
+  /// closes it too, so a search that was reached by sliding down the bar can
+  /// be left the same way the home screen is left by a swipe up.
   bool _onSearchScroll(ScrollNotification notification) {
     if (notification is ScrollStartNotification) {
       _searchPull = 0;
+      _searchPush = 0;
     } else if (notification is OverscrollNotification &&
-        notification.dragDetails != null &&
-        notification.overscroll < 0 &&
-        notification.metrics.pixels <= notification.metrics.minScrollExtent) {
-      _searchPull -= notification.overscroll;
-      if (_searchPull >= _searchPullToClose && _searchMode) {
-        _searchPull = 0;
-        Haptics.fire(HapticEvent.snap);
-        _closeSearch();
+        notification.dragDetails != null) {
+      final metrics = notification.metrics;
+      if (notification.overscroll < 0 &&
+          metrics.pixels <= metrics.minScrollExtent) {
+        _searchPull -= notification.overscroll;
+        if (_searchPull >= _searchPullToClose && _searchMode) {
+          _searchPull = 0;
+          Haptics.fire(HapticEvent.snap);
+          _closeSearch();
+        }
+      } else if (notification.overscroll > 0 &&
+          metrics.pixels >= metrics.maxScrollExtent) {
+        _searchPush += notification.overscroll;
+        if (_searchPush >= _searchPullToClose && _searchMode) {
+          _searchPush = 0;
+          Haptics.fire(HapticEvent.snap);
+          _closeSearch();
+        }
       }
-    } else if (notification is ScrollUpdateNotification &&
-        (notification.scrollDelta ?? 0) > 0) {
+    } else if (notification is ScrollUpdateNotification) {
+      final delta = notification.scrollDelta ?? 0;
       // Turned round and scrolling into the results again.
-      _searchPull = 0;
+      if (delta > 0) _searchPull = 0;
+      if (delta < 0) _searchPush = 0;
     }
     return false;
   }
