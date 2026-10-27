@@ -44,6 +44,15 @@ const jsonLd = page === 'home' ? {
   codeRepositoryURL: REPO_URL,
   author: { '@type': 'Person', name: 'Hannes' },
 } : null;
+// the name Google shows for the site; *.vercel.app is a shared platform domain,
+// so without this the results can fall back to "Vercel"
+const websiteLd = page === 'home' ? {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'hanneslauncher',
+  url: here,
+  inLanguage: lang,
+} : null;
 ---
 <!doctype html>
 <html lang={lang} class="no-js">
@@ -56,8 +65,10 @@ const jsonLd = page === 'home' ? {
     <link rel="alternate" hreflang="en" href={alt('en')} />
     <link rel="alternate" hreflang="de" href={alt('de')} />
     <link rel="alternate" hreflang="x-default" href={alt('en')} />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!-- PNG and ICO first: Google Search ignores SVG favicons -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.png" type="image/png" sizes="192x192" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/favicon.png" />
     <meta name="theme-color" content="#f4f3f0" />
     <meta property="og:type" content="website" />
@@ -77,6 +88,7 @@ const jsonLd = page === 'home' ? {
     <meta name="twitter:image" content={og} />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+    {websiteLd && <script type="application/ld+json" set:html={JSON.stringify(websiteLd)} />}
     <script is:inline define:vars={{ redirect: lang === 'en' && page === 'home', themes: THEMES, designKey: DESIGN_KEY }}>
       var d = document.documentElement;
       d.classList.replace('no-js', 'js');
