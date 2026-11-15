@@ -161,6 +161,7 @@ const Map<String, KeyFate> settingsKeyRegistry = {
   'applist_font_size': KeyFate.backedUp,
   'applist_hand': KeyFate.backedUp,
   'applist_hide_alphabet': KeyFate.backedUp,
+  'applist_highlight': KeyFate.backedUp,
   'applist_keep_open': KeyFate.backedUp,
   'applist_layout_mode': KeyFate.backedUp,
   'applist_row_height': KeyFate.backedUp,

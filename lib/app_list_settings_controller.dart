@@ -46,6 +46,13 @@ enum AppListLayoutMode { singleColumn, columns }
 /// [left] the left-handed one: alphabet on the left, apps to the right of it.
 enum AppListHand { right, left }
 
+/// How the app row under the finger is marked in a letter's list.
+///
+/// [box] fills the whole row evenly - the original look. [fade] starts at
+/// full strength behind the icon and thins out towards the bar, so the mark
+/// trails off instead of ending in a hard edge across the screen.
+enum AppListHighlight { box, fade }
+
 /// The range the alphabet-height slider covers. Below half, the letters get
 /// too small and too close together to hit.
 const double minAlphabetHeight = 0.5;
@@ -64,6 +71,7 @@ class AppListSettings {
     this.sortMode = AppListSortMode.alphabetical,
     this.layoutMode = AppListLayoutMode.singleColumn,
     this.hand = AppListHand.right,
+    this.highlight = AppListHighlight.box,
     this.hideAlphabet = false,
     this.alphabetHeight = 1,
     this.keepListOpen = false,
@@ -80,6 +88,7 @@ class AppListSettings {
   final AppListSortMode sortMode;
   final AppListLayoutMode layoutMode;
   final AppListHand hand;
+  final AppListHighlight highlight;
 
   /// Keeps the alphabet bar invisible until a finger is actually on it: the
   /// letters fade in for the duration of the scrub and back out on release,
@@ -139,6 +148,7 @@ class AppListSettings {
     AppListSortMode? sortMode,
     AppListLayoutMode? layoutMode,
     AppListHand? hand,
+    AppListHighlight? highlight,
     bool? hideAlphabet,
     double? alphabetHeight,
     bool? keepListOpen,
@@ -155,6 +165,7 @@ class AppListSettings {
       sortMode: sortMode ?? this.sortMode,
       layoutMode: layoutMode ?? this.layoutMode,
       hand: hand ?? this.hand,
+      highlight: highlight ?? this.highlight,
       hideAlphabet: hideAlphabet ?? this.hideAlphabet,
       alphabetHeight: alphabetHeight ?? this.alphabetHeight,
       keepListOpen: keepListOpen ?? this.keepListOpen,
@@ -180,6 +191,7 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
   static const _sortModeKey = 'applist_sort_mode';
   static const _layoutModeKey = 'applist_layout_mode';
   static const _handKey = 'applist_hand';
+  static const _highlightKey = 'applist_highlight';
   static const _hideAlphabetKey = 'applist_hide_alphabet';
   static const _alphabetHeightKey = 'applist_alphabet_height';
   static const _keepListOpenKey = 'applist_keep_open';
@@ -202,6 +214,12 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
       layoutMode:
           AppListLayoutMode.values[prefs.getInt(_layoutModeKey) ?? 0],
       hand: AppListHand.values[prefs.getInt(_handKey) ?? 0],
+      highlight: AppListHighlight.values[
+        (prefs.getInt(_highlightKey) ?? 0).clamp(
+          0,
+          AppListHighlight.values.length - 1,
+        )
+      ],
       hideAlphabet: prefs.getBool(_hideAlphabetKey) ?? false,
       alphabetHeight: clampAlphabetHeight(
         prefs.getDouble(_alphabetHeightKey) ?? 1,
@@ -224,6 +242,7 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
     await prefs.setInt(_sortModeKey, newValue.sortMode.index);
     await prefs.setInt(_layoutModeKey, newValue.layoutMode.index);
     await prefs.setInt(_handKey, newValue.hand.index);
+    await prefs.setInt(_highlightKey, newValue.highlight.index);
     await prefs.setBool(_hideAlphabetKey, newValue.hideAlphabet);
     await prefs.setDouble(_alphabetHeightKey, newValue.alphabetHeight);
     await prefs.setBool(_keepListOpenKey, newValue.keepListOpen);

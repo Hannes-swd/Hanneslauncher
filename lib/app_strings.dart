@@ -102,6 +102,16 @@ class AppStrings {
             'swiping over the bar at the edge of the screen.'
       : 'Die Buchstaben bleiben unsichtbar und erscheinen erst, wenn am '
             'Bildschirmrand über die Leiste gewischt wird.';
+  String get appHighlight => _en ? 'Selected app' : 'Markierte App';
+  String get appHighlightBox => _en ? 'Box' : 'Rechteck';
+  String get appHighlightFade => _en ? 'Fade' : 'Verlauf';
+  String get appHighlightHint => _en
+      ? 'How the app under your finger is marked in the alphabet list. Fade '
+            'starts full behind the icon and turns transparent towards the '
+            'alphabet.'
+      : 'Wie die App unter dem Finger in der Alphabet-Liste markiert wird. '
+            'Verlauf ist hinter dem Icon voll und wird zum Alphabet hin '
+            'durchsichtig.';
   String alphabetHeight(int percent) => _en
       ? 'Alphabet height ($percent %)'
       : 'Höhe des Alphabets ($percent %)';

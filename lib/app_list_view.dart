@@ -1694,6 +1694,31 @@ class _AppListViewState extends State<AppListView>
     );
   }
 
+  static const Color _highlightColor = Colors.black12;
+
+  /// The mark behind the row under the finger, in the style picked under
+  /// the app list settings. Always a decoration, marked or not, so the
+  /// row's AnimatedContainer fades between them instead of cutting.
+  BoxDecoration _rowHighlight(bool isTargeted) {
+    if (_settings.highlight == AppListHighlight.box) {
+      return BoxDecoration(
+        color: isTargeted ? _highlightColor : Colors.transparent,
+      );
+    }
+    if (!isTargeted) return const BoxDecoration();
+    // Full behind the icon, which sits on the outer edge, thinning out
+    // towards the bar - so mirrored once the bar is on the left. The first
+    // stretch stays solid so the icon is not already half faded out.
+    return BoxDecoration(
+      gradient: LinearGradient(
+        begin: _leftHanded ? Alignment.centerRight : Alignment.centerLeft,
+        end: _leftHanded ? Alignment.centerLeft : Alignment.centerRight,
+        colors: [_highlightColor, _highlightColor.withAlpha(0)],
+        stops: const [0.15, 1],
+      ),
+    );
+  }
+
   Widget _buildAppRow(LauncherEntry entry, int index) {
     final isTargeted = index == _targetAppIndex;
     // The row under the finger leans a few pixels towards it, so picking
@@ -1703,7 +1728,7 @@ class _AppListViewState extends State<AppListView>
       duration: const Duration(milliseconds: 140),
       curve: Curves.easeOutCubic,
       height: _rowHeight,
-      color: isTargeted ? Colors.black12 : Colors.transparent,
+      decoration: _rowHighlight(isTargeted),
       padding: EdgeInsets.only(
         left: 12 + (_leftHanded ? 0 : lean),
         right: 12 + (_leftHanded ? lean : 0),

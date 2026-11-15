@@ -123,6 +123,7 @@ class SettingsBackupService {
         'sortMode': appList.sortMode.name,
         'layoutMode': appList.layoutMode.name,
         'hand': appList.hand.name,
+        'highlight': appList.highlight.name,
         'hideAlphabet': appList.hideAlphabet,
         'alphabetHeight': appList.alphabetHeight,
         'keepListOpen': appList.keepListOpen,
@@ -570,6 +571,11 @@ class SettingsBackupService {
             AppListHand.values,
             appListJson['hand'],
             AppListHand.right,
+          ),
+          highlight: _enumOr(
+            AppListHighlight.values,
+            appListJson['highlight'],
+            AppListHighlight.box,
           ),
           hideAlphabet: appListJson['hideAlphabet'] as bool? ?? false,
           alphabetHeight: clampAlphabetHeight(

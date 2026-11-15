@@ -87,6 +87,17 @@ class AppListSettingsScreen extends StatelessWidget {
                       color: context.design.textSecondary,
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  _SectionLabel(s.appHighlight),
+                  _HighlightPicker(settings: settings, s: s),
+                  const SizedBox(height: 6),
+                  Text(
+                    s.appHighlightHint,
+                    style: TextStyle(
+                      fontSize: context.design.typeCaption,
+                      color: context.design.textSecondary,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
@@ -330,6 +341,36 @@ class _HandPicker extends StatelessWidget {
             onSelected: (_) {
               AppListSettingsController.instance.update(
                 settings.copyWith(hand: entry.key),
+              );
+            },
+          ),
+      ],
+    );
+  }
+}
+
+class _HighlightPicker extends StatelessWidget {
+  const _HighlightPicker({required this.settings, required this.s});
+
+  final AppListSettings settings;
+  final AppStrings s;
+
+  @override
+  Widget build(BuildContext context) {
+    final options = {
+      AppListHighlight.box: s.appHighlightBox,
+      AppListHighlight.fade: s.appHighlightFade,
+    };
+    return Wrap(
+      spacing: 8,
+      children: [
+        for (final entry in options.entries)
+          ChoiceChip(
+            label: Text(entry.value),
+            selected: settings.highlight == entry.key,
+            onSelected: (_) {
+              AppListSettingsController.instance.update(
+                settings.copyWith(highlight: entry.key),
               );
             },
           ),
