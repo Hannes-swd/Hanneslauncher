@@ -595,7 +595,13 @@ class _PanelViewState extends State<PanelView> {
               child: _CardReveal(
                 reveal: widget.reveal,
                 index: index,
-                child: PanelBlockCard(block: block, s: s),
+                // Each card its own layer: the reveal moves every card on
+                // every frame of the pull-down, and without this the whole
+                // panel - text, calendar, notes - was painted again for each
+                // of them just to land a few pixels lower.
+                child: RepaintBoundary(
+                  child: PanelBlockCard(block: block, s: s),
+                ),
               ),
             );
           },

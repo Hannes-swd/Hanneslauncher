@@ -155,6 +155,7 @@ const Map<String, KeyFate> settingsKeyRegistry = {
   'app_language': KeyFate.backedUp,
   'app_overrides': KeyFate.backedUp,
   'app_pairs': KeyFate.backedUp,
+  'applist_alphabet_height': KeyFate.backedUp,
   'applist_color_index': KeyFate.backedUp,
   'applist_font_family': KeyFate.backedUp,
   'applist_font_size': KeyFate.backedUp,

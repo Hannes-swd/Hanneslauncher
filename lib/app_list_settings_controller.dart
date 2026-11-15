@@ -46,6 +46,15 @@ enum AppListLayoutMode { singleColumn, columns }
 /// [left] the left-handed one: alphabet on the left, apps to the right of it.
 enum AppListHand { right, left }
 
+/// The range the alphabet-height slider covers. Below half, the letters get
+/// too small and too close together to hit.
+const double minAlphabetHeight = 0.5;
+const double maxAlphabetHeight = 1;
+
+/// Keeps a stored or restored value inside what the slider can show.
+double clampAlphabetHeight(double value) =>
+    value.clamp(minAlphabetHeight, maxAlphabetHeight).toDouble();
+
 class AppListSettings {
   const AppListSettings({
     this.colorIndex = 0,
@@ -56,6 +65,7 @@ class AppListSettings {
     this.layoutMode = AppListLayoutMode.singleColumn,
     this.hand = AppListHand.right,
     this.hideAlphabet = false,
+    this.alphabetHeight = 1,
     this.keepListOpen = false,
     this.backgroundBlur = 14,
     this.searchExtras = true,
@@ -75,6 +85,13 @@ class AppListSettings {
   /// letters fade in for the duration of the scrub and back out on release,
   /// so the home screen stays free of them without losing the gesture.
   final bool hideAlphabet;
+
+  /// How much of the screen's height the letters spread over, counted from
+  /// the bottom: 1 is all of it, 0.75 the lower three quarters. Held in one
+  /// hand, the top of the bar is the far end of the thumb's reach - packing
+  /// the alphabet lower down puts every letter where the thumb already is.
+  /// The bar still answers above the letters, as the first one.
+  final double alphabetHeight;
 
   /// Whether a letter's apps stay on screen once the finger leaves the bar
   /// without having picked one of them. They can then be tapped, scrolled
@@ -123,6 +140,7 @@ class AppListSettings {
     AppListLayoutMode? layoutMode,
     AppListHand? hand,
     bool? hideAlphabet,
+    double? alphabetHeight,
     bool? keepListOpen,
     double? backgroundBlur,
     bool? searchExtras,
@@ -138,6 +156,7 @@ class AppListSettings {
       layoutMode: layoutMode ?? this.layoutMode,
       hand: hand ?? this.hand,
       hideAlphabet: hideAlphabet ?? this.hideAlphabet,
+      alphabetHeight: alphabetHeight ?? this.alphabetHeight,
       keepListOpen: keepListOpen ?? this.keepListOpen,
       backgroundBlur: backgroundBlur ?? this.backgroundBlur,
       searchExtras: searchExtras ?? this.searchExtras,
@@ -162,6 +181,7 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
   static const _layoutModeKey = 'applist_layout_mode';
   static const _handKey = 'applist_hand';
   static const _hideAlphabetKey = 'applist_hide_alphabet';
+  static const _alphabetHeightKey = 'applist_alphabet_height';
   static const _keepListOpenKey = 'applist_keep_open';
   // Named for the search because that was all it applied to at first; kept
   // under the old key so a value already set survives the rename.
@@ -183,6 +203,9 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
           AppListLayoutMode.values[prefs.getInt(_layoutModeKey) ?? 0],
       hand: AppListHand.values[prefs.getInt(_handKey) ?? 0],
       hideAlphabet: prefs.getBool(_hideAlphabetKey) ?? false,
+      alphabetHeight: clampAlphabetHeight(
+        prefs.getDouble(_alphabetHeightKey) ?? 1,
+      ),
       keepListOpen: prefs.getBool(_keepListOpenKey) ?? false,
       backgroundBlur: prefs.getDouble(_backgroundBlurKey) ?? 14,
       searchExtras: prefs.getBool(_searchExtrasKey) ?? true,
@@ -202,6 +225,7 @@ class AppListSettingsController extends ValueNotifier<AppListSettings> {
     await prefs.setInt(_layoutModeKey, newValue.layoutMode.index);
     await prefs.setInt(_handKey, newValue.hand.index);
     await prefs.setBool(_hideAlphabetKey, newValue.hideAlphabet);
+    await prefs.setDouble(_alphabetHeightKey, newValue.alphabetHeight);
     await prefs.setBool(_keepListOpenKey, newValue.keepListOpen);
     await prefs.setDouble(_backgroundBlurKey, newValue.backgroundBlur);
     await prefs.setBool(_searchExtrasKey, newValue.searchExtras);

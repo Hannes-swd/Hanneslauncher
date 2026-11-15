@@ -102,6 +102,16 @@ class AppStrings {
             'swiping over the bar at the edge of the screen.'
       : 'Die Buchstaben bleiben unsichtbar und erscheinen erst, wenn am '
             'Bildschirmrand über die Leiste gewischt wird.';
+  String alphabetHeight(int percent) => _en
+      ? 'Alphabet height ($percent %)'
+      : 'Höhe des Alphabets ($percent %)';
+  String get alphabetHeightHint => _en
+      ? 'Packs the letters into the lower part of the screen, so the thumb '
+            'reaches all of them without stretching to the top. 100 % uses '
+            'the full height.'
+      : 'Rückt die Buchstaben in den unteren Teil des Bildschirms, damit der '
+            'Daumen alle erreicht, ohne bis ganz nach oben zu müssen. 100 % '
+            'nutzt die volle Höhe.';
   String get keepListOpen =>
       _en ? 'Keep the list open' : 'Liste offen lassen';
   String get keepListOpenHint => _en

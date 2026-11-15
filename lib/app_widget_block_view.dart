@@ -35,7 +35,15 @@ class _AppWidgetBlockViewState extends State<AppWidgetBlockView> {
   void initState() {
     super.initState();
     PanelVisibility.instance.addListener(_onPanelVisibility);
+    PanelVisibility.instance.warm.addListener(_onWarm);
     _check();
+  }
+
+  // The widget's view is only created once the panel is warm (see
+  // panel_visibility.dart), which can now happen with the panel still shut -
+  // so nothing else would rebuild this card at that moment.
+  void _onWarm() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -47,6 +55,7 @@ class _AppWidgetBlockViewState extends State<AppWidgetBlockView> {
   @override
   void dispose() {
     PanelVisibility.instance.removeListener(_onPanelVisibility);
+    PanelVisibility.instance.warm.removeListener(_onWarm);
     super.dispose();
   }
 

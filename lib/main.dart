@@ -196,6 +196,17 @@ class _LauncherRootState extends State<LauncherRoot>
     AppLauncher.onHomePressed = _onHomePressed;
     IntroTutorialController.instance.step.addListener(_onTutorialStep);
     _startUp();
+    // The panel's web pages and Android widgets are built a moment after
+    // start rather than in the first frames of the first pull-down, where
+    // creating them made that one opening stutter. Two seconds is past the
+    // start-up work and still before most first pull-downs; one that comes
+    // sooner warms the panel itself. See panel_visibility.dart.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(
+        const Duration(seconds: 2),
+        PanelVisibility.instance.warmUp,
+      );
+    });
   }
 
   /// The walk-through comes first on a first start, on the home screen, and the
@@ -257,7 +268,14 @@ class _LauncherRootState extends State<LauncherRoot>
     // and on return the home screen is simply there. Only `paused` (fully
     // covered) counts - `inactive` is also what a pulled-down notification
     // shade or a passing system dialog looks like.
-    if (state == AppLifecycleState.paused) _controller.value = 0;
+    if (state == AppLifecycleState.paused) {
+      _controller.value = 0;
+      // Once a day, the moment an app has been opened over the launcher or
+      // the screen has gone off: still awake, with nobody looking, so the
+      // seconds of reading pictures and writing the file get in nobody's
+      // way. Not on a timer - see auto_backup_service.dart.
+      AutoBackupService.instance.ensureDaily();
+    }
     _updateHomeVisible();
   }
 
@@ -387,11 +405,12 @@ class _LauncherRootState extends State<LauncherRoot>
       wantsSteps: DeviceDataController.instance.value,
       wantsMostUsedApp: DeviceDataController.instance.value,
     );
-    // Once a day, and here rather than on a timer for the same reason as
-    // everything above it: this is a moment the app is already awake and
-    // already being waited on for a fraction of a second, so a file write
-    // costs nothing anyone can see. See auto_backup_service.dart.
-    AutoBackupService.instance.ensureDaily();
+    // No daily backup here any more. It used to ride along, on the theory
+    // that a file write at this moment costs nothing anyone can see - but
+    // the document carries the wallpaper, and building it made the first
+    // pull-down of every day hang for most of a second, right while the
+    // panel was coming down. It is written when the launcher goes to the
+    // background instead; see didChangeAppLifecycleState.
   }
 
   void _onDragEnd(DragEndDetails details) {

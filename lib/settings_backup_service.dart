@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:flutter/material.dart' show Color;
 import 'package:path/path.dart' as p;
@@ -123,6 +124,7 @@ class SettingsBackupService {
         'layoutMode': appList.layoutMode.name,
         'hand': appList.hand.name,
         'hideAlphabet': appList.hideAlphabet,
+        'alphabetHeight': appList.alphabetHeight,
         'keepListOpen': appList.keepListOpen,
         'backgroundBlur': appList.backgroundBlur,
         'searchExtras': appList.searchExtras,
@@ -259,8 +261,9 @@ class SettingsBackupService {
       UsersController.instance.steady(() async {
         // Before anything is read out of it: [build] takes the secret
         // folder's list straight off the controller, and an automatic
-        // backup is written when the panel is first pulled down - which can
-        // be before that list has been read off disk. An empty list written
+        // backup is written the first time the launcher goes to the
+        // background - which can be before that list has been read off
+        // disk. An empty list written
         // into the file would not look like a fault, it would look like an
         // empty secret folder, and restoring it would un-hide every app in
         // there.
@@ -384,9 +387,16 @@ class SettingsBackupService {
       if (length > maxPictureBytes) {
         return {'extension': extension, 'tooLarge': length};
       }
+      // Read and encoded on an isolate of its own: a wallpaper is megabytes,
+      // and turning it into text here would hold up every frame drawn
+      // meanwhile. Handed back without a copy - Isolate.run ends with
+      // Isolate.exit.
+      final path = file.path;
       return {
         'extension': extension,
-        'bytes': base64Encode(await file.readAsBytes()),
+        'bytes': await Isolate.run(
+          () => base64Encode(File(path).readAsBytesSync()),
+        ),
       };
     } catch (_) {
       // One unreadable picture shouldn't cost the rest of the backup.
@@ -426,8 +436,15 @@ class SettingsBackupService {
     }
   }
 
-  static Future<String> exportJsonWithFiles() async =>
-      const JsonEncoder.withIndent('  ').convert(await buildWithFiles());
+  /// Printed on an isolate of its own for the same reason as the pictures
+  /// in [_encodePicture]: with them inside, the document is megabytes of
+  /// text, and printing it on the UI isolate stood the screen still.
+  static Future<String> exportJsonWithFiles() async {
+    final document = await buildWithFiles();
+    return Isolate.run(
+      () => const JsonEncoder.withIndent('  ').convert(document),
+    );
+  }
 
   /// Applies a previously exported document. Throws a [FormatException]
   /// (safe to show the user directly) if [jsonText] isn't one of ours -
@@ -555,6 +572,9 @@ class SettingsBackupService {
             AppListHand.right,
           ),
           hideAlphabet: appListJson['hideAlphabet'] as bool? ?? false,
+          alphabetHeight: clampAlphabetHeight(
+            (appListJson['alphabetHeight'] as num?)?.toDouble() ?? 1,
+          ),
           keepListOpen: appListJson['keepListOpen'] as bool? ?? false,
           backgroundBlur:
               (appListJson['backgroundBlur'] as num?)?.toDouble() ?? 14,

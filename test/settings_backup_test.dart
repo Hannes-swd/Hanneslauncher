@@ -63,6 +63,7 @@ void main() {
         layoutMode: AppListLayoutMode.columns,
         hand: AppListHand.left,
         hideAlphabet: true,
+        alphabetHeight: 0.75,
         // Off rather than the default, so a value that silently fell back
         // on the way through would be caught.
         keepListOpen: false,
@@ -202,6 +203,7 @@ void main() {
     expect(appList.layoutMode, AppListLayoutMode.columns);
     expect(appList.hand, AppListHand.left);
     expect(appList.hideAlphabet, isTrue);
+    expect(appList.alphabetHeight, 0.75);
     expect(appList.keepListOpen, isFalse);
     expect(appList.backgroundBlur, 6);
 

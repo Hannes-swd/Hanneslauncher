@@ -61,13 +61,13 @@ class _CodeBlockViewState extends State<CodeBlockView> {
     if (PanelVisibility.instance.everOpened) {
       _reloadIfNeeded();
     } else {
-      PanelVisibility.instance.addListener(_onPanelVisibility);
+      PanelVisibility.instance.warm.addListener(_onWarm);
     }
   }
 
-  void _onPanelVisibility() {
-    if (!PanelVisibility.instance.value) return;
-    PanelVisibility.instance.removeListener(_onPanelVisibility);
+  void _onWarm() {
+    if (!PanelVisibility.instance.everOpened) return;
+    PanelVisibility.instance.warm.removeListener(_onWarm);
     if (mounted) _reloadIfNeeded();
   }
 
@@ -80,7 +80,7 @@ class _CodeBlockViewState extends State<CodeBlockView> {
   @override
   void dispose() {
     CodeWidgetStore.instance.removeListener(_onStoreChanged);
-    PanelVisibility.instance.removeListener(_onPanelVisibility);
+    PanelVisibility.instance.warm.removeListener(_onWarm);
     _dataSources().removeListener(_pushSnapshot);
     super.dispose();
   }

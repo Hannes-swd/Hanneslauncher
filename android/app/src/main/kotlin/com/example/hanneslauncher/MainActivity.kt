@@ -52,6 +52,8 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.File
 import java.io.FileInputStream
 import java.util.Calendar
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class MainActivity : FlutterActivity() {
     private val gestureChannelName = "hanneslauncher/system_gestures"
@@ -87,6 +89,37 @@ class MainActivity : FlutterActivity() {
     private var pendingImportResult: MethodChannel.Result? = null
     private var pendingStepsPermissionResult: MethodChannel.Result? = null
     private var pendingContactsPermissionResult: MethodChannel.Result? = null
+
+    // Flutter draws on this app's main thread now - the UI thread and
+    // Android's were merged - so a channel handler that takes its time there
+    // is a frame the launcher does not draw. Opening the panel is where it
+    // showed: the calendar query, the notification list, the usage stats and
+    // the daily backup all answered at once, and the first pull-down of the
+    // day stood still for most of a second.
+    //
+    // Two queues rather than one, so a backup file being written cannot hold
+    // the calendar back behind it. Each is one thread, so calls on the same
+    // queue still run in the order they were made.
+    private val queryWorker: ExecutorService = Executors.newSingleThreadExecutor()
+    private val fileWorker: ExecutorService = Executors.newSingleThreadExecutor()
+
+    // Runs [work] on [worker] and answers on the main thread, where the
+    // channel expects to be answered. A throw comes back as an error, the
+    // same as it would from a handler running it inline.
+    private fun answerOff(
+        worker: ExecutorService,
+        result: MethodChannel.Result,
+        work: () -> Any?,
+    ) {
+        worker.execute {
+            try {
+                val value = work()
+                runOnUiThread { result.success(value) }
+            } catch (e: Exception) {
+                runOnUiThread { result.error("failed", e.message, null) }
+            }
+        }
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -177,23 +210,21 @@ class MainActivity : FlutterActivity() {
                             )
                         }
                     }
-                    "getCalendars" -> {
-                        result.success(
-                            if (hasCalendarPermission()) queryCalendars() else emptyList<Map<String, Any?>>(),
-                        )
+                    "getCalendars" -> answerOff(queryWorker, result) {
+                        if (hasCalendarPermission()) queryCalendars() else emptyList<Map<String, Any?>>()
                     }
                     "getEvents" -> {
                         val calendarIds =
                             (call.argument<List<String>>("calendarIds") ?: emptyList()).toSet()
                         val start = (call.argument<Number>("start") ?: 0).toLong()
                         val end = (call.argument<Number>("end") ?: 0).toLong()
-                        result.success(
+                        answerOff(queryWorker, result) {
                             if (hasCalendarPermission()) {
                                 queryEvents(calendarIds, start, end)
                             } else {
                                 emptyList<Map<String, Any?>>()
-                            },
-                        )
+                            }
+                        }
                     }
                     else -> result.notImplemented()
                 }
@@ -285,19 +316,23 @@ class MainActivity : FlutterActivity() {
                     "saveToDownloads" -> {
                         val json = call.argument<String>("json")
                         val name = call.argument<String>("name")
-                        result.success(
+                        answerOff(fileWorker, result) {
                             if (json == null || name == null) null
                             else saveToDownloads(name, json)
-                        )
+                        }
                     }
-                    "listDownloads" -> result.success(listDownloadBackups())
+                    "listDownloads" -> answerOff(fileWorker, result) { listDownloadBackups() }
                     "readDownload" -> {
                         val name = call.argument<String>("name")
-                        result.success(if (name == null) null else readDownloadBackup(name))
+                        answerOff(fileWorker, result) {
+                            if (name == null) null else readDownloadBackup(name)
+                        }
                     }
                     "deleteDownload" -> {
                         val name = call.argument<String>("name")
-                        result.success(name != null && deleteDownloadBackup(name))
+                        answerOff(fileWorker, result) {
+                            name != null && deleteDownloadBackup(name)
+                        }
                     }
                     "shareFile" -> {
                         val path = call.argument<String>("path")
@@ -383,7 +418,7 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "battery" -> result.success(batteryInfo())
-                    "storage" -> result.success(storageInfo())
+                    "storage" -> answerOff(queryWorker, result) { storageInfo() }
                     "connectionType" -> result.success(connectionType())
                     "hasStepsPermission" -> result.success(hasStepsPermission())
                     "requestStepsPermission" -> {
@@ -411,7 +446,7 @@ class MainActivity : FlutterActivity() {
                         )
                         result.success(null)
                     }
-                    "mostUsedApp" -> result.success(mostUsedAppToday())
+                    "mostUsedApp" -> answerOff(queryWorker, result) { mostUsedAppToday() }
                     else -> result.notImplemented()
                 }
             }
@@ -560,8 +595,8 @@ class MainActivity : FlutterActivity() {
                     "state" -> result.success(notificationState())
                     "requestPermission" -> result.success(requestNotificationAccess())
                     "openAppSettings" -> result.success(openAppDetails())
-                    "counts" -> result.success(notificationCounts())
-                    "list" -> result.success(notificationList())
+                    "counts" -> answerOff(queryWorker, result) { notificationCounts() }
+                    "list" -> answerOff(queryWorker, result) { notificationList() }
                     "dismiss" -> {
                         val key = call.argument<String>("key")
                         result.success(

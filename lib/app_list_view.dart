@@ -1070,6 +1070,7 @@ class _AppListViewState extends State<AppListView>
         color: _settings.color,
         leftHanded: _leftHanded,
         hideUntilTouched: _settings.hideAlphabet,
+        heightFraction: _settings.alphabetHeight,
         onScrub: _handleScrub,
         onBubblePositionChanged: (offset) {
           // Cheap update: only the bubble listens to this, so it doesn't
@@ -1755,6 +1756,7 @@ class _AlphabetBar extends StatefulWidget {
     required this.color,
     required this.leftHanded,
     required this.hideUntilTouched,
+    required this.heightFraction,
     required this.onScrub,
     required this.onBubblePositionChanged,
     required this.onSearchHoverChanged,
@@ -1773,6 +1775,11 @@ class _AlphabetBar extends StatefulWidget {
   /// fading them in for as long as a scrub lasts. The gesture detector is
   /// unaffected - an invisible bar still catches the same touches.
   final bool hideUntilTouched;
+
+  /// The share of the bar's height, from the bottom, the letters are laid
+  /// out in - see [AppListSettings.alphabetHeight]. The touch area stays the
+  /// full height: above the letters it simply answers as the first one.
+  final double heightFraction;
 
   final ScrubCallback onScrub;
   final ValueChanged<Offset> onBubblePositionChanged;
@@ -1822,17 +1829,29 @@ class _AlphabetBarState extends State<_AlphabetBar> {
   // count is one more than the letter count throughout this class.
   int get _rowCount => widget.letters.length + 1;
 
+  // The part of the bar the letters are laid out in: its lower
+  // [_AlphabetBar.heightFraction].
+  double _letterArea(double height) => height * widget.heightFraction;
+
   void _updateRowHeight(double height) {
-    final fitted = height / _rowCount;
+    final fitted = _letterArea(height) / _rowCount;
     _rowHeight = fitted < _AlphabetBar._maxRowHeight
         ? fitted
         : _AlphabetBar._maxRowHeight;
   }
 
+  // Where the first letter starts. Placed inside the letter area the way the
+  // bar always placed it inside its full height, so at 100 % nothing moves.
+  // Drawing and hit-testing both go through here.
+  double _blockTop(double height) {
+    final area = _letterArea(height);
+    final blockHeight = _rowCount * _rowHeight;
+    return (height - area) + (area - blockHeight) * _AlphabetBar._verticalBias;
+  }
+
   void _handlePosition(Offset localPosition, double width, double height) {
     final letters = widget.letters;
-    final blockHeight = _rowCount * _rowHeight;
-    final blockTop = (height - blockHeight) * _AlphabetBar._verticalBias;
+    final blockTop = _blockTop(height);
     final index = ((localPosition.dy - blockTop) / _rowHeight).floor().clamp(
       0,
       _rowCount - 1,
@@ -1907,18 +1926,25 @@ class _AlphabetBarState extends State<_AlphabetBar> {
           },
           onPanEnd: (_) => _endHover(),
           onPanCancel: _endHover,
-          child: Align(
-            // _verticalBias is a 0..1 fraction; Alignment's y axis is -1..1.
-            alignment: Alignment(0, _AlphabetBar._verticalBias * 2 - 1),
-            child: AnimatedOpacity(
-              // _hoveredIndex is set on pan start and cleared on release, so
-              // it doubles as "a finger is on the bar right now".
-              opacity: widget.hideUntilTouched && _hoveredIndex == null ? 0 : 1,
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [for (var i = 0; i < _rowCount; i++) _buildRow(i)],
+          child: Padding(
+            padding: EdgeInsets.only(
+              top: math.max(0.0, _blockTop(constraints.maxHeight)),
+            ),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: AnimatedOpacity(
+                // _hoveredIndex is set on pan start and cleared on release,
+                // so it doubles as "a finger is on the bar right now".
+                opacity:
+                    widget.hideUntilTouched && _hoveredIndex == null ? 0 : 1,
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var i = 0; i < _rowCount; i++) _buildRow(i),
+                  ],
+                ),
               ),
             ),
           ),

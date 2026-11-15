@@ -64,6 +64,30 @@ class AppListSettingsScreen extends StatelessWidget {
                       );
                     },
                   ),
+                  const SizedBox(height: 12),
+                  _SectionLabel(
+                    s.alphabetHeight((settings.alphabetHeight * 100).round()),
+                  ),
+                  Slider(
+                    value: settings.alphabetHeight,
+                    min: minAlphabetHeight,
+                    max: maxAlphabetHeight,
+                    // Steps of 5 %, so three quarters is a stop of its own.
+                    divisions: 10,
+                    onChanged: (value) {
+                      AppListSettingsController.instance.update(
+                        settings.copyWith(alphabetHeight: value),
+                      );
+                    },
+                  ),
+                  Text(
+                    s.alphabetHeightHint,
+                    style: TextStyle(
+                      fontSize: context.design.typeCaption,
+                      color: context.design.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(s.keepListOpen),

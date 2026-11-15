@@ -65,7 +65,8 @@ enum BackupReason {
 ///
 /// Deliberately small: a handful of files, no scheduler, no background work.
 /// It writes when the app is already awake and already doing something -
-/// opening the panel, starting an update - because a launcher that wakes
+/// stepping back behind an app that was just opened, starting an update -
+/// because a launcher that wakes
 /// itself up to write a file nobody asked for is a worse trade than a backup
 /// that is occasionally a day old.
 class AutoBackupService {
