@@ -226,9 +226,18 @@ class _LauncherRootState extends State<LauncherRoot>
   /// dismissing something and watching it leave. The app list resets itself
   /// off the same signal.
   void _onHomePressed() {
+    // Every page and dialog over the home screen goes first - the settings
+    // above all - the way the home gesture leaves any other app.
+    final leftPages = popToHome(Navigator.of(context));
     if (_controller.value > 0) {
       Haptics.fire(HapticEvent.snap);
-      _closePanel();
+      // Under a settings page the panel was not to be seen anyway; animating
+      // it shut as the page slides off would be two things leaving at once.
+      if (leftPages) {
+        _controller.value = 0;
+      } else {
+        _closePanel();
+      }
     }
     signalHomeReset();
   }
